@@ -4,27 +4,27 @@ LICENSE = "CLOSED"
 SRC_URI = "file://source \
            "
 
-EXTRA_IMAGE_FEATURES:append = "dev-pkgs"
+EXTRA_IMAGE_FEATURES += "tools-sdk dev-pkgs"
 
 # list of runtime dependencies
-RDEPENDS:${PN}:append = "                   \
-                        vulkan-loader       \
+RDEPENDS:${PN}:append = "vulkan-loader      \
                         vulkan-tools        \
                         vulkan-headers      \
-                        vulkan-loader-dev   \
-                        vulkan-loader-dev   \
                         glfw                \
-                        glfw-dev            \
-                        glm                 \
                         libxi"
 
 # list of buildtime dependencies
-DEPENDS:append = " vulkan-loader vulkan-tools vulkan-headers make glfw glm libxi "
+DEPENDS:append = "vulkan-loader             \
+                  vulkan-tools              \
+                  vulkan-headers            \
+                  make glfw glm libxi       \
+                  "
 
 TARGET_CXX_ARCH:append = "${LDFLAGS}"
 
 SOURCE_DIR = "${WORKDIR}/source"
 
+do_compile[depends] += "glfw:do_populate_sysroot vulkan-loader:do_populate_sysroot"
 do_compile () {
     cd ${SOURCE_DIR}
 
@@ -40,7 +40,7 @@ do_compile () {
 addtask compile
 
 FILES:${PN}:append = "/home/root/graphicapps-source"
-INSANE_SKIP:${PN}:append = "build-deps already-stripped installed-vs-shipped"
+INSANE_SKIP:${PN}:append = " already-stripped installed-vs-shipped "
 
 do_install () {
     install -d ${D}${bindir}
