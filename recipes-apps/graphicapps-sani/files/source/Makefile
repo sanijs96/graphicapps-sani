@@ -1,6 +1,9 @@
 TARGET = graphicapps-sani
-SRCS = $(shell find . -type f -name "*.cpp")
+SRCS = $(shell find ./* -type f -name "*.cpp")
+SRCS += $(shell find ./* -type f -name "*.c")
 HEADS = $(shell find ./include -type f -name "*.hpp")
+HEADS += $(shell find ./include -type f -name "*.h")
+
 OBJS = $(SRCS:.cpp=.o)
 DEPS = Makefile.depend
 
