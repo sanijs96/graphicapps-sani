@@ -24,7 +24,7 @@ TARGET_CXX_ARCH:append = "${LDFLAGS}"
 
 SOURCE_DIR = "${WORKDIR}/source"
 
-do_compile[depends] += "glfw:do_populate_sysroot vulkan-loader:do_populate_sysroot"
+do_compile[depends] += " glfw:do_populate_sysroot vulkan-loader:do_populate_sysroot"
 do_compile () {
     cd ${SOURCE_DIR}
 
@@ -39,8 +39,8 @@ do_compile () {
 }
 addtask compile
 
-FILES:${PN}:append = "/home/root/graphicapps-source"
-INSANE_SKIP:${PN}:append = " already-stripped installed-vs-shipped "
+FILES:${PN}:append = " /home/root/graphicapps-source"
+INSANE_SKIP:${PN}:append = " already-stripped installed-vs-shipped"
 
 do_install () {
     install -d ${D}${bindir}
