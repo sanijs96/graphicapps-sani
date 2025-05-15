@@ -1,4 +1,4 @@
-#include "glfw_window.hpp"
+#include "window_glfw.hpp"
 
 void glAppsWindow::createWindow(void)
 {

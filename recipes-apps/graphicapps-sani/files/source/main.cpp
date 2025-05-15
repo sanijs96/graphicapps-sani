@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <cstdlib>
 
-#include "common/window_obj_mgr/window_glfw/glfw_window.hpp"
+#include "common/window_obj_mgr/window_glfw/window_glfw.hpp"
 #include "common/vulkan_obj_mgr/vulkan_obj_mgr.hpp"
 
 #include "triangle/triangle.hpp"

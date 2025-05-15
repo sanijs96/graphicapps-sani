@@ -23,7 +23,7 @@ void vulkanObjectManager::createInstance(void)
     vkInstanceInfo.pApplicationInfo = &vkAppsInfo;
 
 #if defined(GLFW_USING_VULKAN)
-    vlGlfwBinder.bindGlfwExtension();
+    vlGlfwBinder.bindGlfwExtension(vkInstanceInfo);
 #endif
 
     vkResult = vkCreateInstance(&vkInstanceInfo, nullptr, &vkInstance);
