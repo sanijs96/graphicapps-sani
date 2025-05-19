@@ -1,4 +1,5 @@
 #include "vulkan_obj_mgr.hpp"
+#include "layers/layer_obj_mgr.hpp"
 
 void vulkanObjectManager::fill_vkApplicationInfo(void)
 {
@@ -13,7 +14,6 @@ void vulkanObjectManager::fill_vkApplicationInfo(void)
 
     vkAppsInfo.pNext = nullptr; // used on pointing to next vulkan extension object
 }
-
 
 void vulkanObjectManager::createInstance(void)
 {
@@ -32,6 +32,18 @@ void vulkanObjectManager::createInstance(void)
 void vulkanObjectManager::destroyInstance(void)
 {
     vkDestroyInstance(vkInstance, nullptr);
+}
+
+void vulkanObjectManager::addInstanceLayerInfo(void)
+{
+    vkInstanceInfo.enabledLayerCount = vkLayers.getSupportedLayerCount();
+
+    vkLayers.addLayerNamesTo(vkInstanceInfo.ppEnabledLayerNames);
+}
+
+bool vulkanObjectManager::checkLayerSupport(const char *layerName)
+{
+    return vkLayers.checkLayerSupport(layerName);
 }
 
 VkResult vulkanObjectManager::result(void)

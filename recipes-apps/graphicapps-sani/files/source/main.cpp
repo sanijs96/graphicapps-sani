@@ -2,6 +2,12 @@
 #include <stdexcept>
 #include <cstdlib>
 
+#define DEBUG_EN
+
+#if defined(DEBUG_EN)
+#include "common/debug/debug.hpp"
+#endif
+
 #include "common/window_obj_mgr/window_glfw/window_glfw.hpp"
 #include "common/vulkan_obj_mgr/vulkan_obj_mgr.hpp"
 
@@ -36,6 +42,19 @@ void glApps::init(void)
     if (vulkan.result() != VK_SUCCESS) {
         throw std::runtime_error("failed to create vulkan instance..");
     }
+    else {
+        vulkan.addInstanceLayerInfo();
+    }
+
+#if defined(DEBUG_EN)
+    if (enableValidationLayers == true) {
+        for (auto &layerName : validationLayerNamesList) {
+            if (!vulkan.checkLayerSupport(layerName)) {
+                throw std::runtime_error("validation layers reqested, but not available");
+            }
+        }
+    }
+#endif
 }
 
 void glApps::run(void)
