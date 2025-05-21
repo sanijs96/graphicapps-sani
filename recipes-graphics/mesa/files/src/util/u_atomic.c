@@ -21,7 +21,7 @@
  * IN THE SOFTWARE.
  */
 
-#if defined(MISSING_64BIT_ATOMICS) && defined(HAVE_PTHREAD)
+#if !defined(__clang__) && defined(MISSING_64BIT_ATOMICS) && defined(HAVE_PTHREAD)
 
 #include <stdint.h>
 #include <pthread.h>
