@@ -12,7 +12,7 @@ void glAppsWindow::createWindow(void)
 
 bool glAppsWindow::isCreated(void)
 {
-    return (windowObject == nullptr);
+    return (windowObject != nullptr);
 }
 
 
