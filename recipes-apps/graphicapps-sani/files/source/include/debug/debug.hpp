@@ -1,11 +1,13 @@
-#include "debug.hpp"
+#ifndef __DEBUG_H__
+#define __DEBUG_H__
 
 #if !defined(DEBUG_EN)
 const bool enableValidationLayers = false;
 #else
 const bool enableValidationLayers = true;
-#endif
-
-const std::vector<const char *> validationLayerNamesList = {
+const char *const validationLayerNamesList[] = {
     "VK_LAYER_KHRONOS_validation"
 };
+#endif
+
+#endif

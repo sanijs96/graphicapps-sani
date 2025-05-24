@@ -15,7 +15,6 @@ bool glAppsWindow::isCreated(void)
     return (windowObject != nullptr);
 }
 
-
 void glAppsWindow::changeSizeOfWindow(int width, int height)
 {
 

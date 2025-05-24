@@ -1,3 +1,6 @@
+#ifndef __WINDOW_OBJ_H__
+#define __WINDOW_OBJ_H__
+
 #define WINDOW_SIZE_WIDTH       (600)
 #define WINDOW_SIZE_HEIGHT      (300)
 
@@ -10,3 +13,4 @@ public:
     virtual void destroyWindow(void) = 0;
 };
 
+#endif

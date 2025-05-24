@@ -2,9 +2,10 @@
 #include <cstring>
 #include <vector>
 
-#include "layer_obj_mgr.hpp"
+#include "layer_check.hpp"
 
 vulkanLayer::vulkanLayer(void)
+: supportedLayerCount {0}, pSupportedLayers {nullptr}
 {
     // get number of layers supported
     vkEnumerateInstanceLayerProperties(&supportedLayerCount, nullptr);
@@ -12,11 +13,11 @@ vulkanLayer::vulkanLayer(void)
     // get information of supported layers
     pSupportedLayers = new VkLayerProperties[supportedLayerCount];
     vkEnumerateInstanceLayerProperties(&supportedLayerCount, pSupportedLayers);
-}
 
-vulkanLayer::~vulkanLayer(void)
-{
-    delete []pSupportedLayers;
+    layerNamesList = new char *[supportedLayerCount];
+    for (uint32_t layerIdx = 0; layerIdx < supportedLayerCount; layerIdx++) {
+        layerNamesList[layerIdx] = pSupportedLayers->layerName;
+    }
 }
 
 uint32_t vulkanLayer::getSupportedLayerCount(void)
@@ -24,30 +25,22 @@ uint32_t vulkanLayer::getSupportedLayerCount(void)
     return supportedLayerCount;
 }
 
+char **vulkanLayer::getLayerNamesList(void)
+{
+    if (layerNamesList == nullptr) {
+        throw std::runtime_error(" layer not detected ");
+    }
+
+    return layerNamesList;
+}
+
 bool vulkanLayer::checkLayerSupport(const char *layerName)
 {
-    VkLayerProperties *pLayer;
-
-    pLayer = pSupportedLayers;
-
     for (uint32_t idx = 0; idx < supportedLayerCount; idx++) {
-        if (!strcmp(layerName, pLayer->layerName)) {
+        if (!strcmp(layerName, pSupportedLayers[idx].layerName)) {
             return true;
         }
-
-        pLayer++;
     }
 
     return false;
-}
-
-void vulkanLayer::addLayerNamesTo(const char* const *ppEnabledLayerNames)
-{
-    VkLayerProperties *pLayer;
-
-    pLayer = pSupportedLayers;
-    for (uint32_t idx = 0; idx < supportedLayerCount; idx++) {
-        ppEnabledLayerNames = (const char* const *)pLayer->layerName;
-        ppEnabledLayerNames++;
-    }
 }

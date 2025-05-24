@@ -1,7 +1,10 @@
-#define GLFW_INCLUDE_VULKAN
+#ifndef __WINDOW_GLFW_H__
+#define __WINDOW_GLFW_H__
 
-#include <GLFW/glfw3.h>
-#include "../window_obj_mgr.hpp"
+#include <vulkan/vulkan_core.h>
+
+#include <glfw/glfw.hpp>
+#include <window/window_obj.hpp>
 
 class glAppsWindow:public graphicAppsWindow {
 public:
@@ -18,3 +21,5 @@ private:
     int windowHeight;
     GLFWwindow *windowObject;
 };
+
+#endif
