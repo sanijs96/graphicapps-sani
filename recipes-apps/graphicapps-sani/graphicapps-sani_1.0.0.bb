@@ -4,20 +4,36 @@ LICENSE = "CLOSED"
 SRC_URI = "file://source \
            "
 
-EXTRA_IMAGE_FEATURES += "tools-sdk dev-pkgs"
+CORE_IMAGE_EXTRA_INSTALL += "wayland weston"
+
+EXTRA_IMAGE_FEATURES += "tools-sdk dev-pkgs x11 vulkan"
+
+IMAGE_INSTALL:append = " xwayland mesa"
 
 # list of runtime dependencies
 RDEPENDS:${PN}:append = "vulkan-loader      \
                         vulkan-tools        \
                         vulkan-headers      \
+                        spirv-tools         \
                         glfw                \
+                        wayland             \
+                        weston              \
+                        xrandr              \
                         libxi"
 
 # list of buildtime dependencies
 DEPENDS:append = "vulkan-loader             \
                   vulkan-tools              \
                   vulkan-headers            \
-                  make glfw glm libxi       \
+                  spirv-tools               \
+                  make                      \
+                  glfw                      \
+                  glm                       \
+                  xrandr                    \
+                  wayland                   \
+                  weston                    \
+                  xrandr                    \
+                  libxi                     \
                   "
 
 TARGET_CXX_ARCH:append = "${LDFLAGS}"
