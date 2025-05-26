@@ -8,7 +8,7 @@ CORE_IMAGE_EXTRA_INSTALL += "wayland weston"
 
 EXTRA_IMAGE_FEATURES += "tools-sdk dev-pkgs x11 vulkan"
 
-IMAGE_INSTALL:append = " xwayland mesa"
+IMAGE_INSTALL:append = " xwayland mesa g++"
 
 # list of runtime dependencies
 RDEPENDS:${PN}:append = "vulkan-loader      \
@@ -26,7 +26,6 @@ DEPENDS:append = "vulkan-loader             \
                   vulkan-tools              \
                   vulkan-headers            \
                   spirv-tools               \
-                  make                      \
                   glfw                      \
                   glm                       \
                   xrandr                    \
