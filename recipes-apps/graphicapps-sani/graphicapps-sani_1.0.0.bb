@@ -4,11 +4,11 @@ LICENSE = "CLOSED"
 SRC_URI = "file://source \
            "
 
-CORE_IMAGE_EXTRA_INSTALL += "wayland weston"
+CORE_IMAGE_EXTRA_INSTALL += " wayland weston glfw-dev"
 
-EXTRA_IMAGE_FEATURES += "tools-sdk dev-pkgs x11 vulkan"
+EXTRA_IMAGE_FEATURES += " tools-sdk dev-pkgs x11 vulkan"
 
-IMAGE_INSTALL:append = " xwayland mesa g++"
+IMAGE_INSTALL:append = " xwayland mesa glfw"
 
 # list of runtime dependencies
 RDEPENDS:${PN}:append = "vulkan-loader      \
