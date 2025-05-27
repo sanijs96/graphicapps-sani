@@ -45,6 +45,22 @@ void glApps::init(void)
         throw std::runtime_error("failed to create vulkan instance..");
     }
 
+#if defined(GLFW_INCLUDE_VULKAN)
+        uint32_t extensionCount;
+        const char **extensionNames;
+        glfwExtension glfwExtension;
+
+        extensionNames = glfwExtension.getRequiredExtensionNames();
+
+	extensionCount = glfwExtension.getRequiredExtensionCount();
+
+        for (uint32_t idx = 0; idx < extensionCount; idx++) {
+             std::cout << "ext:" << extensionNames[idx] << std::endl;
+
+             vulkan.addInstanceExtensionInfo(extensionNames[idx]);
+	}
+#endif
+
 #if defined(DEBUG_EN)
     if (enableValidationLayers == true) {
         uint32_t layerCount;
@@ -62,24 +78,7 @@ void glApps::init(void)
             throw std::runtime_error("no validation layer enabled..");
         }
 
-#if defined(GLFW_INCLUDE_VULKAN)
-        uint32_t extensionCount;
-        const char **extensionNames;
-        glfwExtension glfwExtension;
-
-        extensionCount = vulkan.getEnabledInstanceExtensionCount();
-        extensionNames = glfwExtension.getRequiredExtensionNames();
-
-        vulkan.addInstanceExtensionInfo(extensionNames, extensionCount);
-
-        for (uint32_t idx = 0; idx < extensionCount; idx++) {
-            std::cout << "glfw" << idx << extensionNames[idx] << std::endl;
-            //if (!strcmp(extensionNames[idx], VK_EXT_DEBUG_UTILS_EXTENSION_NAME)) {
-            //    vulkan.addInstanceExtensionInfo(extensionNames, extensionCount);
-            //}
-        }
-#endif
-
+        vulkan.addInstanceExtensionInfo(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 #endif
 }

@@ -1,4 +1,5 @@
 #include <cstring>
+#include <iostream>
 
 #include "vulkan_obj_mgr.hpp"
 
@@ -33,6 +34,13 @@ void vulkanObjectManager::createInstance(void)
         .name {nullptr}
     };
 
+    extensionNamesList = (objNamesList_t) {
+        .next {nullptr},
+        .name {nullptr}
+    };
+
+    ppLayerNames = {nullptr};
+    ppExtensionNames  = {nullptr};
 }
 
 void vulkanObjectManager::destroyInstance(void)
@@ -45,27 +53,36 @@ vulkanObjectManager::~vulkanObjectManager(void)
     objNamesList_t *pList;
 
     pList = &layerNamesList;
-    for (uint32_t idx = 0; ; idx++) {
-        if (!pList->next) {
-            break;
-        }
-
+    while (pList->next != nullptr) {
         delete pList;
-
         pList = pList->next;
     }
+
+    pList = &extensionNamesList;
+    while (pList->next != nullptr) {
+        delete pList;
+        pList = pList->next;
+    }
+
+    delete []ppLayerNames;
+    delete []ppExtensionNames;
 }
 
-void vulkanObjectManager::addObjNamesListEntry(objNamesList_t *pList, const char *layerName)
+void vulkanObjectManager::addObjNamesListEntry(objNamesList_t *pList, const char *entryName)
 {
-    objNamesList_t *entry = new objNamesList_t;
 
-    *entry = {
-        .next {nullptr},
-        .name {layerName}
-    };
+    if (pList->name != nullptr) {
+        objNamesList_t *entry = new objNamesList_t;
+        *entry = {
+            .next {nullptr},
+            .name {entryName}
+        };
 
-    pList->next = entry;
+        pList->next = entry;
+    }
+    else {
+        pList->name = entryName;
+    }
 }
 
 void vulkanObjectManager::deleteObjNamesListEntry(objNamesList_t *pList)
@@ -78,22 +95,54 @@ void vulkanObjectManager::deleteObjNamesListEntry(objNamesList_t *pList)
     }
 }
 
-
 void vulkanObjectManager::updateInstanceLayerNamesList(void)
 {
     objNamesList_t *pList;
-    const char * ppLayerNames[vkInstanceInfo.enabledLayerCount];
+
+    if (vkInstanceInfo.ppEnabledLayerNames != nullptr) {
+        delete []ppLayerNames;
+    }
+
+    ppLayerNames = new const char * [vkInstanceInfo.enabledLayerCount];
 
     pList = &layerNamesList;
     for (uint32_t idx = 0; ; idx++) {
         ppLayerNames[idx] = pList->name;
 
+        std::cout << "[" << ppLayerNames[idx] << "]" << std::endl;
+
         if (!pList->next) {
             break;
         }
 
-        pList = (objNamesList_t *)pList->next;
+        pList = pList->next;
     }
+}
+
+void vulkanObjectManager::updateInstanceExtensionNamesList(void)
+{
+    objNamesList_t *pList;
+
+    if (vkInstanceInfo.ppEnabledExtensionNames != nullptr) {
+        delete []ppExtensionNames;
+    }
+
+    ppExtensionNames = new const char * [vkInstanceInfo.enabledExtensionCount];
+
+    pList = &extensionNamesList;
+    for (uint32_t idx = 0; ; idx++) {
+        ppExtensionNames[idx] = pList->name;
+
+        std::cout << "[" << ppExtensionNames[idx] << "]" << std::endl;
+
+        if (!pList->next) {
+            break;
+        }
+
+        pList = pList->next;
+    }
+
+    vkInstanceInfo.ppEnabledExtensionNames = ppExtensionNames;
 }
 
 uint32_t vulkanObjectManager::getEnabledInstanceLayerCount(void)
@@ -108,14 +157,14 @@ uint32_t vulkanObjectManager::getEnabledInstanceExtensionCount(void)
 
 void vulkanObjectManager::addInstanceLayerInfo(const char * layerName)
 {
+    objNamesList_t *pList;
     vkInstanceInfo.enabledLayerCount++;
 
     uint32_t idx;
-    objNamesList_t *pList;
 
     pList = &layerNamesList;
-    for (; idx < vkInstanceInfo.enabledLayerCount - 1; idx++) {
-        pList = (objNamesList_t *)pList->next;
+    while (pList->next != nullptr) {
+        pList = pList->next;
     }
 
     addObjNamesListEntry(pList, layerName);
@@ -140,26 +189,32 @@ void vulkanObjectManager::deleteInstanceLayerInfo(const char *layerName)
         return;
     }
 
-    for (; idx < vkInstanceInfo.enabledLayerCount; idx++) {
+    while (pList->next != nullptr) {
         if (!strcmp(layerName, pList->next->name)) {
-            break;
+            deleteObjNamesListEntry(pList->next);
+
+            vkInstanceInfo.enabledLayerCount--;
+
+            updateInstanceLayerNamesList();
         }
 
         pList = pList->next;
     }
-
-    if ((pList->next != nullptr)) {
-        deleteObjNamesListEntry(pList->next);
-
-        vkInstanceInfo.enabledLayerCount--;
-
-        updateInstanceLayerNamesList();
-    }
 }
 
-void vulkanObjectManager::addInstanceExtensionInfo(const char **extNames, uint32_t extCount)
+void vulkanObjectManager::addInstanceExtensionInfo(const char * extensionName)
 {
-    vkInstanceInfo.enabledExtensionCount += extCount;
-    vkInstanceInfo.ppEnabledExtensionNames = extNames;
-}
+    vkInstanceInfo.enabledExtensionCount++;
 
+    objNamesList_t *pList;
+
+    pList = &extensionNamesList;
+
+    while (pList->next != nullptr) {
+        pList = pList->next;
+    }
+
+    addObjNamesListEntry(pList, extensionName);
+
+    updateInstanceExtensionNamesList();
+}

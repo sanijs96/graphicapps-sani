@@ -23,22 +23,26 @@ public:
     void deleteInstanceLayerInfo(const char *layerName);
 
     uint32_t getEnabledInstanceExtensionCount(void);
-    void addInstanceExtensionInfo(const char **extNames, uint32_t extCount);
+    void addInstanceExtensionInfo(const char *extNames);
+    void deleteInstanceExtensionInfo(const char *extNames);
 
-    void addObjNamesListEntry(objNamesList_t *pList, const char *layerName);
+    void addObjNamesListEntry(objNamesList_t *pList, const char *name);
     void deleteObjNamesListEntry(objNamesList_t *pList);
-    void updateInstanceNamesPtr(const char * const *namePtr);
 
-    void updateInstanceLayerNamesList(void);
 private:
     objNamesList_t layerNamesList;
+    objNamesList_t extensionNamesList;
+    const char ** ppLayerNames;
+    const char ** ppExtensionNames;
     VkResult vkResult;
     VkInstance vkInstance;
     VkApplicationInfo vkAppsInfo;
     VkInstanceCreateInfo vkInstanceInfo;
 
-
     void fill_vkApplicationInfo(void);
+
+    void updateInstanceLayerNamesList(void);
+    void updateInstanceExtensionNamesList(void);
 };
 
 #endif
