@@ -3,7 +3,7 @@
 
 #include "vulkan_obj_mgr.hpp"
 
-void vulkanObjectManager::fill_vkApplicationInfo(void)
+void vulkanObjectManager::fillApplicationInfo(void)
 {
     vkAppsInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 
@@ -17,9 +17,29 @@ void vulkanObjectManager::fill_vkApplicationInfo(void)
     vkAppsInfo.pNext = nullptr; // used on pointing to next vulkan extension object
 }
 
+void vulkanObjectManager::checkAvailableDevices(void)
+{
+    uint32_t deviceCount;
+    VkPhysicalDevice * deviceList;
+
+    deviceCount = 0;
+
+    vkEnumeratePhysicalDevices(vkInstance, &deviceCount, nullptr);
+
+    if (deviceCount == 0) {
+        throw std::runtime_error("no physical devices available..");
+    }
+
+    deviceList = vkDevice.createDeviceList(deviceCount);
+
+    vkEnumeratePhysicalDevices(vkInstance, &deviceCount, deviceList);
+
+    vkDevice.registerDevices(deviceCount);
+}
+
 void vulkanObjectManager::createInstance(void)
 {
-    fill_vkApplicationInfo();
+    fillApplicationInfo();
 
     vkInstanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     vkInstanceInfo.pApplicationInfo = &vkAppsInfo;
@@ -41,6 +61,7 @@ void vulkanObjectManager::createInstance(void)
 
     ppLayerNames = {nullptr};
     ppExtensionNames  = {nullptr};
+
 }
 
 void vulkanObjectManager::destroyInstance(void)
@@ -217,4 +238,29 @@ void vulkanObjectManager::addInstanceExtensionInfo(const char * extensionName)
     addObjNamesListEntry(pList, extensionName);
 
     updateInstanceExtensionNamesList();
+}
+
+
+
+uint32_t vulkanObjectManager::selectGPUDevice(void)
+{
+    uint32_t numDevices;
+    const char * deviceName;
+
+    checkAvailableDevices();
+
+    numDevices = vkDevice.getDeviceCount();
+
+    for (uint32_t idx; idx < numDevices; idx++) {
+
+        if (vkDevice.isDeviceTypeGPU(idx) == true) {
+            vkDevice.selectDevice(idx);
+            std::cout << vkDevice.getDeviceName(idx) << "is selected" << std::endl;
+
+            result = VK_SUCCESS;
+            return result;
+        }
+    }
+
+    return VK_ERROR_UNKNOWN;
 }

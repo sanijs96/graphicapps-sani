@@ -46,19 +46,19 @@ void glApps::init(void)
     }
 
 #if defined(GLFW_INCLUDE_VULKAN)
-        uint32_t extensionCount;
-        const char **extensionNames;
-        glfwExtension glfwExtension;
+    uint32_t extensionCount;
+    const char **extensionNames;
+    glfwExtension glfwExtension;
 
-        extensionNames = glfwExtension.getRequiredExtensionNames();
+    extensionNames = glfwExtension.getRequiredExtensionNames();
 
-	extensionCount = glfwExtension.getRequiredExtensionCount();
+    extensionCount = glfwExtension.getRequiredExtensionCount();
 
-        for (uint32_t idx = 0; idx < extensionCount; idx++) {
-             std::cout << "ext:" << extensionNames[idx] << std::endl;
+    for (uint32_t idx = 0; idx < extensionCount; idx++) {
+         std::cout << "ext:" << extensionNames[idx] << std::endl;
 
-             vulkan.addInstanceExtensionInfo(extensionNames[idx]);
-	}
+         vulkan.addInstanceExtensionInfo(extensionNames[idx]);
+    }
 #endif
 
 #if defined(DEBUG_EN)
@@ -81,6 +81,12 @@ void glApps::init(void)
         vulkan.addInstanceExtensionInfo(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 #endif
+
+    vulkan.selectGPUDevice();
+    if (vulkan.result != VK_SUCCESS) {
+        throw std::runtime_error("device creation failure..");
+    }
+
 }
 
 void glApps::run(void)

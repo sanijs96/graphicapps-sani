@@ -3,6 +3,8 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include "device/vulkan_device.hpp"
+
 typedef struct objNamesList {
     objNamesList *next;
     const char * name;
@@ -11,13 +13,15 @@ typedef struct objNamesList {
 class vulkanObjectManager {
 public:
     VkResult result;
-    vulkanObjectManager(void): vkResult{VK_SUCCESS}, vkInstance{},
+    vulkanObjectManager(void): result{VK_SUCCESS}, vkInstance{},
                                 vkAppsInfo{}, vkInstanceInfo{} { }
     ~vulkanObjectManager(void);
 
+    // instance
     void createInstance(void);
     void destroyInstance(void);
 
+    // layers & extensions
     uint32_t getEnabledInstanceLayerCount(void);
     void addInstanceLayerInfo(const char *layerName);
     void deleteInstanceLayerInfo(const char *layerName);
@@ -26,23 +30,31 @@ public:
     void addInstanceExtensionInfo(const char *extNames);
     void deleteInstanceExtensionInfo(const char *extNames);
 
+    // device select & creation
+    uint32_t selectGPUDevice(void);
+
+    // common
     void addObjNamesListEntry(objNamesList_t *pList, const char *name);
     void deleteObjNamesListEntry(objNamesList_t *pList);
 
 private:
-    objNamesList_t layerNamesList;
-    objNamesList_t extensionNamesList;
-    const char ** ppLayerNames;
-    const char ** ppExtensionNames;
-    VkResult vkResult;
     VkInstance vkInstance;
     VkApplicationInfo vkAppsInfo;
     VkInstanceCreateInfo vkInstanceInfo;
 
-    void fill_vkApplicationInfo(void);
+    const char ** ppLayerNames;
+    const char ** ppExtensionNames;
+    objNamesList_t layerNamesList;
+    objNamesList_t extensionNamesList;
+
+    vulkanDevice vkDevice;
+
+    void fillApplicationInfo(void);
+    void checkAvailableDevices(void);
 
     void updateInstanceLayerNamesList(void);
     void updateInstanceExtensionNamesList(void);
+
 };
 
 #endif
