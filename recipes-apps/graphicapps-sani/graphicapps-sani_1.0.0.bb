@@ -1,8 +1,7 @@
 SUMMARY = "${PN} file recipe"
 LICENSE = "CLOSED"
 
-SRC_URI = "file://source \
-           "
+SRC_URI = "file://source"
 
 CORE_IMAGE_EXTRA_INSTALL:append = " wayland weston xwayland     \
                                     glfw-dev libegl-mesa-dev    \
@@ -43,15 +42,16 @@ SOURCE_DIR = "${WORKDIR}/source"
 do_compile[depends] += " glfw:do_populate_sysroot vulkan-loader:do_populate_sysroot"
 do_compile () {
     cd ${SOURCE_DIR}
-
     ln -sf ${RECIPE_SYSROOT}/usr/lib/libglfw.so.3 ${RECIPE_SYSROOT}/usr/lib/libglfw.so || true
     ln -sf ${RECIPE_SYSROOT}/usr/lib/libvulkan.so.1 ${RECIPE_SYSROOT}/usr/lib/libvulkan.so || true
 
     make clean
+
     make \
-    CPPFLAGS="${CPPFLAGS} -I${STAGING_INCDIR} -I${SOURCE_DIR}/include" \
+    CCFLAGS="${CCFLAGS} -I${STAGING_INCDIR} -I${SOURCE_DIR}/include" \
     LDFLAGS="${LDFLAGS} -L${STAGING_LIBDIR} \
      -lvulkan -lglfw -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi -lm"
+
 }
 addtask compile
 
