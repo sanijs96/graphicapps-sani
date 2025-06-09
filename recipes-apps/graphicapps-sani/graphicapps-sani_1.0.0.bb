@@ -35,7 +35,8 @@ DEPENDS:append = "vulkan-loader             \
                   libxi                     \
                   "
 
-TARGET_CXX_ARCH:append = "${LDFLAGS}"
+
+TARGET_CC_ARCH:append = " -L${STAGING_LIBDIR} -lvulkan -lglfw -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi -lm"
 
 SOURCE_DIR = "${WORKDIR}/source"
 
@@ -48,10 +49,8 @@ do_compile () {
     make clean
 
     make \
-    CCFLAGS="${CCFLAGS} -I${STAGING_INCDIR} -I${SOURCE_DIR}/include" \
-    LDFLAGS="${LDFLAGS} -L${STAGING_LIBDIR} \
-     -lvulkan -lglfw -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi -lm"
-
+    CFLAGS=" ${CFLAGS} -I${STAGING_INCDIR} -I${SOURCE_DIR}/include" \
+    LDFLAGS=" ${LDFLAGS}"
 }
 addtask compile
 
