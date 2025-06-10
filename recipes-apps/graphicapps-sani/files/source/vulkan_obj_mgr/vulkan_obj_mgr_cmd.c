@@ -75,35 +75,23 @@ static uint32_t _vulkan_obj_mgr_cmd_setup_argument_list(command_t *p_cmd,
                                         vulkan_cmd_args_list_t *p_arglist)
 {
     uint32_t res;
-    command_arg_t argument;
+    uint32_t (*__arg_setup_func)(command_arg_t, vulkan_cmd_args_list_t *);
+
+    if (!strcmp(p_cmd->cmd_name, "layer")) {
+        __arg_setup_func = __setup_extension_argument;
+    }
+    else if (!strcmp(p_cmd->cmd_name, "extension")) {
+        __arg_setup_func = __setup_extension_argument;
+    }
+    else if (!strcmp(p_cmd->cmd_name, "device")) {
+        __arg_setup_func = __setup_device_argument;
+    }
+    else {
+        return FAILURE;
+    }
 
     for (uint32_t idx = 0; idx < p_cmd->num_args; idx++) {
-        argument = p_cmd->p_args[idx];
-
-        switch (p_cmd->opcode) {
-            case OPCODE_VK(LAYER, ADD):
-            case OPCODE_VK(LAYER, DEL):
-            case OPCODE_VK(LAYER, SHOW_LIST):
-                res = __setup_layer_argument(argument, p_arglist);
-                break;
-
-            case OPCODE_VK(EXTENSION, ADD):
-            case OPCODE_VK(EXTENSION, DEL):
-            case OPCODE_VK(EXTENSION, SHOW_LIST):
-                res = __setup_extension_argument(argument, p_arglist);
-                break;
-
-            case OPCODE_VK(DEVICE, CREATE):
-            case OPCODE_VK(DEVICE, SHOW_LIST):
-                res = __setup_device_argument(argument, p_arglist);
-                break;
-
-            case OPCODE_VK(INSTANCE, CREATE):
-
-            default:
-                return FAILURE;
-        }
-
+        res = __arg_setup_func(p_cmd->p_args[idx], p_arglist);
         if (res == FAILURE) {
             break;
         }
@@ -112,7 +100,7 @@ static uint32_t _vulkan_obj_mgr_cmd_setup_argument_list(command_t *p_cmd,
     return res;
 }
 
-uint32_t _vulkan_obj_mgr_enable_layer(command_t *p_cmd)
+uint32_t _vulkan_obj_mgr_cmd_enable_layer(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
     if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
@@ -122,7 +110,7 @@ uint32_t _vulkan_obj_mgr_enable_layer(command_t *p_cmd)
     return vulkan_obj_mgr_enable_layer(args_list.layer.name, args_list.layer.scope);
 }
 
-uint32_t _vulkan_obj_mgr_disable_layer(command_t *p_cmd)
+uint32_t _vulkan_obj_mgr_cmd_disable_layer(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
     if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
@@ -132,7 +120,7 @@ uint32_t _vulkan_obj_mgr_disable_layer(command_t *p_cmd)
     return vulkan_obj_mgr_disable_layer(args_list.layer.name, args_list.layer.scope);
 }
 
-uint32_t _vulkan_obj_mgr_enable_extension(command_t *p_cmd)
+uint32_t _vulkan_obj_mgr_cmd_enable_extension(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
     if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
@@ -142,7 +130,7 @@ uint32_t _vulkan_obj_mgr_enable_extension(command_t *p_cmd)
     return vulkan_obj_mgr_enable_extension(args_list.extension.name, args_list.extension.scope);
 }
 
-uint32_t _vulkan_obj_mgr_disable_extension(command_t *p_cmd)
+uint32_t _vulkan_obj_mgr_cmd_disable_extension(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
     if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
@@ -152,7 +140,7 @@ uint32_t _vulkan_obj_mgr_disable_extension(command_t *p_cmd)
     return vulkan_obj_mgr_disable_extension(args_list.extension.name, args_list.extension.scope);
 }
 
-uint32_t _vulkan_obj_mgr_create_instance(command_t *p_cmd)
+uint32_t _vulkan_obj_mgr_cmd_create_instance(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
     if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
@@ -162,7 +150,7 @@ uint32_t _vulkan_obj_mgr_create_instance(command_t *p_cmd)
     return vulkan_obj_mgr_create_instance();
 }
 
-uint32_t _vulkan_obj_mgr_create_device(command_t *p_cmd)
+uint32_t _vulkan_obj_mgr_cmd_create_device(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
     if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {

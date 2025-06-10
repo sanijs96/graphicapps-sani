@@ -12,11 +12,11 @@ enum window_types {
     WINDOW_OBJ_TYPE_MAX,
 };
 
-uint32_t window_obj_mgr_init(uint32_t window_types, uint32_t width, uint32_t height);
+uint32_t window_obj_mgr_init(uint32_t window_types);
 
 void window_obj_mgr_resize(uint32_t width, uint32_t height);
 
-void window_obj_mgr_start_display(void);
+void window_obj_mgr_start_display(uint32_t width, uint32_t height);
 
 void window_obj_mgr_exit(void);
 

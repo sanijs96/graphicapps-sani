@@ -13,20 +13,20 @@ void glfw_init(void)
     glfwInit();
 }
 
-void glfw_create_window(uint32_t width, uint32_t height)
+void glfw_create_window(void)
 {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-    glfw_window_ctx.p_window_obj = glfwCreateWindow(width, height,
-                                                    "Vulkan", NULL, NULL);
 }
 
-void glfw_display_window(void)
+void glfw_display_window(uint32_t width, uint32_t height)
 {
-    while (!glfwWindowShouldClose(glfw_window_ctx.p_window_obj)) {
-        glfwPollEvents();
-    }
+    glfw_window_ctx.p_window_obj = glfwCreateWindow(width, height,
+                                                    "Vulkan", NULL, NULL);
+
+    //while (!glfwWindowShouldClose(glfw_window_ctx.p_window_obj)) {
+    //    glfwPollEvents();
+    //}
 }
 
 void glfw_destroy_window(void)
@@ -38,5 +38,5 @@ void glfw_destroy_window(void)
 void glfw_resize_window(uint32_t width, uint32_t height)
 {
     glfw_destroy_window();
-    glfw_create_window(width, height);
+    glfw_display_window(width, height);
 }

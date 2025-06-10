@@ -3,15 +3,15 @@
 
 #include "common/common_def.h"
 
-#include "vulkan_obj_mgr/vulkan_obj_mgr_cmd.h"
-#include "window_obj_mgr/window_obj_mgr.h"
-
 #include "app_cmd_handler.h"
 
-typedef const struct __command_handler_entry {
-    const char * cid_entry_name;
+#include "vulkan_obj_mgr/vulkan_obj_mgr_cmd.h"
 
-    const uint32_t opcode;
+#include "etc_app_cmd.h"
+
+typedef const struct __command_handler_entry {
+    const char * name;
+
     const char * args_list;
 
     uint32_t (*check_sanity)(command_t *p_cmd);
@@ -20,55 +20,46 @@ typedef const struct __command_handler_entry {
 } const command_handler_entry_t;
 
 command_handler_entry_t vulkan_cmd_handler_instance[] = {
-    {"create", OPCODE_VK(INSTANCE, CREATE), NULL, NULL, _vulkan_obj_mgr_create_instance, NULL},
+    {"create", NULL,
+        NULL, _vulkan_obj_mgr_cmd_create_instance, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t vulkan_cmd_handler_layer[] = {
-    {"add", OPCODE_VK(LAYER, ADD), "ns",
-        NULL, _vulkan_obj_mgr_enable_layer, NULL},
-    {"del", OPCODE_VK(LAYER, DEL), "ns" ,
-        NULL, _vulkan_obj_mgr_disable_layer, NULL},
+    {"add", "ns", NULL, _vulkan_obj_mgr_cmd_enable_layer, NULL},
+    {"del", "ns" , NULL, _vulkan_obj_mgr_cmd_disable_layer, NULL},
 
-    {"list", OPCODE_VK(LAYER, SHOW_LIST), NULL,
-        NULL, NULL, NULL},
+    {"list", NULL, NULL, NULL, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t vulkan_cmd_handler_extension[] = {
-    {"add", OPCODE_VK(EXTENSION, ADD), "ns",
-        NULL, _vulkan_obj_mgr_enable_extension, NULL},
-    {"del", OPCODE_VK(EXTENSION, DEL), "ns",
-        NULL, _vulkan_obj_mgr_disable_extension, NULL},
+    {"add", "ns", NULL, _vulkan_obj_mgr_cmd_enable_extension, NULL},
+    {"del", "ns", NULL, _vulkan_obj_mgr_cmd_disable_extension, NULL},
 
-    {"list", OPCODE_VK(EXTENSION, SHOW_LIST), NULL ,
-        NULL, NULL, NULL},
+    {"list", NULL, NULL, NULL, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t vulkan_cmd_handler_device[] = {
-    {"create", OPCODE_VK(DEVICE, CREATE), NULL,
-        NULL, _vulkan_obj_mgr_create_device, NULL},
+    {"create", NULL, NULL, _vulkan_obj_mgr_cmd_create_device, NULL},
 
-    {"list", OPCODE_VK(DEVICE, SHOW_LIST), NULL,
-        NULL, NULL, NULL},
+    {"list", NULL, NULL, NULL, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t etc_cmd_handler_window[] = {
-    {"resize", OPCODE_ETC(WINDOW, RESIZE), "wh",
-        NULL, NULL, NULL},
+    {"resize", "wh", NULL, NULL, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t etc_cmd_handler_console[] = {
-    {"exit", OPCODE_ETC(CONSOLE, EXIT), "ns",
-        NULL, NULL, NULL},
+    {"exit", NULL, NULL, NULL, NULL},
 
     {NULL, }
 };
@@ -106,8 +97,8 @@ static command_handler_entry_t *__find_matching_cmd_entry_list(command_handler_e
 
 static command_handler_entry_t *__find_matching_cmd_entry(command_handler_entry_t *p_entry, char *subcmd_name)
 {
-    while (p_entry->cid_entry_name) {
-        if (!strcmp(p_entry->cid_entry_name, subcmd_name)) {
+    while (p_entry->name) {
+        if (!strcmp(p_entry->name, subcmd_name)) {
             return p_entry;
         }
 
@@ -117,25 +108,29 @@ static command_handler_entry_t *__find_matching_cmd_entry(command_handler_entry_
     return NULL;
 }
 
-__always_inline static command_handler_entry_t *__app_cmd_find_cmd_handler_entry(command_t *p_cmd)
+static command_handler_entry_t *__app_cmd_find_cmd_handler_entry(command_t *p_cmd)
 {
-    char *cmd;
-    char *subcmd;
     command_handler_entry_t *p_entry;
 
-    cmd = strtok(p_cmd->input, " ");
-    p_entry = __find_matching_cmd_entry_list(app_cmd_list, cmd);
+    p_entry = __find_matching_cmd_entry_list(app_cmd_list, p_cmd->cmd_name);
 
-    if (p_entry) {
-        subcmd = strtok(NULL, " ");
-        return __find_matching_cmd_entry(p_entry, subcmd);
+    if (!p_entry) {
+        return NULL;
     }
 
-    return NULL;
+    return __find_matching_cmd_entry(p_entry, p_cmd->subcmd_name);
 }
 
-#define __app_cmd_get_args_type()           (*(uint8_t *)strtok(NULL, "-"))
-#define __app_cmd_get_args_value()          strtok(NULL, " ")
+uint32_t app_cmd_check_max_num_cmd_args(command_t *p_cmd)
+{
+    command_handler_entry_t *p_entry;
+    if (p_entry = __app_cmd_find_cmd_handler_entry(p_cmd)) {
+        return strlen(p_entry->args_list);
+    }
+    else {
+        return 0;
+    }
+}
 
 uint32_t app_cmd_process(command_t *p_cmd)
 {
@@ -144,19 +139,10 @@ uint32_t app_cmd_process(command_t *p_cmd)
 
     p_cmd_entry = __app_cmd_find_cmd_handler_entry(p_cmd);
 
-    p_cmd->opcode = p_cmd_entry->opcode;
-    p_cmd->num_args = strlen(p_cmd_entry->args_list);
-
-    command_arg_t p_cmd_arguments[p_cmd->num_args];
-
-    for (uint32_t idx = 0; idx < p_cmd->num_args; idx++) {
-        p_cmd_arguments[idx].type = __app_cmd_get_args_type();
-        p_cmd_arguments[idx].value = __app_cmd_get_args_value();
-    }
-
-    res = SUCCESS;
-
     if (!p_cmd_entry->check_sanity) {
+        printf("skip sanity check\n");
+    }
+    else {
         res = p_cmd_entry->check_sanity(p_cmd);
     }
 
@@ -174,7 +160,8 @@ exit:
 
 uint32_t app_cmd_check_exited(command_t *p_cmd)
 {
-    if (p_cmd->opcode == OPCODE_ETC(CONSOLE, EXIT)) {
+    if (!strcmp(p_cmd->cmd_name, "console") &&
+        !strcmp(p_cmd->subcmd_name, "exit")) {
         return TRUE;
     }
     else {
@@ -188,5 +175,7 @@ void app_cmd_show_usage(command_t *p_cmd)
 
     p_cmd_entry = __app_cmd_find_cmd_handler_entry(p_cmd);
 
-    p_cmd_entry->usage(p_cmd);
+    if (p_cmd_entry->usage) {
+        p_cmd_entry->usage(p_cmd);
+    }
 }

@@ -7,13 +7,13 @@
 #endif
 
 static struct {
-    void (* create)(uint32_t width, uint32_t height);
+    void (* create)(void);
+    void (* display)(uint32_t width, uint32_t height);
     void (* resize)(uint32_t width, uint32_t height);
-    void (* display)(void);
     void (* exit)(void);
 } window_object = {0, };
 
-uint32_t window_obj_mgr_init(uint32_t window_types, uint32_t width, uint32_t height)
+uint32_t window_obj_mgr_init(uint32_t window_types)
 {
     if (window_types == WINDOW_OBJ_TYPE_NONE) {
         return FAILURE;
@@ -31,7 +31,7 @@ uint32_t window_obj_mgr_init(uint32_t window_types, uint32_t width, uint32_t hei
         return FAILURE;
     }
 
-    window_object.create(width, height);
+    window_object.create();
 
     return SUCCESS;
 }
@@ -41,9 +41,9 @@ void window_obj_mgr_resize(uint32_t width, uint32_t height)
     window_object.resize(width, height);
 }
 
-void window_obj_mgr_start_display(void)
+void window_obj_mgr_start_display(uint32_t width, uint32_t height)
 {
-    window_object.display();
+    window_object.display(width, height);
 }
 
 void window_obj_mgr_exit(void)

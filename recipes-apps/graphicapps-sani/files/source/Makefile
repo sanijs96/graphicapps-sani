@@ -14,15 +14,9 @@ LFLAGS += $(LDFLAGS)
 all: $(TARGET)
 
 $(TARGET): $(OBJS) $(HEADS)
-	$(info CXXFLAGS is [$(CXXFLAGS)])
-	$(info CFLAGS is [$(CFLAGS)])
-	$(info LFLAGS is [$(LFLAGS)])
 	$(CC) $(CXXFLAGS) $(LFLAGS) $(OBJS) -o $@
 
 %.o: %.c
-	$(info CXXFLAGS is [$(CXXFLAGS)])
-	$(info CFLAGS is [$(CFLAGS)])
-	$(info LFLAGS is [$(LFLAGS)])
 	$(CC) $(CXXFLAGS) -c -o $@ $<
 
 run: all
