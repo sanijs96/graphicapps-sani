@@ -114,8 +114,7 @@ static uint32_t __get_next_arg_length(char **cursor)
     char *delim;
 
     input_length = 0;
-    delim = strstr(*cursor, " ");
-    while (delim) {
+    while (delim = strstr(*cursor, " ")) {
         input_length = (uint32_t)(delim - *cursor);
 
         // duplicated space
@@ -148,7 +147,7 @@ static uint32_t __setup_args_list(command_t *p_cmd, char* input)
     uint32_t input_length;
     char **input_cursor;
 
-    *input_cursor = &input;
+    input_cursor = &input;
 
     input_length = __get_next_arg_length(input_cursor);
     if (input_length == 0) {
@@ -166,7 +165,8 @@ static uint32_t __setup_args_list(command_t *p_cmd, char* input)
     p_cmd->subcmd_name = strndup(*input_cursor, input_length);
     __shift_cursor(input_cursor, input_length);
 
-    if (max_num_args = app_cmd_check_max_num_cmd_args(p_cmd) == 0) {
+    max_num_args = app_cmd_check_max_num_cmd_args(p_cmd);
+    if (max_num_args == 0) {
         res = SUCCESS;
     }
 

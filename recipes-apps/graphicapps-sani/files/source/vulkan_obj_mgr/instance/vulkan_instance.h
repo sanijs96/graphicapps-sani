@@ -15,21 +15,25 @@ enum instance_creation_state {
 };
 
 void instance_init_ctx(const char *app_name);
-uint32_t check_instance_state(void);
+uint32_t instance_check_state(void);
 
 // layers & extensions
+uint32_t instance_get_num_layers(void);
 uint32_t instance_enable_layer(char *layer_name);
 uint32_t instance_disable_layer(char *layer_name);
-uint32_t check_instance_layer_state(char *layer_name);
+uint32_t instance_check_layer_state(uint32_t layer_idx);
+VkLayerProperties *instance_get_layer_info(uint32_t layer_idx);
 
+uint32_t instance_get_num_extensions(void);
 uint32_t instance_enable_extension(char *extension_name);
 uint32_t instance_disable_extension(char *extension_name);
-uint32_t check_instance_extension_state(char *extension_name);
+uint32_t instance_check_extension_state(uint32_t extension_idx);
+VkExtensionProperties *instance_get_extension_info(uint32_t extension_idx);
 
 VkResult instance_create(void);
 VkResult instance_destroy(void);
 
 uint32_t instance_get_physical_devices_count(void);
-void instance_setup_physical_device_lists(VkPhysicalDevice *p_dev_list, uint32_t device_count);
+VkPhysicalDevice *instance_create_physical_device_list(uint32_t device_count);
 
 #endif

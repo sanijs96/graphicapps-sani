@@ -10,19 +10,20 @@ enum vulkan_function_scope {
 
 void vulkan_obj_mgr_init_instance_ctx(void);
 void vulkan_obj_mgr_init_device_ctx(void);
-void vulkan_obj_mgr_exit(void);
 
 uint32_t vulkan_obj_mgr_enable_layer(char *layer_name, uint32_t scope);
 uint32_t vulkan_obj_mgr_disable_layer(char *layer_name, uint32_t scope);
+uint32_t vulkan_obj_mgr_show_layers_list(void);
 
 uint32_t vulkan_obj_mgr_enable_extension(char *extension_name, uint32_t scope);
 uint32_t vulkan_obj_mgr_disable_extension(char *extension_name, uint32_t scope);
+uint32_t vulkan_obj_mgr_show_extensions_list(void);
 
 uint32_t vulkan_obj_mgr_create_instance(void);
 
 uint32_t vulkan_obj_mgr_create_device(uint32_t phydev_idx);
+uint32_t vulkan_obj_mgr_show_devices_list(void);
 
-
-
+void vulkan_obj_mgr_exit(void);
 
 #endif

@@ -11,7 +11,6 @@
 
 typedef const struct __command_handler_entry {
     const char * name;
-
     const char * args_list;
 
     uint32_t (*check_sanity)(command_t *p_cmd);
@@ -29,8 +28,7 @@ command_handler_entry_t vulkan_cmd_handler_instance[] = {
 command_handler_entry_t vulkan_cmd_handler_layer[] = {
     {"add", "ns", NULL, _vulkan_obj_mgr_cmd_enable_layer, NULL},
     {"del", "ns" , NULL, _vulkan_obj_mgr_cmd_disable_layer, NULL},
-
-    {"list", NULL, NULL, NULL, NULL},
+    {"list", NULL, NULL, _vulkan_obj_mgr_cmd_show_layers_list, NULL},
 
     {NULL, }
 };
@@ -38,16 +36,14 @@ command_handler_entry_t vulkan_cmd_handler_layer[] = {
 command_handler_entry_t vulkan_cmd_handler_extension[] = {
     {"add", "ns", NULL, _vulkan_obj_mgr_cmd_enable_extension, NULL},
     {"del", "ns", NULL, _vulkan_obj_mgr_cmd_disable_extension, NULL},
-
-    {"list", NULL, NULL, NULL, NULL},
+    {"list", NULL, NULL, _vulkan_obj_mgr_cmd_show_extensions_list, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t vulkan_cmd_handler_device[] = {
     {"create", NULL, NULL, _vulkan_obj_mgr_cmd_create_device, NULL},
-
-    {"list", NULL, NULL, NULL, NULL},
+    {"list", NULL, NULL, _vulkan_obj_mgr_cmd_show_devices_list, NULL},
 
     {NULL, }
 };
@@ -101,7 +97,6 @@ static command_handler_entry_t *__find_matching_cmd_entry(command_handler_entry_
         if (!strcmp(p_entry->name, subcmd_name)) {
             return p_entry;
         }
-
         p_entry++;
     }
 
@@ -114,17 +109,19 @@ static command_handler_entry_t *__app_cmd_find_cmd_handler_entry(command_t *p_cm
 
     p_entry = __find_matching_cmd_entry_list(app_cmd_list, p_cmd->cmd_name);
 
-    if (!p_entry) {
-        return NULL;
+    if (p_entry) {
+        return __find_matching_cmd_entry(p_entry, p_cmd->subcmd_name);
     }
 
-    return __find_matching_cmd_entry(p_entry, p_cmd->subcmd_name);
+    return NULL;
 }
 
 uint32_t app_cmd_check_max_num_cmd_args(command_t *p_cmd)
 {
     command_handler_entry_t *p_entry;
-    if (p_entry = __app_cmd_find_cmd_handler_entry(p_cmd)) {
+    p_entry = __app_cmd_find_cmd_handler_entry(p_cmd);
+
+    if (p_entry && p_entry->args_list) {
         return strlen(p_entry->args_list);
     }
     else {
@@ -138,20 +135,25 @@ uint32_t app_cmd_process(command_t *p_cmd)
     command_handler_entry_t *p_cmd_entry;
 
     p_cmd_entry = __app_cmd_find_cmd_handler_entry(p_cmd);
-
-    if (!p_cmd_entry->check_sanity) {
-        printf("skip sanity check\n");
-    }
-    else {
-        res = p_cmd_entry->check_sanity(p_cmd);
-    }
-
-    if (!p_cmd_entry->process) {
-        printf("command not implemented\n");
+    if (!p_cmd_entry) {
         res = FAILURE;
+        goto exit;
+    }
+
+    if (p_cmd_entry->check_sanity) {
+        res = p_cmd_entry->check_sanity(p_cmd);
+
+        if (res == FAILURE) {
+            goto exit;
+        }
+    }
+
+    if (p_cmd_entry->process) {
+        res = p_cmd_entry->process(p_cmd);
     }
     else {
-        res = p_cmd_entry->process(p_cmd);
+        printf("command not implemented..\n");
+        res = FAILURE;
     }
 
 exit:
@@ -175,7 +177,11 @@ void app_cmd_show_usage(command_t *p_cmd)
 
     p_cmd_entry = __app_cmd_find_cmd_handler_entry(p_cmd);
 
-    if (p_cmd_entry->usage) {
-        p_cmd_entry->usage(p_cmd);
+    if (!p_cmd_entry || !p_cmd_entry->usage) {
+        return;
     }
+
+    p_cmd_entry->usage(p_cmd);
+
+    return;
 }

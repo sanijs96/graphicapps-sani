@@ -32,7 +32,7 @@ struct instance_ctx_t {
     extension_ctx_t *p_extensions;
 } instance_ctx;
 
-uint32_t check_instance_state(void)
+uint32_t instance_check_state(void)
 {
     return instance_ctx.creation_state;
 }
@@ -185,6 +185,21 @@ uint32_t instance_disable_layer(char * layer_name)
     return __instance_set_layer_state(layer_name, VULKAN_INSTANCE_FUNCTION_STATE_DISABLED);
 }
 
+uint32_t instance_get_num_layers(void)
+{
+    return instance_ctx.num_layers;
+}
+
+uint32_t instance_check_layer_state(uint32_t layer_idx)
+{
+    return instance_ctx.p_layers[layer_idx].state;
+}
+
+VkLayerProperties *instance_get_layer_info(uint32_t layer_idx)
+{
+    return instance_ctx.p_layers[layer_idx].p_pty;
+}
+
 static uint32_t __instance_find_extension_idx(char * extension_name)
 {
     extension_ctx_t *p_extension_ctx;
@@ -243,6 +258,21 @@ uint32_t check_instance_extension_state(char *extension_name)
     return __instance_get_extension_state(extension_name);
 }
 
+uint32_t instance_get_num_extensions(void)
+{
+    return instance_ctx.num_extensions;
+}
+
+uint32_t instance_check_extension_state(uint32_t extension_idx)
+{
+    return instance_ctx.p_extensions[extension_idx].state;
+}
+
+VkExtensionProperties *instance_get_extension_info(uint32_t extension_idx)
+{
+    return instance_ctx.p_extensions[extension_idx].p_pty;
+}
+
 uint32_t instance_get_physical_devices_count(void)
 {
     uint32_t deviceCount;
@@ -255,7 +285,17 @@ uint32_t instance_get_physical_devices_count(void)
     return deviceCount;
 }
 
-void instance_setup_physical_device_lists(VkPhysicalDevice *p_dev_list, uint32_t device_count)
+VkPhysicalDevice *instance_create_physical_device_list(uint32_t device_count)
 {
+    VkPhysicalDevice *p_dev_list;
+
+    if (instance_ctx.instance != VULKAN_INSTANCE_CREATION_STATE_DEFAULT) {
+        return NULL;
+    }
+
+    p_dev_list = (VkPhysicalDevice *)malloc(sizeof(VkPhysicalDevice) * device_count);
+
     vkEnumeratePhysicalDevices(instance_ctx.instance, &device_count, p_dev_list);
+
+    return p_dev_list;
 }

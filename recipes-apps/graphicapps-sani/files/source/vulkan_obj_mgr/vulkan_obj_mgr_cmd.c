@@ -120,6 +120,11 @@ uint32_t _vulkan_obj_mgr_cmd_disable_layer(command_t *p_cmd)
     return vulkan_obj_mgr_disable_layer(args_list.layer.name, args_list.layer.scope);
 }
 
+uint32_t _vulkan_obj_mgr_cmd_show_layers_list(command_t *p_cmd)
+{
+    return vulkan_obj_mgr_show_layers_list();
+}
+
 uint32_t _vulkan_obj_mgr_cmd_enable_extension(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
@@ -140,6 +145,11 @@ uint32_t _vulkan_obj_mgr_cmd_disable_extension(command_t *p_cmd)
     return vulkan_obj_mgr_disable_extension(args_list.extension.name, args_list.extension.scope);
 }
 
+uint32_t _vulkan_obj_mgr_cmd_show_extensions_list(command_t *p_cmd)
+{
+    return vulkan_obj_mgr_show_extensions_list();
+}
+
 uint32_t _vulkan_obj_mgr_cmd_create_instance(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
@@ -158,4 +168,9 @@ uint32_t _vulkan_obj_mgr_cmd_create_device(command_t *p_cmd)
     }
 
     return vulkan_obj_mgr_create_device(args_list.device.phydev_idx);
+}
+
+uint32_t _vulkan_obj_mgr_cmd_show_devices_list(command_t *p_cmd)
+{
+    return vulkan_obj_mgr_show_devices_list();
 }

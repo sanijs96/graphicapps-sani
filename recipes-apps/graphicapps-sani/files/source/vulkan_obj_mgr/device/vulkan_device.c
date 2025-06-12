@@ -7,43 +7,44 @@
 
 #define NUM_TARGET_DEVICE_QUEUES        (3)
 
-typedef struct capabilities {
+typedef struct capability {
     uint32_t queue_info_count;
     VkQueueFamilyProperties *p_queue_info;
 
     VkPhysicalDeviceFeatures feature;
     VkPhysicalDeviceProperties property;
-} phydev_capabilities_t;
+} phydev_capability_t;
 
 typedef struct physical_device_ctx {
-    uint32_t count;
-    VkPhysicalDevice *p_devices;
-    phydev_capabilities_t *p_capabilities;
+    VkPhysicalDevice *p_device;
+    phydev_capability_t *p_capability;
 } phydev_ctx_t;
 
-typedef struct logical_device_ctx {
-    VkDevice device;
-    uint32_t status;
-    uint32_t phydev_idx;
-} dev_ctx_t;
-
 struct device_ctx_t {
+    uint32_t phydev_count;
     // physical device capabilities
-    phydev_ctx_t phydev;
+    phydev_ctx_t *phydevs_ctx;
 
     // logical device
-    dev_ctx_t dev;
+    dev_ctx_t dev_ctx;
+    VkDevice device_handler;
 } device_ctx;
 
-VkPhysicalDevice *device_create_physical_device_list(uint32_t count)
+void device_create_physical_device_ctx(uint32_t count)
 {
-    device_ctx.phydev.count = count;
-    device_ctx.phydev.p_devices = (VkPhysicalDevice *)malloc(sizeof(VkPhysicalDevice) * count);
+    device_ctx.phydev_count = count;
+    device_ctx.phydevs_ctx = (phydev_ctx_t *)malloc(sizeof(phydev_ctx_t) * count);
 
-    device_ctx.dev.phydev_idx = 0;
-    device_ctx.dev.status = VULKAN_DEVICE_CREATION_STATE_DEFAULT;
+    device_ctx.dev_ctx.phydev_idx = 0;
+    device_ctx.dev_ctx.status = VULKAN_DEVICE_CREATION_STATE_DEFAULT;
+}
 
-    return device_ctx.phydev.p_devices;
+void device_register_physical_device_handler(VkPhysicalDevice *p_handle, uint32_t phydev_idx)
+{
+    if (phydev_idx >= device_ctx.phydev_count) {
+        return;
+    }
+    device_ctx.phydevs_ctx[phydev_idx].p_device = p_handle;
 }
 
 uint32_t __device_create_queue_family_list(VkPhysicalDevice *p_phydev,
@@ -59,36 +60,31 @@ uint32_t __device_create_queue_family_list(VkPhysicalDevice *p_phydev,
     return queue_count;
 }
 
-void device_register_physical_device_capabilities(void)
+void device_register_physical_device_capability(uint32_t phydev_idx)
 {
     VkPhysicalDevice *p_phydev;
-    phydev_capabilities_t *p_capability;
+    phydev_capability_t *p_capability;
     VkQueueFamilyProperties *p_queues;
 
-    p_capability = (phydev_capabilities_t *)malloc(sizeof(phydev_capabilities_t)
-                                                        * device_ctx.phydev.count);
+    p_capability = (phydev_capability_t *)malloc(sizeof(phydev_capability_t));
 
-    p_phydev = & device_ctx.phydev.p_devices[0];
-    p_capability = & device_ctx.phydev.p_capabilities[0];
+    device_ctx.phydevs_ctx[phydev_idx].p_capability = &p_capability[phydev_idx];
 
-    for (uint32_t idx = 0; idx < device_ctx.phydev.count; idx++) {
-        vkGetPhysicalDeviceProperties(*p_phydev, &p_capability->property);
-        vkGetPhysicalDeviceFeatures(*p_phydev, &p_capability->feature);
+    p_phydev = device_ctx.phydevs_ctx[phydev_idx].p_device;
 
-        p_capability->queue_info_count = __device_create_queue_family_list(p_phydev,
-                                                            p_capability->p_queue_info);
+    vkGetPhysicalDeviceFeatures(*p_phydev, &p_capability[phydev_idx].feature);
+    vkGetPhysicalDeviceProperties(*p_phydev, &p_capability[phydev_idx].property);
 
-        p_phydev++;
-        p_capability++;
-    }
+    p_capability->queue_info_count = __device_create_queue_family_list(p_phydev,
+                                                        p_capability->p_queue_info);
 }
 
-uint32_t get_device_count(void)
+uint32_t device_get_num_phydevs(void)
 {
-    return device_ctx.phydev.count;
+    return device_ctx.phydev_count;
 }
 
-static uint32_t __device_get_suitable_queue_family(phydev_capabilities_t *p_capability,
+static uint32_t __device_get_suitable_queue_family(phydev_capability_t *p_capability,
                                                                         uint32_t flags_cond)
 {
     uint32_t idx;
@@ -109,13 +105,13 @@ static VkDeviceQueueCreateInfo * __device_allocate_queue_create_info(void)
 
 static void __device_setup_queue_create_info(VkDeviceCreateInfo *p_dev_ctx, uint32_t phydev_idx)
 {
-    phydev_capabilities_t *p_capability;
+    phydev_capability_t *p_capability;
     VkDeviceQueueCreateInfo *p_queue_create_infos;
     uint32_t queue_type_flags[NUM_TARGET_DEVICE_QUEUES] = {VK_QUEUE_GRAPHICS_BIT,
                                                             VK_QUEUE_TRANSFER_BIT,
                                                             VK_QUEUE_SPARSE_BINDING_BIT};
 
-    p_capability = &device_ctx.phydev.p_capabilities[phydev_idx];
+    p_capability = device_ctx.phydevs_ctx[phydev_idx].p_capability;
 
     p_queue_create_infos = __device_allocate_queue_create_info();
 
@@ -148,31 +144,32 @@ VkResult device_create(uint32_t phydev_idx, device_queue_ctx_t queue_info)
 
     device_create_info.pEnabledFeatures = NULL;
 
-    res = vkCreateDevice(device_ctx.phydev.p_devices[phydev_idx], &device_create_info,
-                                                                NULL, &device_ctx.dev.device);
+    res = vkCreateDevice(*device_ctx.phydevs_ctx[phydev_idx].p_device, &device_create_info,
+                                                                NULL, &device_ctx.device_handler);
 
     if (res == VK_SUCCESS) {
-        device_ctx.dev.phydev_idx = phydev_idx;
-        device_ctx.dev.status = VULKAN_DEVICE_CREATION_STATE_CREATED;
+        device_ctx.dev_ctx.phydev_idx = phydev_idx;
+        device_ctx.dev_ctx.status = VULKAN_DEVICE_CREATION_STATE_CREATED;
     }
 }
 
-//bool vulkanDevice::isDeviceTypeGPU(uint32_t deviceIdx)
-//{
-//    VkPhysicalDeviceFeatures deviceFeatures;
-//    VkPhysicalDeviceProperties deviceProperty;
-//
-//    vkGetPhysicalDeviceFeatures(pPhysicalDeviceList[deviceIdx], &deviceFeatures);
-//
-//    vkGetPhysicalDeviceProperties(pPhysicalDeviceList[deviceIdx], &deviceProperty);
-//
-//    return (deviceProperty.deviceType == 
-//            (VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && deviceFeatures.geometryShader));
-//}
-//
-//void vulkanDevice::selectDevice(uint32_t deviceIdx)
-//{
-//    currentName = deviceNamesList[deviceIdx];
-//    vkGetPhysicalDeviceFeatures(pPhysicalDeviceList[deviceIdx], &feature);
-//    vkGetPhysicalDeviceProperties(pPhysicalDeviceList[deviceIdx], &property);
-//}
+dev_ctx_t device_get_current_device_info(void)
+{
+    return device_ctx.dev_ctx;
+}
+
+VkPhysicalDeviceProperties *device_get_device_property(uint32_t phydev_idx)
+{
+    return &device_ctx.phydevs_ctx[phydev_idx].p_capability->property;
+}
+
+uint32_t device_get_num_device_queue_properties(uint32_t phydev_idx)
+{
+    return device_ctx.phydevs_ctx[phydev_idx].p_capability->queue_info_count;
+}
+
+
+VkQueueFamilyProperties *device_get_device_queue_property(uint32_t phydev_idx)
+{
+    return device_ctx.phydevs_ctx[phydev_idx].p_capability->p_queue_info;
+}
