@@ -71,11 +71,20 @@ static uint32_t __setup_device_argument(command_arg_t arg, vulkan_cmd_args_list_
     return SUCCESS;
 }
 
+static uint32_t __setup_instance_argument(command_arg_t arg, vulkan_cmd_args_list_t *p_arglist)
+{
+    return SUCCESS;
+}
+
 static uint32_t _vulkan_obj_mgr_cmd_setup_argument_list(command_t *p_cmd,
                                         vulkan_cmd_args_list_t *p_arglist)
 {
     uint32_t res;
     uint32_t (*__arg_setup_func)(command_arg_t, vulkan_cmd_args_list_t *);
+
+    if (p_cmd->num_args == 0) {
+        return SUCCESS;
+    }
 
     if (!strcmp(p_cmd->cmd_name, "layer")) {
         __arg_setup_func = __setup_extension_argument;
@@ -85,6 +94,9 @@ static uint32_t _vulkan_obj_mgr_cmd_setup_argument_list(command_t *p_cmd,
     }
     else if (!strcmp(p_cmd->cmd_name, "device")) {
         __arg_setup_func = __setup_device_argument;
+    }
+    else if (!strcmp(p_cmd->cmd_name, "instance")) {
+        __arg_setup_func = __setup_instance_argument;
     }
     else {
         return FAILURE;
@@ -164,6 +176,10 @@ uint32_t _vulkan_obj_mgr_cmd_create_device(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
     if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (p_cmd->num_args == 0) {
         return FAILURE;
     }
 

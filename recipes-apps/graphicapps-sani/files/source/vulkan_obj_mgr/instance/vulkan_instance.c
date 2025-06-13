@@ -134,12 +134,21 @@ void instance_init_ctx(const char *app_name)
 
 VkResult instance_create(void)
 {
-    vkCreateInstance(&instance_ctx.creation_info, NULL, &instance_ctx.instance);
+    VkResult res;
+
+    res = vkCreateInstance(&instance_ctx.creation_info, NULL, &instance_ctx.instance);
+
+    if (res == VK_SUCCESS) {
+        instance_ctx.creation_state = VULKAN_INSTANCE_CREATION_STATE_CREATED;
+    }
+
+    return res;
 }
 
-VkResult instance_destroy(void)
+void instance_destroy(void)
 {
     vkDestroyInstance(instance_ctx.instance, NULL);
+    instance_ctx.creation_state = VULKAN_INSTANCE_CREATION_STATE_DELETED;
 }
 
 static uint32_t __instance_find_layer_idx(const char * layer_name)
@@ -289,7 +298,7 @@ VkPhysicalDevice *instance_create_physical_device_list(uint32_t device_count)
 {
     VkPhysicalDevice *p_dev_list;
 
-    if (instance_ctx.instance != VULKAN_INSTANCE_CREATION_STATE_DEFAULT) {
+    if (instance_ctx.creation_state != VULKAN_INSTANCE_CREATION_STATE_CREATED) {
         return NULL;
     }
 

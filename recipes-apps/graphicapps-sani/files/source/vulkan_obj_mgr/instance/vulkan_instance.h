@@ -31,7 +31,7 @@ uint32_t instance_check_extension_state(uint32_t extension_idx);
 VkExtensionProperties *instance_get_extension_info(uint32_t extension_idx);
 
 VkResult instance_create(void);
-VkResult instance_destroy(void);
+void instance_destroy(void);
 
 uint32_t instance_get_physical_devices_count(void);
 VkPhysicalDevice *instance_create_physical_device_list(uint32_t device_count);

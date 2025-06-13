@@ -9,7 +9,6 @@ enum vulkan_function_scope {
 };
 
 void vulkan_obj_mgr_init_instance_ctx(void);
-void vulkan_obj_mgr_init_device_ctx(void);
 
 uint32_t vulkan_obj_mgr_enable_layer(char *layer_name, uint32_t scope);
 uint32_t vulkan_obj_mgr_disable_layer(char *layer_name, uint32_t scope);

@@ -42,7 +42,7 @@ command_handler_entry_t vulkan_cmd_handler_extension[] = {
 };
 
 command_handler_entry_t vulkan_cmd_handler_device[] = {
-    {"create", NULL, NULL, _vulkan_obj_mgr_cmd_create_device, NULL},
+    {"create", "i", NULL, _vulkan_obj_mgr_cmd_create_device, NULL},
     {"list", NULL, NULL, _vulkan_obj_mgr_cmd_show_devices_list, NULL},
 
     {NULL, }

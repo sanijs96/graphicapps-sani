@@ -64,7 +64,7 @@ enum apps_param_type_vulkan {
     APPS_PARAM_TYPE_VULKAN_EXTENSION_NAME = 'n',
     APPS_PARAM_TYPE_VULKAN_EXTENSION_SCOPE = 's',
 
-    APPS_PARAM_TYPE_VULKAN_DEVICE_PHYDEV_IDX = 'd',
+    APPS_PARAM_TYPE_VULKAN_DEVICE_PHYDEV_IDX = 'i',
 };
 
 enum apps_cmd_id_etc {
