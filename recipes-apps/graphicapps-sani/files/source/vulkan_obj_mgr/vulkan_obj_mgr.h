@@ -17,7 +17,7 @@ uint32_t vulkan_obj_mgr_create_instance(void);
 VkInstance *vulkan_obj_mgr_get_instance_object(void);
 
 uint32_t vulkan_obj_mgr_create_device(uint32_t phydev_idx);
-uint32_t vulkan_obj_mgr_show_devices_list(void);
+uint32_t vulkan_obj_mgr_show_device_info(uint32_t phydev_idx);
 
 void vulkan_obj_mgr_exit(void);
 

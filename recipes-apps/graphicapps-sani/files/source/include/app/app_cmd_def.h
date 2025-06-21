@@ -81,8 +81,8 @@ enum apps_param_type_vulkan {
 enum apps_param_type_etc {
     APPS_PARAM_TYPE_ETC_WINDOW_WIDTH = 'w',
     APPS_PARAM_TYPE_ETC_WINDOW_HEIGHT = 'h',
-    APPS_PARAM_TYPE_ETC_WINDOW_INSTANCE = 'i',
 
+    APPS_PARAM_TYPE_ETC_WINDOW_INSTANCE = 'i',
 };
 
 typedef struct __command_arg {

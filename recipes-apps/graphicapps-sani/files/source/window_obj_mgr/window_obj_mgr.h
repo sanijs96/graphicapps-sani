@@ -13,11 +13,20 @@ enum window_types {
     WINDOW_OBJ_TYPE_MAX,
 };
 
+enum window_surface_state {
+    WINDOW_DISPLAY_SURFACE_STATE_DEFAULT = 0,
+    WINDOW_DISPLAY_SURFACE_STATE_CREATED,
+    WINDOW_DISPLAY_SURFACE_STATE_DESTROYED,
+};
+
 uint32_t window_obj_mgr_init(uint32_t window_types);
 
-uint32_t window_obj_mgr_resize(uint32_t width, uint32_t height, VkInstance *p_instance);
+uint32_t window_obj_mgr_resize(uint32_t width, uint32_t height);
 
-uint32_t window_obj_mgr_start_display(uint32_t width, uint32_t height, VkInstance *p_instance);
+uint32_t window_obj_mgr_start_display(VkInstance *p_instance);
+
+uint32_t window_obj_mgr_check_display_status(void);
+VkSurfaceKHR *window_obj_mgr_get_display_object(void);
 
 void window_obj_mgr_exit(VkInstance *p_instance);
 

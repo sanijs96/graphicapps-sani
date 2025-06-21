@@ -7,7 +7,6 @@ static struct glfw_window_context {
     uint32_t width;
     uint32_t height;
     GLFWwindow *p_window;
-    VkSurfaceKHR surface;
 } glfw_window_ctx;
 
 void glfw_init(void)
@@ -21,15 +20,21 @@ uint32_t glfw_create_window(void)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 }
 
-uint32_t glfw_display_window(uint32_t width, uint32_t height, VkInstance *p_instance)
+void glfw_change_window_size(uint32_t width, uint32_t height)
+{
+    glfw_window_ctx.width = width;
+    glfw_window_ctx.height = height;
+}
+
+
+uint32_t glfw_display_window(VkSurfaceKHR *p_surface, VkInstance *p_instance)
 {
     uint32_t res;
 
-    glfw_window_ctx.p_window = glfwCreateWindow(width, height,
-                                                    "Vulkan", NULL, NULL);
+    glfw_window_ctx.p_window = glfwCreateWindow(glfw_window_ctx.width,
+                                                glfw_window_ctx.height, "Vulkan", NULL, NULL);
 
-    res = glfwCreateWindowSurface(*p_instance, glfw_window_ctx.p_window,
-                                            NULL, glfw_window_ctx.surface);
+    res = glfwCreateWindowSurface(*p_instance, glfw_window_ctx.p_window, NULL, *p_surface);
 
     if (res != VK_SUCCESS) {
         return res;
@@ -43,20 +48,13 @@ uint32_t glfw_display_window(uint32_t width, uint32_t height, VkInstance *p_inst
     //}
 }
 
-void glfw_destroy_window(VkInstance *p_instance)
+void glfw_destroy_window(VkSurfaceKHR *p_surface, VkInstance *p_instance)
 {
     glfwDestroyWindow(glfw_window_ctx.p_window);
 
     if (!p_instance) {
-        vkDestroySurfaceKHR(*p_instance, glfw_window_ctx.surface, NULL);
+        vkDestroySurfaceKHR(*p_instance, p_surface, NULL);
     }
 
     glfwTerminate();
-}
-
-uint32_t glfw_resize_window(uint32_t width, uint32_t height, VkInstance *p_instance)
-{
-    glfw_destroy_window(p_instance);
-
-    return glfw_display_window(width, height, p_instance);
 }

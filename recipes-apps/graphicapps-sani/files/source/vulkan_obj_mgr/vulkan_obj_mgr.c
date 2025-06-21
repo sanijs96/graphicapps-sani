@@ -212,7 +212,7 @@ static void __vulkan_obj_mgr_print_queue_flags(uint32_t queue_flag)
     if (queue_flag & VK_QUEUE_OPTICAL_FLOW_BIT_NV)  printf("%s", ", OPTFLOW");
 }
 
-uint32_t vulkan_obj_mgr_show_devices_list(void)
+uint32_t vulkan_obj_mgr_show_device_info(uint32_t phydev_idx)
 {
     char *device_type_str;
     uint32_t device_cnt;
@@ -222,51 +222,41 @@ uint32_t vulkan_obj_mgr_show_devices_list(void)
     VkQueueFamilyProperties *p_queue_pty;
     VkPhysicalDeviceProperties *p_pty;
 
-    if (instance_check_creation_state() != VULKAN_INSTANCE_CREATION_STATE_CREATED) {
-        return FAILURE;
-    }
-
     device_cnt = instance_get_physical_devices_count();
+
+    p_pty = device_get_device_property(phydev_idx);
+
+    queue_pty_count = device_get_device_queue_property_count(phydev_idx);
+
+    p_queue_pty = device_get_device_queue_property(phydev_idx);
+
+    device_type_str = __vulkan_obj_mgr_get_device_type_string(p_pty->deviceType);
 
     current_device_status = device_get_current_status();
     if (current_device_status == VULKAN_DEVICE_CREATION_STATE_CREATED) {
         current_phydev_idx = device_get_current_phydev_idx();
     }
-    else {
 
+    if ((phydev_idx == current_phydev_idx) &&
+        (current_device_status == VULKAN_DEVICE_CREATION_STATE_CREATED)) {
+        printf("*");
     }
 
-    printf("[DEVICE LIST]\n");
-    for (uint32_t idx = 0; idx < device_cnt; idx++) {
-        p_pty = device_get_device_property(idx);
+    printf("[%u] %s\n", phydev_idx, p_pty->deviceName);
 
-        queue_pty_count = device_get_num_device_queue_properties(idx);
+    printf("\t type: %s\n", device_type_str);
 
-        p_queue_pty = device_get_device_queue_property(idx);
+    printf("\t queues:\n");
+    for (uint32_t queue_idx = 0; queue_idx < queue_pty_count; queue_idx++) {
+        printf("\t\t[%u]: ", queue_idx);
+        __vulkan_obj_mgr_print_queue_flags(p_queue_pty->queueFlags);
+        printf("\n");
 
-        device_type_str = __vulkan_obj_mgr_get_device_type_string(p_pty->deviceType);
-
-        if ((idx == current_phydev_idx) &&
-            (current_device_status == VULKAN_DEVICE_CREATION_STATE_CREATED)) {
-            printf("*");
-        }
-
-        printf("[%u] %s\n", idx, p_pty->deviceName);
-
-        printf("\t type: %s\n", device_type_str);
-
-        printf("\t queues:\n");
-        for (uint32_t queue_idx = 0; queue_idx < queue_pty_count; queue_idx++) {
-            printf("\t\t[%u]: ", queue_idx);
-            __vulkan_obj_mgr_print_queue_flags(p_queue_pty->queueFlags);
-            printf("\n");
-
-            printf("\t\tsupported queues: %u\n", p_queue_pty->queueCount);
-            printf("\t\tgranularity: %u %u %u\n",
-                    p_queue_pty->minImageTransferGranularity.width,
-                    p_queue_pty->minImageTransferGranularity.height,
-                    p_queue_pty->minImageTransferGranularity.depth);
-        }
+        printf("\t\tsupported queues: %u\n", p_queue_pty->queueCount);
+        printf("\t\tgranularity: %u %u %u\n",
+                p_queue_pty->minImageTransferGranularity.width,
+                p_queue_pty->minImageTransferGranularity.height,
+                p_queue_pty->minImageTransferGranularity.depth);
     }
 
     return SUCCESS;

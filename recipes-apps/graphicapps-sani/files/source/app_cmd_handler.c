@@ -5,8 +5,7 @@
 
 #include "app_cmd_handler.h"
 
-#include "vulkan_obj_mgr/vulkan_obj_mgr_cmd.h"
-
+#include "vulkan_obj_mgr_cmd.h"
 #include "etc_app_cmd.h"
 
 typedef const struct __command_handler_entry {
@@ -49,8 +48,8 @@ command_handler_entry_t vulkan_cmd_handler_device[] = {
 };
 
 command_handler_entry_t etc_cmd_handler_window[] = {
-    {"display", "whi", _etc_cmd_window_add_instance_obj, _etc_cmd_window_display, NULL},
-    {"resize", "whi", _etc_cmd_window_add_instance_obj, _etc_cmd_window_resize, NULL},
+    {"display", "i", _etc_cmd_window_add_instance_obj, _etc_cmd_window_display, NULL},
+    {"resize", "wh", NULL, _etc_cmd_window_resize, NULL},
 
     {NULL, }
 };

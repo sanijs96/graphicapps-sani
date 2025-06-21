@@ -34,14 +34,16 @@ void device_register_device_capability(uint32_t phydev_idx);
 
 VkResult device_create(uint32_t phydev_idx);
 
-uint32_t device_get_num_phydevs(void);
+uint32_t device_get_phydevs_count(void);
 
 uint32_t device_get_current_status(void);
 uint32_t device_get_current_phydev_idx(void);
+VkDevice * device_get_phydev_object(uint32_t phydev_idx);
 
 VkPhysicalDeviceProperties *device_get_device_property(uint32_t phydev_idx);
 
-uint32_t device_get_num_device_queue_properties(uint32_t phydev_idx);
+uint32_t device_get_device_queue_property_count(uint32_t phydev_idx);
+
 VkQueueFamilyProperties *device_get_device_queue_property(uint32_t phydev_idx);
 
 #endif

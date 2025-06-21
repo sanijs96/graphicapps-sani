@@ -6,11 +6,18 @@
 #include "glfw/window_glfw.h"
 #endif
 
-static struct {
+typedef struct window_ops {
     uint32_t (* create)(void);
-    uint32_t (* display)(uint32_t width, uint32_t height, VkInstance *p_instance);
-    uint32_t (* resize)(uint32_t width, uint32_t height, VkInstance *p_instance);
-    void (* exit)(VkInstance *p_instance);
+    void (* resize)(uint32_t width, uint32_t height);
+    uint32_t (* display)(VkSurfaceKHR *p_surface, VkInstance *p_instance);
+    void (* exit)(VkSurfaceKHR *p_surface, VkInstance *p_instance);
+} window_ops_t;
+
+static struct {
+    window_ops_t ops;
+    uint32_t type;
+    uint32_t state;
+    VkSurfaceKHR surface;
 } window_object = {0, };
 
 uint32_t window_obj_mgr_init(uint32_t window_types)
@@ -21,40 +28,54 @@ uint32_t window_obj_mgr_init(uint32_t window_types)
 
 #if defined(GLFW_INCLUDE_VULKAN)
     glfw_init();
-    window_object.create = glfw_create_window;
-    window_object.resize = glfw_resize_window;
-    window_object.display = glfw_display_window;
-    window_object.exit = glfw_destroy_window;
+    window_object.type = WINDOW_OBJ_TYPE_GLFW;
+    window_object.ops.create = glfw_create_window;
+    window_object.ops.resize = glfw_change_window_size;
+    window_object.ops.display = glfw_display_window;
+    window_object.ops.exit = glfw_destroy_window;
 #endif
 
-    if (!window_object.create) {
+    if (!window_object.ops.create) {
         return FAILURE;
     }
 
-    window_object.create();
+    window_object.ops.create();
+
+    window_object.state = WINDOW_DISPLAY_SURFACE_STATE_DEFAULT;
 
     return SUCCESS;
 }
 
-uint32_t window_obj_mgr_resize(uint32_t width, uint32_t height, VkInstance *p_instance)
+uint32_t window_obj_mgr_resize(uint32_t width, uint32_t height)
 {
-    return window_object.resize(width, height, p_instance);
+    window_object.ops.resize(width, height);
+
+    return SUCCESS;
 }
 
-uint32_t window_obj_mgr_start_display(uint32_t width, uint32_t height, VkInstance *p_instance)
+uint32_t window_obj_mgr_start_display(VkInstance *p_instance)
 {
-    if (width == 0) {
-        width = DEFAULT_WINDOW_SIZE_WIDTH;
+    if (window_object.ops.display(&window_object.surface, p_instance) == SUCCESS) {
+        window_object.state = WINDOW_DISPLAY_SURFACE_STATE_CREATED;
+        return SUCCESS;
     }
-
-    if (height == 0) {
-        height = DEFAULT_WINDOW_SIZE_HEIGHT;
+    else {
+        return FAILURE;
     }
+}
 
-    return window_object.display(width, height, p_instance);
+uint32_t window_obj_mgr_check_display_status(void)
+{
+    return window_object.state;
+}
+
+VkSurfaceKHR *window_obj_mgr_get_display_object(void)
+{
+    return &window_object.surface;
 }
 
 void window_obj_mgr_exit(VkInstance *p_instance)
 {
-    window_object.exit(p_instance);
+    window_object.ops.exit(&window_object.surface, p_instance);
+    window_object.state = WINDOW_DISPLAY_SURFACE_STATE_DESTROYED;
 }

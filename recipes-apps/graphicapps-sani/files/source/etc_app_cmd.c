@@ -9,15 +9,12 @@
 
 typedef union etc_cmd_args_list {
     struct {
-        uint32_t width;
-        uint32_t height;
         VkInstance* p_instance;
     } window_display;
 
     struct {
         uint32_t width;
         uint32_t height;
-        VkInstance* p_instance;
     } window_resize;
 
 } etc_cmd_args_list_t;
@@ -57,11 +54,11 @@ static uint32_t __setup_window_argument(command_arg_t arg, etc_cmd_args_list_t *
 {
     switch (arg.type) {
         case APPS_PARAM_TYPE_ETC_WINDOW_WIDTH:
-            p_arglist->window_display.width = __parse_window_size_value(arg);
+            p_arglist->window_resize.width = __parse_window_size_value(arg);
             break;
 
         case APPS_PARAM_TYPE_ETC_WINDOW_HEIGHT:
-            p_arglist->window_display.height = __parse_window_size_value(arg);
+            p_arglist->window_resize.height = __parse_window_size_value(arg);
             break;
 
         case APPS_PARAM_TYPE_ETC_WINDOW_INSTANCE:
@@ -125,9 +122,7 @@ uint32_t _etc_cmd_window_display(command_t *p_cmd)
         return FAILURE;
     }
 
-    return window_obj_mgr_start_display(args_list.window_display.width,
-                                        args_list.window_display.height,
-                                        args_list.window_display.p_instance);
+    return window_obj_mgr_start_display(args_list.window_display.p_instance);
 }
 
 uint32_t _etc_cmd_window_resize(command_t *p_cmd)
@@ -139,17 +134,16 @@ uint32_t _etc_cmd_window_resize(command_t *p_cmd)
         return FAILURE;
     }
 
-    if (args_list.window_display.width == 0) {
-        args_list.window_display.width = DEFAULT_WINDOW_SIZE_WIDTH;
+    if (args_list.window_resize.width == 0) {
+        args_list.window_resize.width = DEFAULT_WINDOW_SIZE_WIDTH;
     }
 
-    if (args_list.window_display.height == 0) {
-        args_list.window_display.height = DEFAULT_WINDOW_SIZE_HEIGHT;
+    if (args_list.window_resize.height == 0) {
+        args_list.window_resize.height = DEFAULT_WINDOW_SIZE_HEIGHT;
     }
 
-    return window_obj_mgr_resize(args_list.window_display.width,
-                                    args_list.window_display.height,
-                                    args_list.window_display.p_instance);
+    return window_obj_mgr_resize(args_list.window_resize.width,
+                                    args_list.window_resize.height);
 }
 
 uint32_t _etc_cmd_console_exit(command_t *p_cmd)

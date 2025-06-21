@@ -2,8 +2,12 @@
 
 #include "common/common_def.h"
 
-#include "vulkan_obj_mgr.h"
 #include "vulkan_obj_mgr_cmd.h"
+
+#include "vulkan_obj_mgr/vulkan_obj_mgr.h"
+#include "vulkan_obj_mgr/instance/vulkan_instance.h"
+
+#include "window_obj_mgr/window_obj_mgr.h"
 
 typedef union vulkan_cmd_args_list {
     struct {
@@ -186,7 +190,60 @@ uint32_t _vulkan_obj_mgr_cmd_create_device(command_t *p_cmd)
     return vulkan_obj_mgr_create_device(args_list.device.phydev_idx);
 }
 
+static void __check_presentation_support(uint32_t phydev_idx, VkSurfaceKHR *p_surface)
+{
+    uint32_t queue_count;
+    uint32_t present_support;
+    VkPhysicalDevice *p_phydev;
+
+    p_phydev = device_get_phydev_object(phydev_idx);
+
+    queue_count = device_get_device_queue_property_count(phydev_idx);
+
+    printf("Presentation Queue Index: ");
+    for (uint32_t queue_idx = 0; queue_idx < queue_count; queue_idx++)  {
+        present_support = FALSE;
+        vkGetPhysicalDeviceSurfaceSupportKHR(*p_phydev, *p_surface, queue_idx, &present_support);
+
+        if (present_support == TRUE) {
+            printf("%u ", queue_idx);
+        }
+    }
+    printf("\n");
+
+    return;
+}
+
+void _vulkan_obj_mgr_cmd_show_display_support(uint32_t phydev_idx)
+{
+    VkSurfaceKHR *p_display_object;
+
+    p_display_object = window_obj_mgr_get_display_object();
+
+    __check_presentation_support(phydev_idx, p_display_object);
+}
+
 uint32_t _vulkan_obj_mgr_cmd_show_devices_list(command_t *p_cmd)
 {
-    return vulkan_obj_mgr_show_devices_list();
+    uint32_t phydev_count;
+
+    phydev_count = device_get_phydevs_count();
+
+    if (instance_check_creation_state() != VULKAN_INSTANCE_CREATION_STATE_CREATED) {
+        return FAILURE;
+    }
+
+    printf("[DEVICE LIST]\n");
+    for (uint32_t phydev_idx = 0; phydev_idx < phydev_count; phydev_idx++) {
+        vulkan_obj_mgr_show_device_info(phydev_idx);
+
+        if (window_obj_mgr_check_display_status() == WINDOW_DISPLAY_SURFACE_STATE_CREATED) {
+            _vulkan_obj_mgr_cmd_show_display_support(phydev_idx);
+        }
+    }
+
+
+
+
+    return SUCCESS;
 }
