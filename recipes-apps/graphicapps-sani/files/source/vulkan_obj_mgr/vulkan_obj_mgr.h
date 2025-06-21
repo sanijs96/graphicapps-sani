@@ -3,12 +3,7 @@
 
 #include <vulkan/vulkan_core.h>
 
-enum vulkan_function_scope {
-    VULKAN_FUNCTION_SCOPE_INSTANCE = 0,
-    VULKAN_FUNCTION_SCOPE_DEVICE = 1,
-};
-
-void vulkan_obj_mgr_init_instance_ctx(void);
+void vulkan_obj_mgr_init(void);
 
 uint32_t vulkan_obj_mgr_enable_layer(char *layer_name, uint32_t scope);
 uint32_t vulkan_obj_mgr_disable_layer(char *layer_name, uint32_t scope);

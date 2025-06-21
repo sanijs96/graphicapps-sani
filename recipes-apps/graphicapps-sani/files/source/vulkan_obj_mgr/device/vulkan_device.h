@@ -23,11 +23,6 @@ enum device_queue_utility_status {
     VULKAN_DEVICE_QUEUE_UNUSED,
 };
 
-enum device_function_state {
-    VULKAN_DEVICE_FUNCTION_STATE_DISABLED = 0,
-    VULKAN_DEVICE_FUNCTION_STATE_ENABLED,
-};
-
 typedef struct __device_queue_ctx {
     uint32_t *priorities;
     uint32_t num_queues;

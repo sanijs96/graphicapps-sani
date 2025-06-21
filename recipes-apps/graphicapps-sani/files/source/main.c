@@ -17,6 +17,7 @@
 
 #include "window_obj_mgr/window_obj_mgr.h"
 #include "vulkan_obj_mgr/vulkan_obj_mgr.h"
+#include "vulkan_obj_mgr/functions/vulkan_function.h"
 
 uint32_t __select_window_obj_type(void)
 {
@@ -41,7 +42,7 @@ uint32_t init_components(void)
         goto exit;
     }
 
-    vulkan_obj_mgr_init_instance_ctx();
+    vulkan_obj_mgr_init();
 
 #if defined(DEBUG_EN)
     if (enable_validation == TRUE) {

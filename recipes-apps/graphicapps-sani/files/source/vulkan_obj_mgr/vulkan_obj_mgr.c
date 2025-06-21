@@ -5,13 +5,16 @@
 
 #include "device/vulkan_device.h"
 #include "instance/vulkan_instance.h"
+#include "functions/vulkan_function.h"
 
 #include "vulkan_obj_mgr.h"
 
 // vulkan instance
-void vulkan_obj_mgr_init_instance_ctx(void)
+void vulkan_obj_mgr_init(void)
 {
-    instance_init_ctx("Sani Vulkan Application");
+    instance_init("Sani Vulkan Application");
+
+    function_init();
 }
 
 uint32_t vulkan_obj_mgr_enable_layer(char * layer_name, uint32_t scope)
@@ -21,7 +24,7 @@ uint32_t vulkan_obj_mgr_enable_layer(char * layer_name, uint32_t scope)
         return FAILURE;
     }
 
-    return instance_enable_layer(layer_name);
+    return function_enable_layer(layer_name, VULKAN_FUNCTION_SCOPE_DEFAULT);
 }
 
 uint32_t vulkan_obj_mgr_disable_layer(char * layer_name, uint32_t scope)
@@ -31,24 +34,26 @@ uint32_t vulkan_obj_mgr_disable_layer(char * layer_name, uint32_t scope)
         return FAILURE;
     }
 
-    return instance_disable_layer(layer_name);
+    return function_disable_layer(layer_name, VULKAN_FUNCTION_SCOPE_DEFAULT);
 }
 
 uint32_t vulkan_obj_mgr_show_layers_list(void)
 {
     uint32_t layer_cnt;
     uint32_t layer_status;
-    VkLayerProperties *p_layer_property;
 
-    layer_cnt = instance_get_num_layers();
+    layer_cnt = function_get_layers_count(VULKAN_FUNCTION_STATE_DEFAULT);
+
+    char *p_layers_name[layer_cnt];
+
+    function_get_layer_names_list(VULKAN_FUNCTION_STATE_DEFAULT, p_layers_name);
+
     printf("[LAYER INFO]\n");
     for (uint32_t idx = 0; idx < layer_cnt; idx++) {
-        p_layer_property = instance_get_layer_info(idx);
-        layer_status = instance_check_layer_state(idx);
+        layer_status = function_check_layer_state(p_layers_name[idx]);
 
-        printf("[%u] %s (%s)\n", idx, p_layer_property->layerName,
-                (layer_status == VULKAN_INSTANCE_FUNCTION_STATE_ENABLED) ? "enabled" : "disabled");
-        printf("\t%s\n", p_layer_property->description);
+        printf("[%u] %s (%s)\n", idx, p_layers_name[idx],
+                (layer_status == VULKAN_FUNCTION_STATE_DISABLED) ? "disabled" : "enabled");
     }
 
     return SUCCESS;
@@ -58,17 +63,19 @@ uint32_t vulkan_obj_mgr_show_extensions_list(void)
 {
     uint32_t ext_cnt;
     uint32_t ext_status;
-    VkExtensionProperties *p_extension_property;
 
-    ext_cnt = instance_get_num_extensions();
+    ext_cnt = function_get_extensions_count(VULKAN_FUNCTION_STATE_DEFAULT);
+
+    char *p_extensions_name[ext_cnt];
+
+    function_get_extension_names_list(VULKAN_FUNCTION_STATE_DEFAULT, p_extensions_name);
 
     printf("[EXTENSION INFO]\n");
     for (uint32_t idx = 0; idx < ext_cnt; idx++) {
-        p_extension_property = instance_get_extension_info(idx);
-        ext_status = instance_check_extension_state(idx);
+        ext_status = function_check_extension_state(p_extensions_name[idx]);
 
-        printf("[%u] %s (%s)\n", idx, p_extension_property->extensionName,
-                (ext_status == VULKAN_INSTANCE_FUNCTION_STATE_ENABLED) ?  "enabled" : "disabled");
+        printf("[%u] %s (%s)\n", idx, p_extensions_name[idx],
+                (ext_status == VULKAN_FUNCTION_STATE_DISABLED) ? "disabled" : "enabled");
     }
 
     return SUCCESS;
@@ -81,7 +88,7 @@ uint32_t vulkan_obj_mgr_enable_extension(char *extension_name, uint32_t scope)
         return FAILURE;
     }
 
-    return instance_enable_extension(extension_name);
+    return function_enable_extension(extension_name, VULKAN_FUNCTION_SCOPE_DEFAULT);
 }
 
 uint32_t vulkan_obj_mgr_disable_extension(char *extension_name, uint32_t scope)
@@ -91,7 +98,7 @@ uint32_t vulkan_obj_mgr_disable_extension(char *extension_name, uint32_t scope)
         return FAILURE;
     }
 
-    return instance_disable_extension(extension_name);
+    return function_disable_extension(extension_name, VULKAN_FUNCTION_SCOPE_DEFAULT);
 }
 
 static void __vulkan_obj_mgr_init_device_ctx(void)
@@ -125,8 +132,7 @@ uint32_t vulkan_obj_mgr_create_instance(void)
 // TODO: customize queueus
 uint32_t vulkan_obj_mgr_create_device(uint32_t phydev_idx)
 {
-
-    if (instance_check_state() != VULKAN_INSTANCE_CREATION_STATE_CREATED) {
+    if (instance_check_creation_state() != VULKAN_INSTANCE_CREATION_STATE_CREATED) {
         return FAILURE;
     }
 
@@ -192,7 +198,7 @@ uint32_t vulkan_obj_mgr_show_devices_list(void)
     VkQueueFamilyProperties *p_queue_pty;
     VkPhysicalDeviceProperties *p_pty;
 
-    if (instance_check_state() != VULKAN_INSTANCE_CREATION_STATE_CREATED) {
+    if (instance_check_creation_state() != VULKAN_INSTANCE_CREATION_STATE_CREATED) {
         return FAILURE;
     }
 
