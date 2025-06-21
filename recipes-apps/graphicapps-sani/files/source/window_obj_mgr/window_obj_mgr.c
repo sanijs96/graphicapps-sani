@@ -7,10 +7,10 @@
 #endif
 
 static struct {
-    void (* create)(void);
-    void (* display)(uint32_t width, uint32_t height);
-    void (* resize)(uint32_t width, uint32_t height);
-    void (* exit)(void);
+    uint32_t (* create)(void);
+    uint32_t (* display)(uint32_t width, uint32_t height, VkInstance *p_instance);
+    uint32_t (* resize)(uint32_t width, uint32_t height, VkInstance *p_instance);
+    void (* exit)(VkInstance *p_instance);
 } window_object = {0, };
 
 uint32_t window_obj_mgr_init(uint32_t window_types)
@@ -36,18 +36,25 @@ uint32_t window_obj_mgr_init(uint32_t window_types)
     return SUCCESS;
 }
 
-void window_obj_mgr_resize(uint32_t width, uint32_t height)
+uint32_t window_obj_mgr_resize(uint32_t width, uint32_t height, VkInstance *p_instance)
 {
-    window_object.resize(width, height);
+    return window_object.resize(width, height, p_instance);
 }
 
-void window_obj_mgr_start_display(uint32_t width, uint32_t height)
+uint32_t window_obj_mgr_start_display(uint32_t width, uint32_t height, VkInstance *p_instance)
 {
-    window_object.display(width, height);
+    if (width == 0) {
+        width = DEFAULT_WINDOW_SIZE_WIDTH;
+    }
+
+    if (height == 0) {
+        height = DEFAULT_WINDOW_SIZE_HEIGHT;
+    }
+
+    return window_object.display(width, height, p_instance);
 }
 
-void window_obj_mgr_exit(void)
+void window_obj_mgr_exit(VkInstance *p_instance)
 {
-    window_object.exit();
+    window_object.exit(p_instance);
 }
-

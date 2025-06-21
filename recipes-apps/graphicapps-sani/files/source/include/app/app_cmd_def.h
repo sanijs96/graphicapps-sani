@@ -56,6 +56,17 @@
 //    APPS_SUBCMD_ID_VULKAN_PIPELINE_BIND_SHADER,
 //    APPS_SUBCMD_ID_VULKAN_PIPELINE_BIND_OBJECT,
 //};
+//
+//enum apps_cmd_id_etc {
+//    APPS_CMD_ID_ETC_WINDOW,
+//    APPS_CMD_ID_ETC_CONSOLE,
+//};
+//
+//enum apps_subcmd_id_etc {
+//    APPS_SUBCMD_ID_ETC_WINDOW_DISPLAY,
+//    APPS_SUBCMD_ID_ETC_WINDOW_RESIZE,
+//    APPS_SUBCMD_ID_ETC_CONSOLE_EXIT,
+//};
 
 enum apps_param_type_vulkan {
     APPS_PARAM_TYPE_VULKAN_LAYER_NAME = 'n',
@@ -67,23 +78,11 @@ enum apps_param_type_vulkan {
     APPS_PARAM_TYPE_VULKAN_DEVICE_PHYDEV_IDX = 'i',
 };
 
-enum apps_cmd_id_etc {
-    APPS_CMD_ID_ETC_WINDOW,
-    APPS_CMD_ID_ETC_CONSOLE,
-};
-
-enum apps_subcmd_id_etc {
-    APPS_SUBCMD_ID_ETC_WINDOW_DISPLAY,
-    APPS_SUBCMD_ID_ETC_WINDOW_RESIZE,
-    APPS_SUBCMD_ID_ETC_CONSOLE_EXIT,
-};
-
 enum apps_param_type_etc {
-    APPS_PARAM_TYPE_ETC_WINDOW_DISPLAY_WIDTH = 'w',
-    APPS_PARAM_TYPE_ETC_WINDOW_DISPLAY_HEIGHT = 'h',
+    APPS_PARAM_TYPE_ETC_WINDOW_WIDTH = 'w',
+    APPS_PARAM_TYPE_ETC_WINDOW_HEIGHT = 'h',
+    APPS_PARAM_TYPE_ETC_WINDOW_INSTANCE = 'i',
 
-    APPS_PARAM_TYPE_ETC_WINDOW_RESIZE_WIDTH = 'w',
-    APPS_PARAM_TYPE_ETC_WINDOW_RESIZE_HEIGHT = 'h',
 };
 
 typedef struct __command_arg {

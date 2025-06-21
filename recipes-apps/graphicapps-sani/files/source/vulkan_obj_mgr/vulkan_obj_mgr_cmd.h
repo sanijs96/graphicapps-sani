@@ -3,8 +3,6 @@
 
 #include "app/app_cmd_def.h"
 
-uint32_t _vulkan_obj_mgr_cmd_check_arguments(command_arg_t *p_arg);
-
 uint32_t _vulkan_obj_mgr_cmd_enable_layer(command_t *p_cmd);
 uint32_t _vulkan_obj_mgr_cmd_disable_layer(command_t *p_cmd);
 uint32_t _vulkan_obj_mgr_cmd_show_layers_list(command_t *p_cmd);

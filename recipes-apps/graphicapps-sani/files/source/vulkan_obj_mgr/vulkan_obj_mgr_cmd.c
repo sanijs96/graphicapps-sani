@@ -87,7 +87,7 @@ static uint32_t _vulkan_obj_mgr_cmd_setup_argument_list(command_t *p_cmd,
     }
 
     if (!strcmp(p_cmd->cmd_name, "layer")) {
-        __arg_setup_func = __setup_extension_argument;
+        __arg_setup_func = __setup_layer_argument;
     }
     else if (!strcmp(p_cmd->cmd_name, "extension")) {
         __arg_setup_func = __setup_extension_argument;

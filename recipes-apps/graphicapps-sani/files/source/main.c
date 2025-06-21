@@ -208,8 +208,6 @@ exit:
 
 void run(void)
 {
-    window_obj_mgr_start_display(DEFAULT_WINDOW_SIZE_WIDTH, DEFAULT_WINDOW_SIZE_HEIGHT);
-
     command_t cmd = {0, };
     char input[MAX_LENGTH_APP_CMD];
 input:
@@ -239,7 +237,7 @@ input:
 
 void cleanup(void)
 {
-    window_obj_mgr_exit();
+    window_obj_mgr_exit(NULL);
     vulkan_obj_mgr_exit();
 }
 

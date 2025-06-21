@@ -33,5 +33,4 @@ uint32_t function_get_extensions_count(uint32_t state);
 
 void function_get_layer_names_list(uint32_t state, char ** names_list);
 void function_get_extension_names_list(uint32_t state, char ** names_list);
-
 #endif

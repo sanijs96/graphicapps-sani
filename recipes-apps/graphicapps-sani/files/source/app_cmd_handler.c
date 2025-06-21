@@ -13,7 +13,7 @@ typedef const struct __command_handler_entry {
     const char * name;
     const char * args_list;
 
-    uint32_t (*check_sanity)(command_t *p_cmd);
+    uint32_t (*preproc)(command_t *p_cmd);
     uint32_t (*process)(command_t *p_cmd);
     uint32_t (*usage)(command_t *p_cmd);
 } const command_handler_entry_t;
@@ -49,7 +49,8 @@ command_handler_entry_t vulkan_cmd_handler_device[] = {
 };
 
 command_handler_entry_t etc_cmd_handler_window[] = {
-    {"resize", "wh", NULL, NULL, NULL},
+    {"display", "whi", _etc_cmd_window_add_instance_obj, _etc_cmd_window_display, NULL},
+    {"resize", "whi", _etc_cmd_window_add_instance_obj, _etc_cmd_window_resize, NULL},
 
     {NULL, }
 };
@@ -140,8 +141,8 @@ uint32_t app_cmd_process(command_t *p_cmd)
         goto exit;
     }
 
-    if (p_cmd_entry->check_sanity) {
-        res = p_cmd_entry->check_sanity(p_cmd);
+    if (p_cmd_entry->preproc) {
+        res = p_cmd_entry->preproc(p_cmd);
 
         if (res == FAILURE) {
             goto exit;

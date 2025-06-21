@@ -61,6 +61,18 @@ void instance_init(const char *app_name)
     instance_ctx.creation_state = VULKAN_INSTANCE_CREATION_STATE_DEFAULT;
 }
 
+void instance_add_layer_info(uint32_t layers_count, char **pp_layers_name)
+{
+    instance_ctx.creation_info.enabledLayerCount = layers_count;
+    instance_ctx.creation_info.ppEnabledLayerNames = pp_layers_name;
+}
+
+void instance_add_extension_info(uint32_t extension_count, char **pp_extensions_name)
+{
+    instance_ctx.creation_info.enabledExtensionCount = extension_count;
+    instance_ctx.creation_info.ppEnabledExtensionNames = pp_extensions_name;
+}
+
 VkResult instance_create(void)
 {
     VkResult res;
@@ -72,6 +84,11 @@ VkResult instance_create(void)
     }
 
     return res;
+}
+
+VkInstance *instance_get_instance_object(void)
+{
+    return &instance_ctx.instance;
 }
 
 void instance_destroy(void)

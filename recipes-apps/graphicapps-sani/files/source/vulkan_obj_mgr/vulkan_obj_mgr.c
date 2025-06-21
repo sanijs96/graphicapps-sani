@@ -120,6 +120,21 @@ static void __vulkan_obj_mgr_init_device_ctx(void)
 
 uint32_t vulkan_obj_mgr_create_instance(void)
 {
+    uint32_t layers_cnt;
+    uint32_t exts_cnt;
+
+    layers_cnt = function_get_layers_count(VULKAN_FUNCTION_STATE_ENABLED_SCOPE_INSTANCE);
+    exts_cnt = function_get_extensions_count(VULKAN_FUNCTION_STATE_ENABLED_SCOPE_INSTANCE);
+
+    char *p_layers_list[layers_cnt];
+    char *p_exts_list[exts_cnt];
+
+    function_get_layer_names_list(VULKAN_FUNCTION_STATE_ENABLED_SCOPE_INSTANCE, p_layers_list);
+    function_get_extension_names_list(VULKAN_FUNCTION_STATE_ENABLED_SCOPE_INSTANCE, p_exts_list);
+
+    instance_add_layer_info(layers_cnt, p_layers_list);
+    instance_add_extension_info(exts_cnt, p_exts_list);
+
     if (instance_create() != VK_SUCCESS) {
         return FAILURE;
     }
@@ -127,6 +142,15 @@ uint32_t vulkan_obj_mgr_create_instance(void)
     __vulkan_obj_mgr_init_device_ctx();
 
     return SUCCESS;
+}
+
+VkInstance *vulkan_obj_mgr_get_instance_object(void)
+{
+    if (instance_check_creation_state() != VULKAN_INSTANCE_CREATION_STATE_CREATED) {
+        return NULL;
+    }
+
+    return instance_get_instance_object();
 }
 
 // TODO: customize queueus

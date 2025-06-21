@@ -14,6 +14,7 @@ uint32_t vulkan_obj_mgr_disable_extension(char *extension_name, uint32_t scope);
 uint32_t vulkan_obj_mgr_show_extensions_list(void);
 
 uint32_t vulkan_obj_mgr_create_instance(void);
+VkInstance *vulkan_obj_mgr_get_instance_object(void);
 
 uint32_t vulkan_obj_mgr_create_device(uint32_t phydev_idx);
 uint32_t vulkan_obj_mgr_show_devices_list(void);

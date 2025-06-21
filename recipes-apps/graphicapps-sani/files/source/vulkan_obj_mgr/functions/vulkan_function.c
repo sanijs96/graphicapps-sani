@@ -118,11 +118,11 @@ uint32_t function_enable_layer(char * layer_name, uint32_t scope)
 {
     uint32_t state;
 
-    if (scope == VULKAN_FUNCTION_SCOPE_INSTANCE) {
-        state = VULKAN_FUNCTION_STATE_ENABLED_SCOPE_INSTANCE;
-    }
-    else if (scope == VULKAN_FUNCTION_SCOPE_DEVICE) {
+    if (scope == VULKAN_FUNCTION_SCOPE_DEVICE) {
         state = VULKAN_FUNCTION_STATE_ENABLED_SCOPE_DEVICE;
+    }
+    else {
+        state = VULKAN_FUNCTION_STATE_ENABLED_SCOPE_INSTANCE;
     }
 
     return __function_set_layer_state(layer_name, state);
@@ -258,11 +258,11 @@ uint32_t function_enable_extension(char *extension_name, uint32_t scope)
 {
     uint32_t state;
 
-    if (scope == VULKAN_FUNCTION_SCOPE_INSTANCE) {
-        state = VULKAN_FUNCTION_STATE_ENABLED_SCOPE_INSTANCE;
-    }
-    else if (scope == VULKAN_FUNCTION_SCOPE_DEVICE) {
+    if (scope == VULKAN_FUNCTION_SCOPE_DEVICE) {
         state = VULKAN_FUNCTION_STATE_ENABLED_SCOPE_DEVICE;
+    }
+    else {
+        state = VULKAN_FUNCTION_STATE_ENABLED_SCOPE_INSTANCE;
     }
 
     return __function_set_extension_state(extension_name, state);
