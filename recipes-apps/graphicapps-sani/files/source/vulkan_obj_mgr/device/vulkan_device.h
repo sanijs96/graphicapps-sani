@@ -32,6 +32,7 @@ void device_create_physical_device_ctx(uint32_t count);
 void device_register_physical_device(VkPhysicalDevice *p_device, uint32_t phydev_idx);
 void device_register_device_capability(uint32_t phydev_idx);
 
+void device_add_enabled_exts_info(uint32_t ext_count, char **extensions_name_list);
 VkResult device_create(uint32_t phydev_idx);
 
 uint32_t device_get_phydevs_count(void);
@@ -39,9 +40,6 @@ uint32_t device_get_phydevs_count(void);
 uint32_t device_get_current_status(void);
 uint32_t device_get_current_phydev_idx(void);
 VkPhysicalDevice * device_get_phydev_object(uint32_t phydev_idx);
-
-uint32_t device_get_phydev_extension_list_count(uint32_t phydev_idx);
-uint32_t device_get_phydev_extension_list(uint32_t phydev_idx, char **names_list, uint32_t ext_cnt);
 
 VkPhysicalDeviceProperties *device_get_device_property(uint32_t phydev_idx);
 

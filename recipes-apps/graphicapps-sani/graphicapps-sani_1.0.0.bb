@@ -35,7 +35,6 @@ DEPENDS:append = "vulkan-loader             \
                   libxi                     \
                   "
 
-
 TARGET_CC_ARCH:append = " -L${STAGING_LIBDIR} -lvulkan -lglfw -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi -lm"
 
 SOURCE_DIR = "${WORKDIR}/source"

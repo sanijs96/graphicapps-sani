@@ -167,9 +167,23 @@ VkInstance *vulkan_obj_mgr_get_instance_object(void)
 // TODO: customize queueus
 uint32_t vulkan_obj_mgr_create_device(uint32_t phydev_idx)
 {
+    uint32_t exts_cnt;
+
     if (instance_check_creation_state() != VULKAN_INSTANCE_CREATION_STATE_CREATED) {
         return FAILURE;
     }
+
+    exts_cnt = function_get_phydev_exts_count(VULKAN_FUNCTION_STATE_ENABLED, phydev_idx);
+
+    char exts_name_list[exts_cnt][VK_MAX_EXTENSION_NAME_SIZE];
+    function_get_phydev_exts_name_list(VULKAN_FUNCTION_STATE_ENABLED, exts_name_list, phydev_idx);
+
+    char *name_list_ptr[exts_cnt];
+    for (uint32_t idx = 0; idx < exts_cnt; idx++) {
+        name_list_ptr[idx] = exts_name_list[idx];
+    }
+
+    device_add_enabled_exts_info(exts_cnt, name_list_ptr);
 
     if (device_create(phydev_idx) == VK_SUCCESS) {
         return SUCCESS;

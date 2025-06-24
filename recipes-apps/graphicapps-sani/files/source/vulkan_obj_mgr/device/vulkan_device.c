@@ -204,6 +204,16 @@ void __device_include_target_queue_create_ctx(VkDeviceQueueCreateInfo *p_qcreate
     }
 }
 
+void device_add_enabled_exts_info(uint32_t ext_count, char **extensions_name_list)
+{
+    VkDeviceCreateInfo *p_ldev_create_info;
+
+    p_ldev_create_info = &device_ctx.ldev_ctx.ldev_create_info;
+
+    p_ldev_create_info->enabledExtensionCount = ext_count;
+    p_ldev_create_info->ppEnabledExtensionNames = extensions_name_list;
+}
+
 VkResult device_create(uint32_t phydev_idx)
 {
     VkResult res;
@@ -251,41 +261,6 @@ VkResult device_create(uint32_t phydev_idx)
 uint32_t device_get_current_status(void)
 {
     return device_ctx.ldev_ctx.status;
-}
-
-uint32_t device_get_phydev_extension_list_count(uint32_t phydev_idx)
-{
-    uint32_t exts_cnt;
-    VkPhysicalDevice *p_phydev;
-    p_phydev = device_ctx.pdevs_ctx[phydev_idx].p_device;
-
-    vkEnumerateDeviceExtensionProperties(*p_phydev, NULL, &exts_cnt, NULL);
-
-    return exts_cnt;
-}
-
-uint32_t device_get_phydev_extension_list(uint32_t phydev_idx, char **names_list, uint32_t ext_cnt)
-{
-    uint32_t exts_cnt;
-    VkPhysicalDevice *p_phydev;
-
-    p_phydev = device_ctx.pdevs_ctx[phydev_idx].p_device;
-
-    vkEnumerateDeviceExtensionProperties(*p_phydev, NULL, &exts_cnt, NULL);
-
-    if (exts_cnt != ext_cnt) {
-        return FAILURE;
-    }
-
-    VkExtensionProperties exts_list[exts_cnt];
-    vkEnumerateDeviceExtensionProperties(*p_phydev, NULL, &exts_cnt, exts_list);
-
-    for (uint32_t ext_idx = 0; ext_idx < exts_cnt; exts_cnt++) {
-        strncpy(names_list[ext_idx],
-                exts_list[ext_idx].extensionName, strlen(exts_list[ext_idx].extensionName));
-    }
-
-    return SUCCESS;
 }
 
 uint32_t device_get_current_phydev_idx(void)
