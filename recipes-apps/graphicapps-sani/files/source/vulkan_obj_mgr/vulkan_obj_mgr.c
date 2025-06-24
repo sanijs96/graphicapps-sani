@@ -164,6 +164,16 @@ VkInstance *vulkan_obj_mgr_get_instance_object(void)
     return instance_get_instance_object();
 }
 
+uint32_t vulkan_obj_mgr_get_phydev_count(void)
+{
+    return device_get_phydevs_count();
+}
+
+VkPhysicalDevice *vulkan_obj_mgr_get_phydev_object(uint32_t phydev_idx)
+{
+    return device_get_phydev_object(phydev_idx);
+}
+
 // TODO: customize queueus
 uint32_t vulkan_obj_mgr_create_device(uint32_t phydev_idx)
 {

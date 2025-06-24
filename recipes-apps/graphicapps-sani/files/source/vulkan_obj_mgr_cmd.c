@@ -302,9 +302,15 @@ uint32_t _vulkan_obj_mgr_cmd_show_devices_list(command_t *p_cmd)
 
     if (_vulkan_obj_mgr_cmd_check_arg_exist(p_cmd, APPS_PARAM_TYPE_VULKAN_EXTENSION_PHYDEV_IDX)) {
         phydev_idx = args_list.device.phydev_idx;
+
     }
     else {
         phydev_idx = 0;
+    }
+
+    if (phydev_idx >= phydev_count) {
+        printf("invalid device index\n");
+        return FAILURE;
     }
 
     printf("[DEVICE LIST]\n");

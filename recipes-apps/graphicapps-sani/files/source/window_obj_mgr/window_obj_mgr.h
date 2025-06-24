@@ -26,6 +26,9 @@ uint32_t window_obj_mgr_resize(uint32_t width, uint32_t height);
 uint32_t window_obj_mgr_start_display(VkInstance *p_instance);
 
 uint32_t window_obj_mgr_check_display_status(void);
+
+uint32_t window_obj_mgr_show_display_ctx_info(VkPhysicalDevice *p_phydev);
+
 VkSurfaceKHR *window_obj_mgr_get_display_object(void);
 
 void window_obj_mgr_exit(VkInstance *p_instance);

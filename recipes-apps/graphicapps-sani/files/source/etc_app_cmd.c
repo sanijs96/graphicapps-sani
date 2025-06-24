@@ -65,6 +65,7 @@ static uint32_t __setup_window_argument(command_arg_t arg, etc_cmd_args_list_t *
             p_arglist->window_display.p_instance = vulkan_obj_mgr_get_instance_object();
             // instance not created
             if (!p_arglist->window_display.p_instance) {
+                printf("instance not created yet\n");
                 return FAILURE;
             }
 
@@ -82,6 +83,8 @@ static uint32_t _etc_cmd_setup_argument_list(command_t *p_cmd, etc_cmd_args_list
     uint32_t res;
     uint32_t (*__arg_setup_func)(command_arg_t, etc_cmd_args_list_t *);
 
+    memset(p_arglist, 0, sizeof(etc_cmd_args_list_t));
+
     if (!strcmp(p_cmd->cmd_name, "window")) {
         __arg_setup_func = __setup_window_argument;
     }
@@ -89,6 +92,7 @@ static uint32_t _etc_cmd_setup_argument_list(command_t *p_cmd, etc_cmd_args_list
         return FAILURE;
     }
 
+    res = SUCCESS;
     for (uint32_t idx = 0; idx < p_cmd->num_args; idx++) {
         res = __arg_setup_func(p_cmd->p_args[idx], p_arglist);
         if (res == FAILURE) {
@@ -117,7 +121,6 @@ uint32_t _etc_cmd_window_display(command_t *p_cmd)
 {
     etc_cmd_args_list_t args_list;
 
-    memset(&args_list, 0, sizeof(etc_cmd_args_list_t));
     if (_etc_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
@@ -125,21 +128,48 @@ uint32_t _etc_cmd_window_display(command_t *p_cmd)
     return window_obj_mgr_start_display(args_list.window_display.p_instance);
 }
 
-uint32_t _etc_cmd_window_resize(command_t *p_cmd)
+uint32_t _etc_cmd_show_window_ctx_info(command_t *p_cmd)
 {
+    uint32_t phydev_count;
+    VkPhysicalDevice *p_phydev;
     etc_cmd_args_list_t args_list;
 
-    memset(&args_list, 0, sizeof(etc_cmd_args_list_t));
     if (_etc_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
 
-    if (args_list.window_resize.width == 0) {
-        args_list.window_resize.width = DEFAULT_WINDOW_SIZE_WIDTH;
+    if (window_obj_mgr_check_display_status() != WINDOW_DISPLAY_SURFACE_STATE_CREATED) {
+        printf("display not started yet\n");
+        return FAILURE;
     }
 
-    if (args_list.window_resize.height == 0) {
-        args_list.window_resize.height = DEFAULT_WINDOW_SIZE_HEIGHT;
+    phydev_count = vulkan_obj_mgr_get_phydev_count();
+    for (uint32_t idx = 0; idx < phydev_count; idx++) {
+        p_phydev = vulkan_obj_mgr_get_phydev_object(idx);
+
+        window_obj_mgr_show_display_ctx_info(p_phydev);
+    }
+
+    return SUCCESS;
+}
+
+static uint32_t __etc_cmd_check_arg_exist(command_t *p_cmd, uint32_t arg_type)
+{
+    for (uint32_t idx = 0; idx <p_cmd->num_args; idx++) {
+        if (p_cmd->p_args[idx].type == arg_type) {
+            return SUCCESS;
+        }
+    }
+
+    return FAILURE;
+}
+
+uint32_t _etc_cmd_window_resize(command_t *p_cmd)
+{
+    etc_cmd_args_list_t args_list;
+
+    if (_etc_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+        return FAILURE;
     }
 
     return window_obj_mgr_resize(args_list.window_resize.width,

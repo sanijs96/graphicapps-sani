@@ -19,6 +19,9 @@ uint32_t vulkan_obj_mgr_disable_phydev_extension(char *extension_name, uint32_t 
 uint32_t vulkan_obj_mgr_create_instance(void);
 VkInstance *vulkan_obj_mgr_get_instance_object(void);
 
+uint32_t vulkan_obj_mgr_get_phydev_count(void);
+VkPhysicalDevice *vulkan_obj_mgr_get_phydev_object(uint32_t phydev_idx);
+
 uint32_t vulkan_obj_mgr_create_device(uint32_t phydev_idx);
 void vulkan_obj_mgr_show_device_info(uint32_t phydev_idx);
 void vulkan_obj_mgr_show_device_extensions_list(uint32_t phydev_idx);

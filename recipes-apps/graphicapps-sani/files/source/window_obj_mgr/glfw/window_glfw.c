@@ -1,4 +1,3 @@
-#include <malloc.h>
 #include "common/common_def.h"
 #include "window_glfw.h"
 
@@ -25,7 +24,6 @@ void glfw_change_window_size(uint32_t width, uint32_t height)
     glfw_window_ctx.width = width;
     glfw_window_ctx.height = height;
 }
-
 
 uint32_t glfw_display_window(VkSurfaceKHR *p_surface, VkInstance *p_instance)
 {

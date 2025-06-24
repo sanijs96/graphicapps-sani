@@ -50,6 +50,7 @@ command_handler_entry_t vulkan_cmd_handler_device[] = {
 command_handler_entry_t etc_cmd_handler_window[] = {
     {"display", "i", _etc_cmd_window_add_instance_obj, _etc_cmd_window_display, NULL},
     {"resize", "hw", NULL, _etc_cmd_window_resize, NULL},
+    {"info", NULL, NULL, _etc_cmd_show_window_ctx_info, NULL},
 
     {NULL, }
 };
