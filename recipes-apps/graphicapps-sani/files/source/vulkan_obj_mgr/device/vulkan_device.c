@@ -1,5 +1,5 @@
 #include <malloc.h>
-#include <strings.h>
+#include <string.h>
 
 #include "common/common_def.h"
 
@@ -54,6 +54,7 @@ void device_register_physical_device(VkPhysicalDevice *p_device, uint32_t phydev
     if (phydev_idx >= device_ctx.pdev_count) {
         return;
     }
+
     device_ctx.pdevs_ctx[phydev_idx].p_device = p_device;
 }
 
@@ -121,6 +122,7 @@ void device_register_device_capability(uint32_t phydev_idx)
 {
     VkPhysicalDevice *p_phydev;
     pdev_capability_t *p_capability;
+    VkDeviceCreateInfo *p_ldev_create_info;
 
     p_capability = &device_ctx.pdevs_ctx[phydev_idx].capability;
 
@@ -131,10 +133,22 @@ void device_register_device_capability(uint32_t phydev_idx)
 
     p_phydev = device_ctx.pdevs_ctx[phydev_idx].p_device;
 
+    p_ldev_create_info = &device_ctx.ldev_ctx.ldev_create_info;
+
     vkGetPhysicalDeviceFeatures(*p_phydev, p_capability->p_feature);
     vkGetPhysicalDeviceProperties(*p_phydev, p_capability->p_property);
 
     __device_setup_queue_family_ctx(p_phydev, phydev_idx);
+
+    p_ldev_create_info->sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    p_ldev_create_info->pNext = NULL;
+
+    p_ldev_create_info->enabledExtensionCount = 0;
+    p_ldev_create_info->enabledLayerCount = 0;
+    p_ldev_create_info->ppEnabledExtensionNames = NULL;
+    p_ldev_create_info->pEnabledFeatures = NULL;
+    p_ldev_create_info->ppEnabledLayerNames = NULL;
+
     __device_setup_ldev_queue_ctx(phydev_idx);
 }
 
@@ -190,7 +204,6 @@ void __device_include_target_queue_create_ctx(VkDeviceQueueCreateInfo *p_qcreate
     }
 }
 
-// TODO: enable device layer & extension
 VkResult device_create(uint32_t phydev_idx)
 {
     VkResult res;
@@ -198,16 +211,13 @@ VkResult device_create(uint32_t phydev_idx)
     VkDevice *p_device_handler;
     VkDeviceCreateInfo *p_ldev_create_info;
 
-    if (device_get_current_status == VULKAN_DEVICE_CREATION_STATE_CREATED) {
+    if (device_get_current_status() == VULKAN_DEVICE_CREATION_STATE_CREATED) {
         return FAILURE;
     }
 
-    queue_info_count = device_get_device_queue_property_count(phydev_idx);
-
     p_ldev_create_info = &device_ctx.ldev_ctx.ldev_create_info;
 
-    p_ldev_create_info->sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    p_ldev_create_info->pNext = NULL;
+    queue_info_count = device_get_device_queue_property_count(phydev_idx);
 
     __device_setup_ldev_queue_create_ctx(p_ldev_create_info, phydev_idx);
 
@@ -221,12 +231,6 @@ VkResult device_create(uint32_t phydev_idx)
     __device_include_target_queue_create_ctx(p_qcreate_infos, max_qcreate_info_count);
 
     p_ldev_create_info->pQueueCreateInfos = p_qcreate_infos;
-
-    p_ldev_create_info->enabledExtensionCount = 0;
-    p_ldev_create_info->enabledLayerCount = 0;
-    p_ldev_create_info->ppEnabledExtensionNames = NULL;
-    p_ldev_create_info->pEnabledFeatures = NULL;
-    p_ldev_create_info->ppEnabledLayerNames = NULL;
 
     p_device_handler = (VkDevice *)malloc(sizeof(VkDevice));
 
@@ -249,6 +253,41 @@ uint32_t device_get_current_status(void)
     return device_ctx.ldev_ctx.status;
 }
 
+uint32_t device_get_phydev_extension_list_count(uint32_t phydev_idx)
+{
+    uint32_t exts_cnt;
+    VkPhysicalDevice *p_phydev;
+    p_phydev = device_ctx.pdevs_ctx[phydev_idx].p_device;
+
+    vkEnumerateDeviceExtensionProperties(*p_phydev, NULL, &exts_cnt, NULL);
+
+    return exts_cnt;
+}
+
+uint32_t device_get_phydev_extension_list(uint32_t phydev_idx, char **names_list, uint32_t ext_cnt)
+{
+    uint32_t exts_cnt;
+    VkPhysicalDevice *p_phydev;
+
+    p_phydev = device_ctx.pdevs_ctx[phydev_idx].p_device;
+
+    vkEnumerateDeviceExtensionProperties(*p_phydev, NULL, &exts_cnt, NULL);
+
+    if (exts_cnt != ext_cnt) {
+        return FAILURE;
+    }
+
+    VkExtensionProperties exts_list[exts_cnt];
+    vkEnumerateDeviceExtensionProperties(*p_phydev, NULL, &exts_cnt, exts_list);
+
+    for (uint32_t ext_idx = 0; ext_idx < exts_cnt; exts_cnt++) {
+        strncpy(names_list[ext_idx],
+                exts_list[ext_idx].extensionName, strlen(exts_list[ext_idx].extensionName));
+    }
+
+    return SUCCESS;
+}
+
 uint32_t device_get_current_phydev_idx(void)
 {
     return device_ctx.ldev_ctx.phydev_idx;
@@ -264,7 +303,7 @@ uint32_t device_get_device_queue_property_count(uint32_t phydev_idx)
     return device_ctx.pdevs_ctx[phydev_idx].capability.queue_info_count;
 }
 
-VkDevice *device_get_phydev_object(uint32_t phydev_idx)
+VkPhysicalDevice *device_get_phydev_object(uint32_t phydev_idx)
 {
     return device_ctx.pdevs_ctx[phydev_idx].p_device;
 }

@@ -17,7 +17,7 @@
 
 #include "window_obj_mgr/window_obj_mgr.h"
 #include "vulkan_obj_mgr/vulkan_obj_mgr.h"
-#include "vulkan_obj_mgr/functions/vulkan_function.h"
+#include "vulkan_obj_mgr/vulkan_function.h"
 
 uint32_t __select_window_obj_type(void)
 {
@@ -54,7 +54,7 @@ uint32_t init_components(void)
         for (uint32_t idx = 0; idx < layer_count; idx++) {
             layer_name = (char *)validation_layer_names_list[idx];
 
-            res = vulkan_obj_mgr_enable_layer(layer_name, VULKAN_FUNCTION_SCOPE_INSTANCE);
+            res = vulkan_obj_mgr_enable_layer(layer_name);
             if (res == FAILURE) {
                 printf("layer enable failure\n");
 
@@ -62,8 +62,7 @@ uint32_t init_components(void)
             }
         }
 
-        res = vulkan_obj_mgr_enable_extension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-                                                    VULKAN_FUNCTION_SCOPE_INSTANCE);
+        res = vulkan_obj_mgr_enable_extension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         if (res == FAILURE) {
             printf("extension enable failure\n");
 
@@ -80,8 +79,7 @@ uint32_t init_components(void)
     glfw_ext_names = (char **)glfwGetRequiredInstanceExtensions(&glfw_ext_count);
 
     for (uint32_t idx = 0; idx < glfw_ext_count; idx++) {
-        res = vulkan_obj_mgr_enable_extension(glfw_ext_names[idx],
-                                    VULKAN_FUNCTION_SCOPE_INSTANCE);
+        res = vulkan_obj_mgr_enable_extension(glfw_ext_names[idx]);
         if (res == FAILURE) {
             printf("glfw extension enable failure\n");
 
@@ -188,6 +186,7 @@ static uint32_t __setup_args_list(command_t *p_cmd, char* input)
         if (input_length == 0) {
             break;
         }
+
         p_cmd->p_args[p_cmd->num_args].value = strndup(*input_cursor, input_length);
 
         __shift_cursor(input_cursor, input_length);

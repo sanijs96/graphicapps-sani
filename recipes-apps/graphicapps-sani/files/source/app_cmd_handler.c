@@ -33,8 +33,8 @@ command_handler_entry_t vulkan_cmd_handler_layer[] = {
 };
 
 command_handler_entry_t vulkan_cmd_handler_extension[] = {
-    {"add", "ns", NULL, _vulkan_obj_mgr_cmd_enable_extension, NULL},
-    {"del", "ns", NULL, _vulkan_obj_mgr_cmd_disable_extension, NULL},
+    {"add", "ins", NULL, _vulkan_obj_mgr_cmd_enable_extension, NULL},
+    {"del", "ins", NULL, _vulkan_obj_mgr_cmd_disable_extension, NULL},
     {"list", NULL, NULL, _vulkan_obj_mgr_cmd_show_extensions_list, NULL},
 
     {NULL, }
@@ -42,14 +42,14 @@ command_handler_entry_t vulkan_cmd_handler_extension[] = {
 
 command_handler_entry_t vulkan_cmd_handler_device[] = {
     {"create", "i", NULL, _vulkan_obj_mgr_cmd_create_device, NULL},
-    {"list", NULL, NULL, _vulkan_obj_mgr_cmd_show_devices_list, NULL},
+    {"list", "ei", NULL, _vulkan_obj_mgr_cmd_show_devices_list, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t etc_cmd_handler_window[] = {
     {"display", "i", _etc_cmd_window_add_instance_obj, _etc_cmd_window_display, NULL},
-    {"resize", "wh", NULL, _etc_cmd_window_resize, NULL},
+    {"resize", "hw", NULL, _etc_cmd_window_resize, NULL},
 
     {NULL, }
 };

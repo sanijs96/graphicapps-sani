@@ -34,7 +34,7 @@ uint32_t glfw_display_window(VkSurfaceKHR *p_surface, VkInstance *p_instance)
     glfw_window_ctx.p_window = glfwCreateWindow(glfw_window_ctx.width,
                                                 glfw_window_ctx.height, "Vulkan", NULL, NULL);
 
-    res = glfwCreateWindowSurface(*p_instance, glfw_window_ctx.p_window, NULL, *p_surface);
+    res = glfwCreateWindowSurface(*p_instance, glfw_window_ctx.p_window, NULL, p_surface);
 
     if (res != VK_SUCCESS) {
         return res;
@@ -53,7 +53,7 @@ void glfw_destroy_window(VkSurfaceKHR *p_surface, VkInstance *p_instance)
     glfwDestroyWindow(glfw_window_ctx.p_window);
 
     if (!p_instance) {
-        vkDestroySurfaceKHR(*p_instance, p_surface, NULL);
+        vkDestroySurfaceKHR(*p_instance, *p_surface, NULL);
     }
 
     glfwTerminate();
