@@ -39,6 +39,7 @@ uint32_t device_get_phydevs_count(void);
 
 uint32_t device_get_current_status(void);
 uint32_t device_get_current_phydev_idx(void);
+VkDevice * device_get_current_device_object(void);
 VkPhysicalDevice * device_get_phydev_object(uint32_t phydev_idx);
 
 VkPhysicalDeviceProperties *device_get_device_property(uint32_t phydev_idx);

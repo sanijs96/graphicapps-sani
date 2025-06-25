@@ -26,6 +26,7 @@ static void __init_apps_info(const char *app_name)
     p_apps_info = &(instance_ctx.apps_info);
 
     p_apps_info->sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    p_apps_info->pNext = NULL;
 
     p_apps_info->pApplicationName = app_name;
     p_apps_info->pEngineName = "No Engine";
@@ -33,8 +34,6 @@ static void __init_apps_info(const char *app_name)
     p_apps_info->applicationVersion = VK_MAKE_VERSION(1,0,0);
     p_apps_info->engineVersion = VK_MAKE_VERSION(1, 0, 0);
     p_apps_info->apiVersion = VK_API_VERSION_1_0;
-
-    p_apps_info->pNext = NULL;
 }
 
 static void __init_creation_info(void)
@@ -43,6 +42,7 @@ static void __init_creation_info(void)
     p_creation_info = &instance_ctx.creation_info;
 
     p_creation_info->sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    p_creation_info->pNext = NULL;
     p_creation_info->pApplicationInfo = &instance_ctx.apps_info;
 
     p_creation_info->enabledLayerCount = 0;

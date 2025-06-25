@@ -5,6 +5,7 @@ SRC_URI = "file://source"
 
 CORE_IMAGE_EXTRA_INSTALL:append = " wayland weston xwayland     \
                                     glfw-dev libegl-mesa-dev    \
+                                    glslang                     \
                                     "
 
 EXTRA_IMAGE_FEATURES:append = " tools-sdk dev-pkgs x11 vulkan"
@@ -16,6 +17,7 @@ RDEPENDS:${PN}:append = "vulkan-loader      \
                         spirv-tools         \
                         mesa                \
                         glfw                \
+                        glslang             \
                         wayland             \
                         weston              \
                         xrandr              \

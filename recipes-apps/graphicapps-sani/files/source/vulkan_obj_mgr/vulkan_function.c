@@ -368,7 +368,7 @@ static uint32_t __function_find_phydev_ext_idx(char *extension_name, uint32_t ph
     vkEnumerateDeviceExtensionProperties(*p_phydev, NULL, &p_phydev_ctx->num_extensions, p_properties);
 
     ext_idx = 0;
-    for (; ext_idx < function_ctx.num_extensions; ext_idx++) {
+    for (; ext_idx < p_phydev_ctx->num_extensions; ext_idx++) {
         if (strcmp(extension_name, p_properties[ext_idx].extensionName) == 0) {
             break;
         }

@@ -86,6 +86,9 @@ enum apps_param_type_etc {
     APPS_PARAM_TYPE_ETC_WINDOW_INSTANCE = 'i',
 };
 
+#define PARAM_VK(type)    (APPS_PARAM_TYPE_VULKAN_ ## type)
+#define PARAM_ETC(type)    (APPS_PARAM_TYPE_ETC_ ## type)
+
 typedef struct __command_arg {
     char type;
     char *value;

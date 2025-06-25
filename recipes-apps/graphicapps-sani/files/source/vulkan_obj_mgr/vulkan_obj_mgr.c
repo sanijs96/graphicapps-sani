@@ -169,6 +169,16 @@ uint32_t vulkan_obj_mgr_get_phydev_count(void)
     return device_get_phydevs_count();
 }
 
+uint32_t vulkan_obj_mgr_get_current_phydev_idx(void)
+{
+    return device_get_current_phydev_idx();
+}
+
+VkDevice *vulkan_obj_mgr_get_current_device_object(void)
+{
+    return device_get_current_device_object();
+}
+
 VkPhysicalDevice *vulkan_obj_mgr_get_phydev_object(uint32_t phydev_idx)
 {
     return device_get_phydev_object(phydev_idx);

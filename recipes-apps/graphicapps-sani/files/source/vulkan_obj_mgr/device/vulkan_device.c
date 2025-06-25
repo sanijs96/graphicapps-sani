@@ -80,6 +80,8 @@ static void __device_setup_queue_family_ctx(VkPhysicalDevice *p_phydev, uint32_t
 static void __device_setup_default_ldev_queue_info(uint32_t queue_info_idx,
                                                     pdev_capability_t *p_pdev_cap)
 {
+    const float queue_priorities = 1.0f;
+
     VkQueueFamilyProperties *p_pdev_queue_info;
     VkDeviceQueueCreateInfo *p_ldev_qcreate_info;
 
@@ -88,11 +90,12 @@ static void __device_setup_default_ldev_queue_info(uint32_t queue_info_idx,
     p_ldev_qcreate_info = device_ctx.ldev_ctx.p_capabilities[queue_info_idx].p_qcreate_info;
 
     p_ldev_qcreate_info->sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    p_ldev_qcreate_info->pNext = NULL;
     p_ldev_qcreate_info->queueFamilyIndex = queue_info_idx;
     p_ldev_qcreate_info->queueCount = p_pdev_queue_info->queueCount;
     p_ldev_qcreate_info->flags = 0;
 
-    p_ldev_qcreate_info->pQueuePriorities = (const float *){0, };
+    p_ldev_qcreate_info->pQueuePriorities = &queue_priorities;
 }
 
 static void __device_setup_ldev_queue_ctx(uint32_t phydev_idx)
@@ -276,6 +279,11 @@ VkPhysicalDeviceProperties *device_get_device_property(uint32_t phydev_idx)
 uint32_t device_get_device_queue_property_count(uint32_t phydev_idx)
 {
     return device_ctx.pdevs_ctx[phydev_idx].capability.queue_info_count;
+}
+
+VkDevice *device_get_current_device_object(void)
+{
+    return device_ctx.p_device_handler;
 }
 
 VkPhysicalDevice *device_get_phydev_object(uint32_t phydev_idx)

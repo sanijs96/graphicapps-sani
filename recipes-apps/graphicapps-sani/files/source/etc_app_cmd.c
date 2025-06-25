@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include <string.h>
+#include <malloc.h>
 
 #include "common/common_def.h"
 
@@ -24,8 +26,8 @@ static uint32_t __parse_window_size_value(command_arg_t arg)
     uint32_t argval_int;
     char *p_argval_digit;
 
-    if ((arg.type != APPS_PARAM_TYPE_ETC_WINDOW_WIDTH) &&
-        (arg.type != APPS_PARAM_TYPE_ETC_WINDOW_HEIGHT)) {
+    if ((arg.type != PARAM_ETC(WINDOW_WIDTH)) &&
+        (arg.type != PARAM_ETC(WINDOW_HEIGHT))) {
         return 0;
     }
 
@@ -53,15 +55,15 @@ static uint32_t __parse_window_size_value(command_arg_t arg)
 static uint32_t __setup_window_argument(command_arg_t arg, etc_cmd_args_list_t *p_arglist)
 {
     switch (arg.type) {
-        case APPS_PARAM_TYPE_ETC_WINDOW_WIDTH:
+        case PARAM_ETC(WINDOW_WIDTH):
             p_arglist->window_resize.width = __parse_window_size_value(arg);
             break;
 
-        case APPS_PARAM_TYPE_ETC_WINDOW_HEIGHT:
+        case PARAM_ETC(WINDOW_HEIGHT):
             p_arglist->window_resize.height = __parse_window_size_value(arg);
             break;
 
-        case APPS_PARAM_TYPE_ETC_WINDOW_INSTANCE:
+        case PARAM_ETC(WINDOW_INSTANCE):
             p_arglist->window_display.p_instance = vulkan_obj_mgr_get_instance_object();
             // instance not created
             if (!p_arglist->window_display.p_instance) {
@@ -109,7 +111,7 @@ uint32_t _etc_cmd_window_add_instance_obj(command_t *p_cmd)
         p_cmd->p_args++;
     }
 
-    p_cmd->p_args->type = APPS_PARAM_TYPE_ETC_WINDOW_INSTANCE;
+    p_cmd->p_args->type = PARAM_ETC(WINDOW_INSTANCE);
     p_cmd->p_args->value = (char *)malloc(sizeof(uint32_t)); // unused
 
     p_cmd->num_args++;
@@ -138,7 +140,7 @@ uint32_t _etc_cmd_show_window_ctx_info(command_t *p_cmd)
         return FAILURE;
     }
 
-    if (window_obj_mgr_check_display_status() != WINDOW_DISPLAY_SURFACE_STATE_CREATED) {
+    if (window_obj_mgr_check_display_status() != WINDOW_OBJ_DISPLAY_STATE_CREATED) {
         printf("display not started yet\n");
         return FAILURE;
     }

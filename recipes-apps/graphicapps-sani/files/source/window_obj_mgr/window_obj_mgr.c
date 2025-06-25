@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <malloc.h>
 
 #include "common/common_def.h"
 #include "window_obj_mgr.h"
@@ -5,6 +7,33 @@
 #if defined(GLFW_INCLUDE_VULKAN)
 #include "glfw/window_glfw.h"
 #endif
+
+typedef struct swapchain_ctx {
+    VkSwapchainKHR swapchain;
+
+    uint32_t image_count;
+    VkImage *p_images;
+    VkImageView *p_views;
+} swapchain_ctx_t;
+
+
+typedef struct display_ctx {
+    uint32_t state;
+
+    VkDevice *p_device;
+    VkPhysicalDevice *p_phydev;
+
+    VkSurfaceKHR surface;
+
+    uint32_t format_cnt;
+    VkSurfaceFormatKHR base_format;
+    VkExtent2D base_extent;
+
+    uint32_t present_mode_cnt;
+    VkSurfaceCapabilitiesKHR capability;
+
+    swapchain_ctx_t swapchain_ctx;
+} display_ctx_t;
 
 typedef struct window_ops {
     uint32_t (* create)(void);
@@ -14,10 +43,9 @@ typedef struct window_ops {
 } window_ops_t;
 
 static struct {
-    window_ops_t ops;
     uint32_t type;
-    uint32_t state;
-    VkSurfaceKHR surface;
+    window_ops_t ops;
+    display_ctx_t display_ctx;
 } window_object;
 
 uint32_t window_obj_mgr_init(uint32_t window_types)
@@ -41,7 +69,7 @@ uint32_t window_obj_mgr_init(uint32_t window_types)
 
     window_object.ops.create();
 
-    window_object.state = WINDOW_DISPLAY_SURFACE_STATE_DEFAULT;
+    window_object.display_ctx.state = WINDOW_OBJ_DISPLAY_STATE_DEFAULT;
 
     if (window_object.ops.resize) {
         window_object.ops.resize(DEFAULT_WINDOW_SIZE_WIDTH, DEFAULT_WINDOW_SIZE_HEIGHT);
@@ -57,20 +85,173 @@ uint32_t window_obj_mgr_resize(uint32_t width, uint32_t height)
     return SUCCESS;
 }
 
+static VkSurfaceFormatKHR __window_obj_mgr_select_base_format(display_ctx_t *p_display_ctx)
+{
+    uint32_t format_idx;
+    VkSurfaceFormatKHR formats[p_display_ctx->format_cnt];
+
+    vkGetPhysicalDeviceSurfaceFormatsKHR(*p_display_ctx->p_phydev, p_display_ctx->surface,
+                                                        &p_display_ctx->format_cnt, formats);
+
+    format_idx = 0;
+    for (; format_idx < p_display_ctx->format_cnt; format_idx++) {
+        if ((formats[format_idx].format == VK_FORMAT_B8G8R8A8_SRGB) &&
+            (formats[format_idx].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)) {
+            break;
+        }
+    }
+
+    return formats[format_idx];
+}
+
+static uint32_t __window_obj_mgr_setup_display_ctx(void)
+{
+    display_ctx_t *p_display_ctx;
+
+    p_display_ctx = &window_object.display_ctx;
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(*p_display_ctx->p_phydev, p_display_ctx->surface,
+                                                                    &p_display_ctx->capability);
+    p_display_ctx->base_extent = p_display_ctx->capability.currentExtent;
+
+    vkGetPhysicalDeviceSurfaceFormatsKHR(*p_display_ctx->p_phydev, p_display_ctx->surface,
+                                                            &p_display_ctx->format_cnt, NULL);
+    p_display_ctx->base_format = __window_obj_mgr_select_base_format(p_display_ctx);
+
+    vkGetPhysicalDeviceSurfacePresentModesKHR(*p_display_ctx->p_phydev, p_display_ctx->surface,
+                                                        &p_display_ctx->present_mode_cnt, NULL);
+}
+
+static uint32_t __window_obj_mgr_create_swapchain(void)
+{
+    display_ctx_t *p_display_ctx;
+    VkSwapchainCreateInfoKHR create_info;
+
+    p_display_ctx = &window_object.display_ctx;
+
+    create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    create_info.pNext = NULL;
+    create_info.surface = p_display_ctx->surface;
+
+    create_info.flags = 0;
+
+    create_info.minImageCount = p_display_ctx->capability.minImageCount;
+
+    create_info.imageFormat = p_display_ctx->base_format.format;
+    create_info.imageColorSpace = p_display_ctx->base_format.colorSpace;
+    create_info.imageExtent = p_display_ctx->capability.currentExtent;
+
+    create_info.imageArrayLayers = 1;
+    create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    create_info.queueFamilyIndexCount = 0;
+    create_info.pQueueFamilyIndices = NULL;
+
+    create_info.preTransform = p_display_ctx->capability.currentTransform;
+
+    create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    create_info.presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+    create_info.clipped = VK_TRUE;
+
+    create_info.oldSwapchain = VK_NULL_HANDLE;
+
+    return vkCreateSwapchainKHR(*p_display_ctx->p_device, &create_info, NULL,
+                                        &p_display_ctx->swapchain_ctx.swapchain);
+}
+
+static uint32_t __window_obj_mgr_create_swapchain_image_views(display_ctx_t *p_display_ctx)
+{
+    swapchain_ctx_t *p_swapchain_ctx;
+    VkImageViewCreateInfo create_info;
+
+    p_swapchain_ctx = &p_display_ctx->swapchain_ctx;
+
+    p_swapchain_ctx->p_views = (VkImageView *)malloc(sizeof(VkImageView) *
+                                                        p_swapchain_ctx->image_count);
+
+    create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    create_info.pNext = NULL;
+    create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    create_info.format = p_display_ctx->base_format.format;
+
+    create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+    create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    create_info.subresourceRange.baseMipLevel = 0;
+    create_info.subresourceRange.levelCount = 1;
+    create_info.subresourceRange.baseArrayLayer = 0;
+    create_info.subresourceRange.layerCount = 1;
+
+    for (uint32_t idx = 0; idx < p_swapchain_ctx->image_count; idx++) {
+        create_info.image = p_swapchain_ctx->p_images[idx];
+        if (vkCreateImageView(*p_display_ctx->p_device, &create_info,
+                                    NULL, &p_swapchain_ctx->p_views[idx]) != VK_SUCCESS) {
+            return FAILURE;
+        }
+    }
+
+    return SUCCESS;
+}
+
+static uint32_t __window_obj_mgr_setup_swapchain_ctx(display_ctx_t *p_display_ctx)
+{
+    uint32_t res;
+    swapchain_ctx_t *p_swapchain_ctx;
+
+    p_swapchain_ctx = &p_display_ctx->swapchain_ctx;
+
+    vkGetSwapchainImagesKHR(*p_display_ctx->p_device, p_swapchain_ctx->swapchain,
+                                                &p_swapchain_ctx->image_count, NULL);
+    p_swapchain_ctx->p_images = (VkImage *)malloc(sizeof(VkImage) * p_swapchain_ctx->image_count);
+    vkGetSwapchainImagesKHR(*p_display_ctx->p_device, p_swapchain_ctx->swapchain,
+                                        &p_swapchain_ctx->image_count, p_swapchain_ctx->p_images);
+
+    return __window_obj_mgr_create_swapchain_image_views(p_display_ctx);
+}
+
 uint32_t window_obj_mgr_start_display(VkInstance *p_instance)
 {
-    if (window_object.ops.display(&window_object.surface, p_instance) == SUCCESS) {
-        window_object.state = WINDOW_DISPLAY_SURFACE_STATE_CREATED;
-        return SUCCESS;
-    }
-    else {
+    uint32_t res;
+    display_ctx_t *p_display_ctx;
+
+    p_display_ctx = &window_object.display_ctx;
+
+    if (window_object.ops.display(&p_display_ctx->surface, p_instance) != SUCCESS) {
         return FAILURE;
     }
+
+    __window_obj_mgr_setup_display_ctx();
+
+    res = __window_obj_mgr_create_swapchain();
+    if (res != VK_SUCCESS) {
+        printf("swapchain creation failure: %d\n", res);
+        return FAILURE;
+    }
+
+    p_display_ctx->state = WINDOW_OBJ_DISPLAY_STATE_CREATED;
+
+    res = __window_obj_mgr_setup_swapchain_ctx(p_display_ctx);
+    if (res != VK_SUCCESS) {
+        printf("swapchain ctx setup error: %d\n", res);
+        return FAILURE;
+    }
+
+    return res;
 }
 
 uint32_t window_obj_mgr_check_display_status(void)
 {
-    return window_object.state;
+    return window_object.display_ctx.state;
+}
+
+void window_obj_mgr_setup_device_ctx(VkPhysicalDevice *p_phydev, VkDevice *p_device)
+{
+    window_object.display_ctx.p_phydev = p_phydev;
+    window_object.display_ctx.p_device = p_device;
 }
 
 static void __window_obj_mgr_show_display_capabilities(VkSurfaceCapabilitiesKHR *p_cap)
@@ -113,19 +294,16 @@ uint32_t window_obj_mgr_show_display_ctx_info(VkPhysicalDevice *p_phydev)
 {
     uint32_t format_cnt;
     uint32_t present_cnt;
-    VkSurfaceKHR *p_surface;
-    VkSurfaceCapabilitiesKHR capabilities;
+    display_ctx_t *p_display_ctx;
 
-    format_cnt = 0;
-    present_cnt = 0;
-    p_surface = &window_object.surface;
+    format_cnt = window_object.display_ctx.format_cnt;
+    present_cnt = window_object.display_ctx.present_mode_cnt;
+    p_display_ctx = &window_object.display_ctx;
 
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(*p_phydev, *p_surface, &capabilities);
-    __window_obj_mgr_show_display_capabilities(&capabilities);
+    __window_obj_mgr_show_display_capabilities(&p_display_ctx->capability);
 
-    vkGetPhysicalDeviceSurfaceFormatsKHR(*p_phydev, *p_surface, &format_cnt, NULL);
     VkSurfaceFormatKHR formats[format_cnt];
-    vkGetPhysicalDeviceSurfaceFormatsKHR(*p_phydev, *p_surface, &format_cnt, formats);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(*p_phydev, p_display_ctx->surface, &format_cnt, formats);
 
     printf("\nFormats\n");
     for (uint32_t idx = 0; idx < format_cnt; idx++) {
@@ -133,14 +311,13 @@ uint32_t window_obj_mgr_show_display_ctx_info(VkPhysicalDevice *p_phydev)
             (formats[idx].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)) {
             printf("\t [%u] Format VK_FORMAT_B8G8R8A8_SRGB: supported\n", idx);
             printf("\t [%u] Colorspace VK_COLOR_SPACE_SRGB_NONLINEAR_KHR: supported\n", idx);
-
             break;
         }
     }
 
-    vkGetPhysicalDeviceSurfacePresentModesKHR(*p_phydev, *p_surface, &present_cnt, NULL);
     VkPresentModeKHR present_modes[present_cnt];
-    vkGetPhysicalDeviceSurfacePresentModesKHR(*p_phydev, *p_surface, &present_cnt, present_modes);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(*p_phydev, p_display_ctx->surface,
+                                                    &present_cnt, present_modes);
     __window_obj_mgr_show_display_present_modes(present_modes, present_cnt);
 
     return SUCCESS;
@@ -148,11 +325,11 @@ uint32_t window_obj_mgr_show_display_ctx_info(VkPhysicalDevice *p_phydev)
 
 VkSurfaceKHR *window_obj_mgr_get_display_object(void)
 {
-    return &window_object.surface;
+    return &window_object.display_ctx.surface;
 }
 
 void window_obj_mgr_exit(VkInstance *p_instance)
 {
-    window_object.ops.exit(&window_object.surface, p_instance);
-    window_object.state = WINDOW_DISPLAY_SURFACE_STATE_DESTROYED;
+    window_object.ops.exit(&window_object.display_ctx.surface, p_instance);
+    window_object.display_ctx.state = WINDOW_OBJ_DISPLAY_STATE_DESTROYED;
 }
