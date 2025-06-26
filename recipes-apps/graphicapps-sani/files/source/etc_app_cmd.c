@@ -107,12 +107,8 @@ static uint32_t _etc_cmd_setup_argument_list(command_t *p_cmd, etc_cmd_args_list
 
 uint32_t _etc_cmd_window_add_instance_obj(command_t *p_cmd)
 {
-    while (p_cmd->p_args->value) {
-        p_cmd->p_args++;
-    }
-
-    p_cmd->p_args->type = PARAM_ETC(WINDOW_INSTANCE);
-    p_cmd->p_args->value = (char *)malloc(sizeof(uint32_t)); // unused
+    p_cmd->p_args[p_cmd->num_args].type = PARAM_ETC(WINDOW_INSTANCE);
+    p_cmd->p_args[p_cmd->num_args].value = (char *)malloc(sizeof(uint32_t)); // unused
 
     p_cmd->num_args++;
 

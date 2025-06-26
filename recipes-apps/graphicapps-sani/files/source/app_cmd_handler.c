@@ -5,7 +5,7 @@
 
 #include "app_cmd_handler.h"
 
-#include "vulkan_obj_mgr_cmd.h"
+#include "vulkan_app_cmd.h"
 #include "etc_app_cmd.h"
 
 typedef const struct __command_handler_entry {
@@ -19,30 +19,30 @@ typedef const struct __command_handler_entry {
 
 command_handler_entry_t vulkan_cmd_handler_instance[] = {
     {"create", NULL,
-        NULL, _vulkan_obj_mgr_cmd_create_instance, NULL},
+        NULL, _vulkan_cmd_create_instance, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t vulkan_cmd_handler_layer[] = {
-    {"add", "ns", NULL, _vulkan_obj_mgr_cmd_enable_layer, NULL},
-    {"del", "ns" , NULL, _vulkan_obj_mgr_cmd_disable_layer, NULL},
-    {"list", NULL, NULL, _vulkan_obj_mgr_cmd_show_layers_list, NULL},
+    {"add", "ns", NULL, _vulkan_cmd_enable_layer, NULL},
+    {"del", "ns" , NULL, _vulkan_cmd_disable_layer, NULL},
+    {"list", NULL, NULL, _vulkan_cmd_show_layers_list, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t vulkan_cmd_handler_extension[] = {
-    {"add", "ins", NULL, _vulkan_obj_mgr_cmd_enable_extension, NULL},
-    {"del", "ins", NULL, _vulkan_obj_mgr_cmd_disable_extension, NULL},
-    {"list", NULL, NULL, _vulkan_obj_mgr_cmd_show_extensions_list, NULL},
+    {"add", "ins", NULL, _vulkan_cmd_enable_extension, NULL},
+    {"del", "ins", NULL, _vulkan_cmd_disable_extension, NULL},
+    {"list", NULL, NULL, _vulkan_cmd_show_extensions_list, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t vulkan_cmd_handler_device[] = {
-    {"create", "i", NULL, _vulkan_obj_mgr_cmd_create_device, NULL},
-    {"list", "ei", NULL, _vulkan_obj_mgr_cmd_show_devices_list, NULL},
+    {"create", "i", NULL, _vulkan_cmd_create_device, NULL},
+    {"list", "ei", NULL, _vulkan_cmd_show_devices_list, NULL},
 
     {NULL, }
 };

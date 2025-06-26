@@ -3,7 +3,7 @@
 
 #include "common/common_def.h"
 
-#include "vulkan_obj_mgr_cmd.h"
+#include "vulkan_app_cmd.h"
 
 #include "vulkan_obj_mgr/vulkan_obj_mgr.h"
 #include "vulkan_obj_mgr/vulkan_function.h"
@@ -90,7 +90,7 @@ static uint32_t __setup_instance_argument(command_arg_t arg, vulkan_cmd_args_lis
     return SUCCESS;
 }
 
-static uint32_t _vulkan_obj_mgr_cmd_check_arg_exist(command_t *p_cmd, uint32_t arg_type)
+static uint32_t _vulkan_cmd_check_arg_exist(command_t *p_cmd, uint32_t arg_type)
 {
     for (uint32_t idx = 0; idx < p_cmd->num_args; idx++) {
         if (p_cmd->p_args[idx].type == arg_type) {
@@ -101,7 +101,7 @@ static uint32_t _vulkan_obj_mgr_cmd_check_arg_exist(command_t *p_cmd, uint32_t a
     return FAILURE;
 }
 
-static uint32_t _vulkan_obj_mgr_cmd_setup_argument_list(command_t *p_cmd,
+static uint32_t _vulkan_cmd_setup_argument_list(command_t *p_cmd,
                                         vulkan_cmd_args_list_t *p_arglist)
 {
     uint32_t res;
@@ -137,38 +137,38 @@ static uint32_t _vulkan_obj_mgr_cmd_setup_argument_list(command_t *p_cmd,
     return res;
 }
 
-uint32_t _vulkan_obj_mgr_cmd_enable_layer(command_t *p_cmd)
+uint32_t _vulkan_cmd_enable_layer(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
-    if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+    if (_vulkan_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
 
     return vulkan_obj_mgr_enable_layer(args_list.layer.name);
 }
 
-uint32_t _vulkan_obj_mgr_cmd_disable_layer(command_t *p_cmd)
+uint32_t _vulkan_cmd_disable_layer(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
-    if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+    if (_vulkan_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
 
     return vulkan_obj_mgr_disable_layer(args_list.layer.name);
 }
 
-uint32_t _vulkan_obj_mgr_cmd_show_layers_list(command_t *p_cmd)
+uint32_t _vulkan_cmd_show_layers_list(command_t *p_cmd)
 {
     vulkan_obj_mgr_show_layers_list();
 
     return  SUCCESS;
 }
 
-uint32_t _vulkan_obj_mgr_cmd_enable_extension(command_t *p_cmd)
+uint32_t _vulkan_cmd_enable_extension(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
 
-    if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+    if (_vulkan_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
 
@@ -176,7 +176,7 @@ uint32_t _vulkan_obj_mgr_cmd_enable_extension(command_t *p_cmd)
         return vulkan_obj_mgr_enable_extension(args_list.extension.name);
     }
     else if (args_list.extension.scope == VULKAN_FUNCTION_SCOPE_DEVICE) {
-        if (_vulkan_obj_mgr_cmd_check_arg_exist(p_cmd, PARAM_VK(EXTENSION_PHYDEV_IDX)) == FAILURE) {
+        if (_vulkan_cmd_check_arg_exist(p_cmd, PARAM_VK(EXTENSION_PHYDEV_IDX)) == FAILURE) {
             printf("no physical device selected\n");
 
             return FAILURE;
@@ -190,11 +190,11 @@ uint32_t _vulkan_obj_mgr_cmd_enable_extension(command_t *p_cmd)
     }
 }
 
-uint32_t _vulkan_obj_mgr_cmd_disable_extension(command_t *p_cmd)
+uint32_t _vulkan_cmd_disable_extension(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
 
-    if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+    if (_vulkan_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
 
@@ -202,7 +202,7 @@ uint32_t _vulkan_obj_mgr_cmd_disable_extension(command_t *p_cmd)
         return vulkan_obj_mgr_enable_extension(args_list.extension.name);
     }
     else if (args_list.extension.scope == VULKAN_FUNCTION_SCOPE_DEVICE) {
-        if (_vulkan_obj_mgr_cmd_check_arg_exist(p_cmd, PARAM_VK(EXTENSION_PHYDEV_IDX)) == FAILURE) {
+        if (_vulkan_cmd_check_arg_exist(p_cmd, PARAM_VK(EXTENSION_PHYDEV_IDX)) == FAILURE) {
             printf("no physical device selected\n");
 
             return FAILURE;
@@ -216,17 +216,17 @@ uint32_t _vulkan_obj_mgr_cmd_disable_extension(command_t *p_cmd)
     }
 }
 
-uint32_t _vulkan_obj_mgr_cmd_show_extensions_list(command_t *p_cmd)
+uint32_t _vulkan_cmd_show_extensions_list(command_t *p_cmd)
 {
     vulkan_obj_mgr_show_extensions_list();
 
     return SUCCESS;
 }
 
-uint32_t _vulkan_obj_mgr_cmd_create_instance(command_t *p_cmd)
+uint32_t _vulkan_cmd_create_instance(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
-    if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+    if (_vulkan_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
 
@@ -234,15 +234,15 @@ uint32_t _vulkan_obj_mgr_cmd_create_instance(command_t *p_cmd)
 }
 
 
-uint32_t _vulkan_obj_mgr_cmd_create_device(command_t *p_cmd)
+uint32_t _vulkan_cmd_create_device(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;
 
-    if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+    if (_vulkan_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
 
-    if (_vulkan_obj_mgr_cmd_check_arg_exist(p_cmd, PARAM_VK(EXTENSION_PHYDEV_IDX)) == FAILURE) {
+    if (_vulkan_cmd_check_arg_exist(p_cmd, PARAM_VK(EXTENSION_PHYDEV_IDX)) == FAILURE) {
         return FAILURE;
     }
 
@@ -283,7 +283,7 @@ static void __check_presentation_support(uint32_t phydev_idx, VkSurfaceKHR *p_su
     return;
 }
 
-void _vulkan_obj_mgr_cmd_show_display_support(uint32_t phydev_idx)
+void _vulkan_cmd_show_display_support(uint32_t phydev_idx)
 {
     VkSurfaceKHR *p_display_object;
 
@@ -292,7 +292,7 @@ void _vulkan_obj_mgr_cmd_show_display_support(uint32_t phydev_idx)
     __check_presentation_support(phydev_idx, p_display_object);
 }
 
-uint32_t _vulkan_obj_mgr_cmd_show_devices_list(command_t *p_cmd)
+uint32_t _vulkan_cmd_show_devices_list(command_t *p_cmd)
 {
     uint32_t phydev_idx;
     uint32_t phydev_count;
@@ -305,12 +305,12 @@ uint32_t _vulkan_obj_mgr_cmd_show_devices_list(command_t *p_cmd)
         return FAILURE;
     }
 
-    if (_vulkan_obj_mgr_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+    if (_vulkan_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
 
     printf("[DEVICE LIST]\n");
-    if (_vulkan_obj_mgr_cmd_check_arg_exist(p_cmd, PARAM_VK(EXTENSION_PHYDEV_IDX)) == FAILURE) {
+    if (_vulkan_cmd_check_arg_exist(p_cmd, PARAM_VK(EXTENSION_PHYDEV_IDX)) == FAILURE) {
         phydev_idx = 0;
     }
     else {
@@ -332,7 +332,7 @@ uint32_t _vulkan_obj_mgr_cmd_show_devices_list(command_t *p_cmd)
         }
 
         if (window_obj_mgr_check_display_status() == WINDOW_OBJ_DISPLAY_STATE_CREATED) {
-            _vulkan_obj_mgr_cmd_show_display_support(phydev_idx);
+            _vulkan_cmd_show_display_support(phydev_idx);
         }
     }
 
