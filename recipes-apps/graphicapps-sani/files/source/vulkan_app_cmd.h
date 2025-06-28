@@ -15,4 +15,8 @@ uint32_t _vulkan_cmd_create_instance(command_t *p_cmd);
 uint32_t _vulkan_cmd_create_device(command_t *p_cmd);
 uint32_t _vulkan_cmd_show_devices_list(command_t *p_cmd);
 
+uint32_t _vulkan_cmd_setup_pipeline_stage(command_t *p_cmd);
+uint32_t _vulkan_cmd_run_pipeline(command_t *p_cmd);
+uint32_t _vulkan_cmd_show_pipeline_info(command_t *p_cmd);
+
 #endif

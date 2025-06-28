@@ -64,13 +64,13 @@ void instance_init(const char *app_name)
 void instance_add_layer_info(uint32_t layers_count, char **pp_layers_name)
 {
     instance_ctx.creation_info.enabledLayerCount = layers_count;
-    instance_ctx.creation_info.ppEnabledLayerNames = pp_layers_name;
+    instance_ctx.creation_info.ppEnabledLayerNames = (const char *const *)pp_layers_name;
 }
 
 void instance_add_extension_info(uint32_t extension_count, char **pp_extensions_name)
 {
     instance_ctx.creation_info.enabledExtensionCount = extension_count;
-    instance_ctx.creation_info.ppEnabledExtensionNames = pp_extensions_name;
+    instance_ctx.creation_info.ppEnabledExtensionNames = (const char *const *)pp_extensions_name;
 }
 
 VkResult instance_create(void)

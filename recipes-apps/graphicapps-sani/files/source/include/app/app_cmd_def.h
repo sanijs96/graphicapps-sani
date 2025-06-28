@@ -77,6 +77,9 @@ enum apps_param_type_vulkan {
 
     APPS_PARAM_TYPE_VULKAN_DEVICE_PHYDEV_IDX = 'i',
     APPS_PARAM_TYPE_VULKAN_DEVICE_SHOW_EXTENSION = 'e',
+
+    APPS_PARAM_TYPE_VULKAN_PIPELINE_STAGE_IDX = 'i',
+    APPS_PARAM_TYPE_VULKAN_PIPELINE_SHADER_FILENAME = 'f',
 };
 
 enum apps_param_type_etc {

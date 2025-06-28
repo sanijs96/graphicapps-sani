@@ -47,6 +47,14 @@ command_handler_entry_t vulkan_cmd_handler_device[] = {
     {NULL, }
 };
 
+command_handler_entry_t vulkan_cmd_handler_pipeline[] = {
+    {"add", "if", NULL, _vulkan_cmd_setup_pipeline_stage, NULL},
+    {"run", NULL, NULL, _vulkan_cmd_run_pipeline, NULL},
+    {"info", NULL, NULL, _vulkan_cmd_show_pipeline_info, NULL},
+
+    {NULL, }
+};
+
 command_handler_entry_t etc_cmd_handler_window[] = {
     {"display", "i", _etc_cmd_window_add_instance_obj, _etc_cmd_window_display, NULL},
     {"resize", "hw", NULL, _etc_cmd_window_resize, NULL},
@@ -72,6 +80,7 @@ command_handler_entry_list_t app_cmd_list[] = {
     {"layer", vulkan_cmd_handler_layer},
     {"extension", vulkan_cmd_handler_extension},
     {"device", vulkan_cmd_handler_device},
+    {"pipeline", vulkan_cmd_handler_pipeline},
 
     {"window", etc_cmd_handler_window},
     {"console", etc_cmd_handler_console},

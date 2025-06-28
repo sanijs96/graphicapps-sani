@@ -16,7 +16,6 @@ typedef struct swapchain_ctx {
     VkImageView *p_views;
 } swapchain_ctx_t;
 
-
 typedef struct display_ctx {
     uint32_t state;
 
@@ -267,9 +266,9 @@ static void __window_obj_mgr_show_display_capabilities(VkSurfaceCapabilitiesKHR 
 
     printf("\tcurrentExtent       : %u, %u\n",
             p_cap->currentExtent.width, p_cap->currentExtent.height);
-    printf("\tminImageExtent      : %u\n",
+    printf("\tminImageExtent      : %u, %u\n",
             p_cap->minImageExtent.width, p_cap->minImageExtent.height);
-    printf("\tmaxImageExtent      : %u\n",
+    printf("\tmaxImageExtent      : %u, %u\n",
             p_cap->maxImageExtent.width, p_cap->maxImageExtent.height);
 
     printf("\tmaxImageArrayLayers : %u\n", p_cap->maxImageArrayLayers);
@@ -328,9 +327,24 @@ uint32_t window_obj_mgr_show_display_ctx_info(VkPhysicalDevice *p_phydev)
     return SUCCESS;
 }
 
-VkSurfaceKHR *window_obj_mgr_get_display_object(void)
+VkSurfaceKHR *window_obj_mgr_get_current_display_object(void)
 {
     return &window_object.display_ctx.surface;
+}
+
+VkSwapchainKHR *window_obj_mgr_get_current_swapchain_object(void)
+{
+    return &window_object.display_ctx.swapchain_ctx.swapchain;
+}
+
+VkExtent2D *window_obj_mgr_get_current_swapchain_extent(void)
+{
+    return &window_object.display_ctx.base_extent;
+}
+
+VkFormat *window_obj_mgr_get_current_swapchain_format(void)
+{
+    return &window_object.display_ctx.base_format.format;
 }
 
 void window_obj_mgr_exit(VkInstance *p_instance)

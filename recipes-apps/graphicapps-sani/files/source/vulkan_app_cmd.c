@@ -10,6 +10,9 @@
 #include "vulkan_obj_mgr/device/vulkan_device.h"
 #include "vulkan_obj_mgr/instance/vulkan_instance.h"
 
+#include "vulkan_ops_mgr/vulkan_ops_mgr.h"
+#include "vulkan_ops_mgr/pipeline/vulkan_pipeline.h"
+
 #include "window_obj_mgr/window_obj_mgr.h"
 
 typedef union vulkan_cmd_args_list {
@@ -28,6 +31,12 @@ typedef union vulkan_cmd_args_list {
         uint32_t phydev_idx;
         uint32_t show_extension;
     } device;
+
+    struct {
+        uint32_t stage_idx;
+        char filename[FILENAME_MAX];
+    } pipeline;
+
 } vulkan_cmd_args_list_t;
 
 static uint32_t __setup_layer_argument(command_arg_t arg, vulkan_cmd_args_list_t *p_arglist)
@@ -90,6 +99,24 @@ static uint32_t __setup_instance_argument(command_arg_t arg, vulkan_cmd_args_lis
     return SUCCESS;
 }
 
+static uint32_t __setup_pipeline_argument(command_arg_t arg, vulkan_cmd_args_list_t *p_arglist)
+{
+    switch (arg.type) {
+        case PARAM_VK(PIPELINE_STAGE_IDX):
+            p_arglist->pipeline.stage_idx = (uint32_t)(*(char *)arg.value - '0');
+            break;
+
+        case PARAM_VK(PIPELINE_SHADER_FILENAME):
+            strncpy(p_arglist->pipeline.filename, arg.value, strlen(arg.value));
+            break;
+
+        default:
+            return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
 static uint32_t _vulkan_cmd_check_arg_exist(command_t *p_cmd, uint32_t arg_type)
 {
     for (uint32_t idx = 0; idx < p_cmd->num_args; idx++) {
@@ -122,6 +149,9 @@ static uint32_t _vulkan_cmd_setup_argument_list(command_t *p_cmd,
     }
     else if (!strcmp(p_cmd->cmd_name, "instance")) {
         __arg_setup_func = __setup_instance_argument;
+    }
+    else if (!strcmp(p_cmd->cmd_name, "pipeline")) {
+        __arg_setup_func = __setup_pipeline_argument;
     }
     else {
         return FAILURE;
@@ -287,7 +317,7 @@ void _vulkan_cmd_show_display_support(uint32_t phydev_idx)
 {
     VkSurfaceKHR *p_display_object;
 
-    p_display_object = window_obj_mgr_get_display_object();
+    p_display_object = window_obj_mgr_get_current_display_object();
 
     __check_presentation_support(phydev_idx, p_display_object);
 }
@@ -338,3 +368,57 @@ uint32_t _vulkan_cmd_show_devices_list(command_t *p_cmd)
 
     return SUCCESS;
 }
+
+uint32_t _vulkan_cmd_setup_pipeline_stage(command_t *p_cmd)
+{
+    uint32_t res;
+    uint32_t pipeline_stage_idx;
+
+    VkDevice *p_device;
+    vulkan_cmd_args_list_t args_list;
+
+    if (_vulkan_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+        return FAILURE;
+    }
+
+    pipeline_stage_idx = args_list.pipeline.stage_idx;
+
+    switch (pipeline_stage_idx) {
+        case VULKAN_PIPELINE_STAGE_VERTEX_SHADER:
+        case VULKAN_PIPELINE_STAGE_FRAGMENT_SHADER:
+            p_device = vulkan_obj_mgr_get_current_device_object();
+            res = vulkan_ops_mgr_add_shader_file(pipeline_stage_idx,
+                                                    args_list.pipeline.filename, p_device);
+            break;
+
+        default:
+            printf("changing stage of %u is not allowed(yet)\n", pipeline_stage_idx);
+            return FAILURE;
+
+    }
+
+    return res;
+}
+
+uint32_t _vulkan_cmd_run_pipeline(command_t *p_cmd)
+{
+    uint32_t res;
+    VkDevice *p_device;
+
+    p_device = vulkan_obj_mgr_get_current_device_object();
+    if (p_device == NULL) {
+        printf("device is not created\n");
+
+        return FAILURE;
+    }
+
+    res = vulkan_ops_mgr_create_pipeline(p_device);
+
+    return res;
+}
+
+uint32_t _vulkan_cmd_show_pipeline_info(command_t *p_cmd)
+{
+
+}
+

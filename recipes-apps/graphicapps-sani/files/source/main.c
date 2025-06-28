@@ -6,7 +6,7 @@
 #include "common/common_def.h"
 
 #if defined (DEBUG_EN)
-#include "debug/debug.h"
+#include "vulkan/debug.h"
 #endif
 
 #if defined(GLFW_INCLUDE_VULKAN)
@@ -16,6 +16,7 @@
 #include "app_cmd_handler.h"
 
 #include "window_obj_mgr/window_obj_mgr.h"
+#include "vulkan_obj_mgr/vulkan_obj_mgr.h"
 #include "vulkan_obj_mgr/vulkan_function.h"
 
 uint32_t __select_window_obj_type(void)
@@ -213,7 +214,7 @@ input:
 
     printf("[CMD]: ");
 
-    fgets(input, MAX_LENGTH_APP_CMD, stdin);
+    if (!fgets(input, MAX_LENGTH_APP_CMD, stdin)) return;
 
     if (__setup_args_list(&cmd, input) == FAILURE) {
         printf("arguments not valid\n");

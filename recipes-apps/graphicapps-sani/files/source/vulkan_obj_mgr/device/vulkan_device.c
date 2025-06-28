@@ -214,7 +214,7 @@ void device_add_enabled_exts_info(uint32_t ext_count, char **extensions_name_lis
     p_ldev_create_info = &device_ctx.ldev_ctx.ldev_create_info;
 
     p_ldev_create_info->enabledExtensionCount = ext_count;
-    p_ldev_create_info->ppEnabledExtensionNames = extensions_name_list;
+    p_ldev_create_info->ppEnabledExtensionNames = (const char *const *)extensions_name_list;
 }
 
 VkResult device_create(uint32_t phydev_idx)

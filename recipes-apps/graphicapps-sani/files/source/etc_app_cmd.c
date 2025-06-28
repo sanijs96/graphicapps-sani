@@ -7,7 +7,9 @@
 #include "etc_app_cmd.h"
 
 #include "window_obj_mgr/window_obj_mgr.h"
+
 #include "vulkan_obj_mgr/vulkan_obj_mgr.h"
+#include "vulkan_ops_mgr/vulkan_ops_mgr.h"
 
 typedef union etc_cmd_args_list {
     struct {
@@ -118,12 +120,23 @@ uint32_t _etc_cmd_window_add_instance_obj(command_t *p_cmd)
 uint32_t _etc_cmd_window_display(command_t *p_cmd)
 {
     etc_cmd_args_list_t args_list;
+    VkExtent2D *p_extent;
+    VkFormat *p_format;
 
     if (_etc_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
 
-    return window_obj_mgr_start_display(args_list.window_display.p_instance);
+    if (window_obj_mgr_start_display(args_list.window_display.p_instance) == FAILURE) {
+        return FAILURE;
+    }
+
+    p_extent = window_obj_mgr_get_current_swapchain_extent();
+    p_format = window_obj_mgr_get_current_swapchain_format();
+
+    vulkan_ops_mgr_add_viewport_ctx(p_extent, p_format);
+
+    return SUCCESS;
 }
 
 uint32_t _etc_cmd_show_window_ctx_info(command_t *p_cmd)

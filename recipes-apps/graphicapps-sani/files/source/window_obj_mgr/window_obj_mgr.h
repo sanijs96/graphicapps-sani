@@ -31,7 +31,10 @@ void window_obj_mgr_setup_device_ctx(VkPhysicalDevice *p_phydev, VkDevice *p_dev
 
 uint32_t window_obj_mgr_show_display_ctx_info(VkPhysicalDevice *p_phydev);
 
-VkSurfaceKHR *window_obj_mgr_get_display_object(void);
+VkSurfaceKHR *window_obj_mgr_get_current_display_object(void);
+VkSwapchainKHR *window_obj_mgr_get_current_swapchain_object(void);
+VkExtent2D *window_obj_mgr_get_current_swapchain_extent(void);
+VkFormat *window_obj_mgr_get_current_swapchain_format(void);
 
 void window_obj_mgr_exit(VkInstance *p_instance);
 
