@@ -107,7 +107,7 @@ static uint32_t __setup_pipeline_argument(command_arg_t arg, vulkan_cmd_args_lis
             break;
 
         case PARAM_VK(PIPELINE_SHADER_FILENAME):
-            strncpy(p_arglist->pipeline.filename, arg.value, strlen(arg.value));
+            strcpy(p_arglist->pipeline.filename, arg.value);
             break;
 
         default:

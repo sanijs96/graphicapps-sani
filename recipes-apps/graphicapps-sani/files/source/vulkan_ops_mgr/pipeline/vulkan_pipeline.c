@@ -7,12 +7,20 @@
 #include "vulkan/pipeline_stages.h"
 #include "stage/vulkan_pipeline_stage.h"
 
+typedef struct renderpass_ctx {
+    VkAttachmentDescription color_attachment;
+    VkAttachmentReference color_attachment_ref;
+    VkSubpassDescription subpass;
+    VkRenderPassCreateInfo renderpass_info;
+    VkRenderPass renderpass;
+} renderpass_ctx_t;
+
 static struct pipeline_ctx {
     uint32_t state;
     VkPipeline pipeline;
     VkExtent2D swapchain_extent;
     VkFormat swapchain_format;
-    VkRenderPass renderpass;
+    renderpass_ctx_t renderpass_ctx;
     VkPipelineLayout layout;
 } pipeline_ctx;
 
@@ -101,33 +109,36 @@ static uint32_t __pipeline_create_layout(VkDevice *p_device)
 
 static uint32_t __pipeline_create_renderpass(VkDevice *p_device, VkFormat *p_format)
 {
-    VkAttachmentDescription color_attachment;
-    color_attachment.format = *p_format;
-    color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    renderpass_ctx_t *p_ctx;
 
-    VkAttachmentReference color_attachment_ref;
-    color_attachment_ref.attachment = 0;
-    color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    p_ctx = &pipeline_ctx.renderpass_ctx;
 
-    VkSubpassDescription subpass;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &color_attachment_ref;
+    p_ctx->color_attachment.format = *p_format;
+    p_ctx->color_attachment.flags = 0;
+    p_ctx->color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    p_ctx->color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    p_ctx->color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    p_ctx->color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    p_ctx->color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    p_ctx->color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    p_ctx->color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-    VkRenderPassCreateInfo renderpass_info;
-    renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderpass_info.flags = 0;
-    renderpass_info.attachmentCount = 1;
-    renderpass_info.pAttachments = &color_attachment;
-    renderpass_info.subpassCount = 1;
-    renderpass_info.pSubpasses = &subpass;
+    p_ctx->color_attachment_ref.attachment = 0; // index of color_attachment in renderpass create info
+    p_ctx->color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    return vkCreateRenderPass(*p_device, &renderpass_info, NULL, &pipeline_ctx.renderpass);
+    p_ctx->subpass.flags = 0;
+    p_ctx->subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    p_ctx->subpass.colorAttachmentCount = 1;
+    p_ctx->subpass.pColorAttachments = &p_ctx->color_attachment_ref;
+
+    p_ctx->renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    p_ctx->renderpass_info.flags = 0;
+    p_ctx->renderpass_info.attachmentCount = 1;
+    p_ctx->renderpass_info.pAttachments = &p_ctx->color_attachment;
+    p_ctx->renderpass_info.subpassCount = 1;
+    p_ctx->renderpass_info.pSubpasses = &p_ctx->subpass;
+
+    return vkCreateRenderPass(*p_device, &p_ctx->renderpass_info, NULL, &p_ctx->renderpass);
 }
 
 static uint32_t __pipeline_create(VkDevice *p_device)
@@ -136,17 +147,23 @@ static uint32_t __pipeline_create(VkDevice *p_device)
     VkGraphicsPipelineCreateInfo pipeline_info;
     VkPipelineShaderStageCreateInfo p_shader_stages[2];
 
-    p_stage_info = pipeline_stage_get_creation_info(VULKAN_PIPELINE_STAGE_VERTEX_SHADER);
-    p_shader_stages[0] = p_stage_info->vertex_shader;
-
-    p_stage_info = pipeline_stage_get_creation_info(VULKAN_PIPELINE_STAGE_FRAGMENT_SHADER);
-    p_shader_stages[1] = p_stage_info->fragment_shader;
-
     pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipeline_info.pNext = NULL;
     pipeline_info.flags = 0;
 
-    pipeline_info.stageCount = 2;
+    pipeline_info.stageCount = 0;
+    p_stage_info = pipeline_stage_get_creation_info(VULKAN_PIPELINE_STAGE_VERTEX_SHADER);
+    if (p_stage_info->vertex_shader.pName != NULL) {
+        p_shader_stages[0] = p_stage_info->vertex_shader;
+        pipeline_info.stageCount++;
+    }
+
+    p_stage_info = pipeline_stage_get_creation_info(VULKAN_PIPELINE_STAGE_FRAGMENT_SHADER);
+    if (p_stage_info->fragment_shader.pName != NULL) {
+        p_shader_stages[1] = p_stage_info->fragment_shader;
+        pipeline_info.stageCount++;
+    }
+
     pipeline_info.pStages = p_shader_stages;
 
     p_stage_info = pipeline_stage_get_creation_info(VULKAN_PIPELINE_STAGE_VERTEX_INPUT);
@@ -174,16 +191,16 @@ static uint32_t __pipeline_create(VkDevice *p_device)
     pipeline_info.pDynamicState = &p_stage_info->dynamic;
 
     pipeline_info.layout = pipeline_ctx.layout;
-    pipeline_info.renderPass = pipeline_ctx.renderpass;
+    pipeline_info.renderPass = pipeline_ctx.renderpass_ctx.renderpass;
     pipeline_info.subpass = 0;
 
+    // previous pipeline object, if exist
     pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
     pipeline_info.basePipelineIndex = -1;
 
     return vkCreateGraphicsPipelines(*p_device, VK_NULL_HANDLE, 1, &pipeline_info,
                                                     NULL, &pipeline_ctx.pipeline);;
 }
-
 
 uint32_t pipeline_create(VkDevice *p_device)
 {

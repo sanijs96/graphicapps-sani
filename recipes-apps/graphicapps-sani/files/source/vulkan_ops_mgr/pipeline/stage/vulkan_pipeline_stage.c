@@ -63,7 +63,7 @@ stage_ctx_t stages[NUM_VULKAN_PIPELINE_STAGES] = {
 },
 [VULKAN_PIPELINE_STAGE_VIEWPORT] = {
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
-    .setting.viewport = { .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+    .setting.viewport = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
                                     .pNext = NULL, .flags = 0,
                                     .viewportCount = 0, .pViewports = NULL,
                                     .scissorCount = 0, .pScissors = NULL }
@@ -90,7 +90,7 @@ stage_ctx_t stages[NUM_VULKAN_PIPELINE_STAGES] = {
 },
 [VULKAN_PIPELINE_STAGE_MULTISAMPLING] = {
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
-    .setting.multisampling = { .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+    .setting.multisampling = { .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
                                     .pNext = NULL, .flags = 0,
                                     .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
                                     .sampleShadingEnable = VK_FALSE, .minSampleShading = 1.0f,
@@ -122,11 +122,34 @@ stage_creation_info_t *pipeline_stage_get_creation_info(uint32_t stage_idx)
     return &stages[stage_idx].setting;
 }
 
+static uint32_t __pipeline_stage_get_shader_file_length(FILE *p_fstream)
+{
+    uint32_t file_len;
+    fpos_t pos;
+
+    // TODO: divide with units of size_t(=SIZE_MAX)
+    if (fseek(p_fstream, 0, SEEK_END) != 0) {
+        return 0;
+    }
+    if (fgetpos(p_fstream, &pos) != 0) {
+        return 0;
+    }
+
+    file_len = pos.__pos;
+
+    pos.__pos = 0;
+    if (fsetpos(p_fstream, &pos) != 0) {
+        return 0;
+    }
+
+    return file_len;
+}
+
 static uint32_t __pipeline_stage_create_shader_module(stage_creation_info_t *p_setting,
                                                         char *filename, VkDevice *p_device)
 {
     uint32_t res;
-    uint32_t filesize;
+    uint32_t file_len;
     FILE *p_fstream;
     VkShaderModuleCreateInfo create_info;
 
@@ -140,14 +163,23 @@ static uint32_t __pipeline_stage_create_shader_module(stage_creation_info_t *p_s
         return FAILURE;
     }
 
-    // TODO: divide with units of size_t(=SIZE_MAX)
-    filesize = fseek(p_fstream, 0, SEEK_END);
-    uint8_t buf[filesize];
-    while (filesize > 0) {
-        filesize -= fread(buf, filesize, 1, p_fstream);
+    file_len = __pipeline_stage_get_shader_file_length(p_fstream);
+    if (file_len == 0) {
+        printf("shader file read failure\n");
+
+        fclose(p_fstream);
+        return FAILURE;
     }
 
-    create_info.codeSize = filesize;
+    uint8_t buf[file_len];
+    if (fread(buf, file_len, 1, p_fstream) == 0) {
+        printf("shader file read failure");
+
+        fclose(p_fstream);
+        return 0;
+    }
+
+    create_info.codeSize = file_len;
     create_info.pCode = (uint32_t *)buf;
 
     res = vkCreateShaderModule(*p_device, &create_info, NULL, &p_setting->vertex_shader.module);
@@ -239,7 +271,7 @@ uint32_t pipeline_stage_setup_viewport_ctx(VkViewport *p_viewport, VkRect2D *p_s
     scissor_cnt = p_setting->viewport.scissorCount;
     viewport_cnt = p_setting->viewport.viewportCount;
 
-    p_scissors = (VkExtent2D *)malloc(sizeof(VkExtent2D) * (scissor_cnt + 1));
+    p_scissors = (VkRect2D *)malloc(sizeof(VkRect2D) * (scissor_cnt + 1));
     p_viewports = (VkViewport *)malloc(sizeof(VkViewport) * (viewport_cnt + 1));
 
     for (uint32_t idx = 0; idx < viewport_cnt; idx++) {

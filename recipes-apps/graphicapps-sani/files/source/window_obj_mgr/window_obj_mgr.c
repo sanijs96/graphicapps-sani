@@ -171,6 +171,8 @@ static uint32_t __window_obj_mgr_create_swapchain_image_views(display_ctx_t *p_d
 
     create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     create_info.pNext = NULL;
+    create_info.flags = 0;
+
     create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
 
     create_info.format = p_display_ctx->base_format.format;
