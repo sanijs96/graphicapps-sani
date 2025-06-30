@@ -36,6 +36,8 @@ VkSwapchainKHR *window_obj_mgr_get_current_swapchain_object(void);
 VkExtent2D *window_obj_mgr_get_current_swapchain_extent(void);
 VkFormat *window_obj_mgr_get_current_swapchain_format(void);
 
+uint32_t window_obj_mgr_create_framebuffer(VkRenderPass* p_renderpass);
+
 void window_obj_mgr_exit(VkInstance *p_instance);
 
 #endif

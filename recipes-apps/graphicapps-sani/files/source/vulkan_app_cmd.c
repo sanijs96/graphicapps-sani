@@ -404,6 +404,7 @@ uint32_t _vulkan_cmd_run_pipeline(command_t *p_cmd)
 {
     uint32_t res;
     VkDevice *p_device;
+    VkRenderPass *p_renderpass;
 
     p_device = vulkan_obj_mgr_get_current_device_object();
     if (p_device == NULL) {
@@ -413,6 +414,11 @@ uint32_t _vulkan_cmd_run_pipeline(command_t *p_cmd)
     }
 
     res = vulkan_ops_mgr_create_pipeline(p_device);
+    if (res == SUCCESS) {
+        p_renderpass = vulkan_ops_mgr_get_renderpass_object();
+
+        window_obj_mgr_create_framebuffer(p_renderpass);
+    }
 
     return res;
 }

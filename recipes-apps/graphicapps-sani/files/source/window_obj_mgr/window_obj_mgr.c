@@ -19,9 +19,6 @@ typedef struct swapchain_ctx {
 typedef struct display_ctx {
     uint32_t state;
 
-    VkDevice *p_device;
-    VkPhysicalDevice *p_phydev;
-
     VkSurfaceKHR surface;
 
     uint32_t format_cnt;
@@ -32,6 +29,8 @@ typedef struct display_ctx {
     VkSurfaceCapabilitiesKHR capability;
 
     swapchain_ctx_t swapchain_ctx;
+
+    VkFramebuffer framebuffer;
 } display_ctx_t;
 
 typedef struct window_ops {
@@ -44,8 +43,12 @@ typedef struct window_ops {
 static struct {
     uint32_t type;
     window_ops_t ops;
+
+    VkDevice *p_device;
+    VkPhysicalDevice *p_phydev;
+
     display_ctx_t display_ctx;
-} window_object;
+} window_ctx;
 
 uint32_t window_obj_mgr_init(uint32_t window_types)
 {
@@ -55,23 +58,23 @@ uint32_t window_obj_mgr_init(uint32_t window_types)
 
 #if defined(GLFW_INCLUDE_VULKAN)
     glfw_init();
-    window_object.type = WINDOW_OBJ_TYPE_GLFW;
-    window_object.ops.create = glfw_create_window;
-    window_object.ops.resize = glfw_change_window_size;
-    window_object.ops.display = glfw_display_window;
-    window_object.ops.exit = glfw_destroy_window;
+    window_ctx.type = WINDOW_OBJ_TYPE_GLFW;
+    window_ctx.ops.create = glfw_create_window;
+    window_ctx.ops.resize = glfw_change_window_size;
+    window_ctx.ops.display = glfw_display_window;
+    window_ctx.ops.exit = glfw_destroy_window;
 #endif
 
-    if (!window_object.ops.create) {
+    if (!window_ctx.ops.create) {
         return FAILURE;
     }
 
-    window_object.ops.create();
+    window_ctx.ops.create();
 
-    window_object.display_ctx.state = WINDOW_OBJ_DISPLAY_STATE_DEFAULT;
+    window_ctx.display_ctx.state = WINDOW_OBJ_DISPLAY_STATE_DEFAULT;
 
-    if (window_object.ops.resize) {
-        window_object.ops.resize(DEFAULT_WINDOW_SIZE_WIDTH, DEFAULT_WINDOW_SIZE_HEIGHT);
+    if (window_ctx.ops.resize) {
+        window_ctx.ops.resize(DEFAULT_WINDOW_SIZE_WIDTH, DEFAULT_WINDOW_SIZE_HEIGHT);
     }
 
     return SUCCESS;
@@ -79,7 +82,7 @@ uint32_t window_obj_mgr_init(uint32_t window_types)
 
 uint32_t window_obj_mgr_resize(uint32_t width, uint32_t height)
 {
-    window_object.ops.resize(width, height);
+    window_ctx.ops.resize(width, height);
 
     return SUCCESS;
 }
@@ -89,7 +92,7 @@ static VkSurfaceFormatKHR __window_obj_mgr_select_base_format(display_ctx_t *p_d
     uint32_t format_idx;
     VkSurfaceFormatKHR formats[p_display_ctx->format_cnt];
 
-    vkGetPhysicalDeviceSurfaceFormatsKHR(*p_display_ctx->p_phydev, p_display_ctx->surface,
+    vkGetPhysicalDeviceSurfaceFormatsKHR(*window_ctx.p_phydev, p_display_ctx->surface,
                                                         &p_display_ctx->format_cnt, formats);
 
     format_idx = 0;
@@ -107,17 +110,17 @@ static uint32_t __window_obj_mgr_setup_display_ctx(void)
 {
     display_ctx_t *p_display_ctx;
 
-    p_display_ctx = &window_object.display_ctx;
+    p_display_ctx = &window_ctx.display_ctx;
 
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(*p_display_ctx->p_phydev, p_display_ctx->surface,
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(*window_ctx.p_phydev, p_display_ctx->surface,
                                                                     &p_display_ctx->capability);
     p_display_ctx->base_extent = p_display_ctx->capability.currentExtent;
 
-    vkGetPhysicalDeviceSurfaceFormatsKHR(*p_display_ctx->p_phydev, p_display_ctx->surface,
+    vkGetPhysicalDeviceSurfaceFormatsKHR(*window_ctx.p_phydev, p_display_ctx->surface,
                                                             &p_display_ctx->format_cnt, NULL);
     p_display_ctx->base_format = __window_obj_mgr_select_base_format(p_display_ctx);
 
-    vkGetPhysicalDeviceSurfacePresentModesKHR(*p_display_ctx->p_phydev, p_display_ctx->surface,
+    vkGetPhysicalDeviceSurfacePresentModesKHR(*window_ctx.p_phydev, p_display_ctx->surface,
                                                         &p_display_ctx->present_mode_cnt, NULL);
 }
 
@@ -126,7 +129,7 @@ static uint32_t __window_obj_mgr_create_swapchain(void)
     display_ctx_t *p_display_ctx;
     VkSwapchainCreateInfoKHR create_info;
 
-    p_display_ctx = &window_object.display_ctx;
+    p_display_ctx = &window_ctx.display_ctx;
 
     create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     create_info.pNext = NULL;
@@ -155,7 +158,7 @@ static uint32_t __window_obj_mgr_create_swapchain(void)
 
     create_info.oldSwapchain = VK_NULL_HANDLE;
 
-    return vkCreateSwapchainKHR(*p_display_ctx->p_device, &create_info, NULL,
+    return vkCreateSwapchainKHR(*window_ctx.p_device, &create_info, NULL,
                                         &p_display_ctx->swapchain_ctx.swapchain);
 }
 
@@ -192,7 +195,7 @@ static uint32_t __window_obj_mgr_create_swapchain_image_views(display_ctx_t *p_d
 
     for (uint32_t idx = 0; idx < p_swapchain_ctx->image_count; idx++) {
         create_info.image = p_swapchain_ctx->p_images[idx];
-        if (vkCreateImageView(*p_display_ctx->p_device, &create_info,
+        if (vkCreateImageView(*window_ctx.p_device, &create_info,
                                     NULL, &p_swapchain_ctx->p_views[idx]) != VK_SUCCESS) {
             return FAILURE;
         }
@@ -208,10 +211,10 @@ static uint32_t __window_obj_mgr_setup_swapchain_ctx(display_ctx_t *p_display_ct
 
     p_swapchain_ctx = &p_display_ctx->swapchain_ctx;
 
-    vkGetSwapchainImagesKHR(*p_display_ctx->p_device, p_swapchain_ctx->swapchain,
+    vkGetSwapchainImagesKHR(*window_ctx.p_device, p_swapchain_ctx->swapchain,
                                                 &p_swapchain_ctx->image_count, NULL);
     p_swapchain_ctx->p_images = (VkImage *)malloc(sizeof(VkImage) * p_swapchain_ctx->image_count);
-    vkGetSwapchainImagesKHR(*p_display_ctx->p_device, p_swapchain_ctx->swapchain,
+    vkGetSwapchainImagesKHR(*window_ctx.p_device, p_swapchain_ctx->swapchain,
                                         &p_swapchain_ctx->image_count, p_swapchain_ctx->p_images);
 
     res = __window_obj_mgr_create_swapchain_image_views(p_display_ctx);
@@ -224,9 +227,9 @@ uint32_t window_obj_mgr_start_display(VkInstance *p_instance)
     uint32_t res;
     display_ctx_t *p_display_ctx;
 
-    p_display_ctx = &window_object.display_ctx;
+    p_display_ctx = &window_ctx.display_ctx;
 
-    if (window_object.ops.display(&p_display_ctx->surface, p_instance) != SUCCESS) {
+    if (window_ctx.ops.display(&p_display_ctx->surface, p_instance) != SUCCESS) {
         return FAILURE;
     }
 
@@ -251,13 +254,13 @@ uint32_t window_obj_mgr_start_display(VkInstance *p_instance)
 
 uint32_t window_obj_mgr_check_display_status(void)
 {
-    return window_object.display_ctx.state;
+    return window_ctx.display_ctx.state;
 }
 
 void window_obj_mgr_setup_device_ctx(VkPhysicalDevice *p_phydev, VkDevice *p_device)
 {
-    window_object.display_ctx.p_phydev = p_phydev;
-    window_object.display_ctx.p_device = p_device;
+    window_ctx.p_phydev = p_phydev;
+    window_ctx.p_device = p_device;
 }
 
 static void __window_obj_mgr_show_display_capabilities(VkSurfaceCapabilitiesKHR *p_cap)
@@ -302,9 +305,9 @@ uint32_t window_obj_mgr_show_display_ctx_info(VkPhysicalDevice *p_phydev)
     uint32_t present_cnt;
     display_ctx_t *p_display_ctx;
 
-    format_cnt = window_object.display_ctx.format_cnt;
-    present_cnt = window_object.display_ctx.present_mode_cnt;
-    p_display_ctx = &window_object.display_ctx;
+    format_cnt = window_ctx.display_ctx.format_cnt;
+    present_cnt = window_ctx.display_ctx.present_mode_cnt;
+    p_display_ctx = &window_ctx.display_ctx;
 
     __window_obj_mgr_show_display_capabilities(&p_display_ctx->capability);
 
@@ -331,26 +334,63 @@ uint32_t window_obj_mgr_show_display_ctx_info(VkPhysicalDevice *p_phydev)
 
 VkSurfaceKHR *window_obj_mgr_get_current_display_object(void)
 {
-    return &window_object.display_ctx.surface;
+    return &window_ctx.display_ctx.surface;
 }
 
 VkSwapchainKHR *window_obj_mgr_get_current_swapchain_object(void)
 {
-    return &window_object.display_ctx.swapchain_ctx.swapchain;
+    return &window_ctx.display_ctx.swapchain_ctx.swapchain;
 }
 
 VkExtent2D *window_obj_mgr_get_current_swapchain_extent(void)
 {
-    return &window_object.display_ctx.base_extent;
+    return &window_ctx.display_ctx.base_extent;
 }
 
 VkFormat *window_obj_mgr_get_current_swapchain_format(void)
 {
-    return &window_object.display_ctx.base_format.format;
+    return &window_ctx.display_ctx.base_format.format;
+}
+
+uint32_t window_obj_mgr_create_framebuffer(VkRenderPass* p_renderpass)
+{
+    uint32_t res;
+    uint32_t image_count;
+    VkFramebufferCreateInfo framebuffer_info;
+
+    image_count = window_ctx.display_ctx.swapchain_ctx.image_count;
+
+    framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebuffer_info.pNext = NULL;
+    framebuffer_info.flags = 0;
+
+    framebuffer_info.renderPass = *p_renderpass;
+    framebuffer_info.attachmentCount = image_count;
+
+    framebuffer_info.width = window_ctx.display_ctx.base_extent.width;
+    framebuffer_info.height = window_ctx.display_ctx.base_extent.height;
+    framebuffer_info.layers = 1;
+
+    for (uint32_t idx = 0; idx < image_count; idx++) {
+        res = vkCreateFramebuffer(*window_ctx.p_device, &framebuffer_info, NULL,
+                                    &window_ctx.display_ctx.swapchain_ctx.p_views[idx]);
+
+        if (res != VK_SUCCESS) {
+            printf("framebuffer creation failure: %d\n", res);
+
+            res = FAILURE;
+            goto exit;
+        }
+    }
+
+    res = SUCCESS;
+
+exit:
+    return res;
 }
 
 void window_obj_mgr_exit(VkInstance *p_instance)
 {
-    window_object.ops.exit(&window_object.display_ctx.surface, p_instance);
-    window_object.display_ctx.state = WINDOW_OBJ_DISPLAY_STATE_DESTROYED;
+    window_ctx.ops.exit(&window_ctx.display_ctx.surface, p_instance);
+    window_ctx.display_ctx.state = WINDOW_OBJ_DISPLAY_STATE_DESTROYED;
 }

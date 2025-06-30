@@ -236,7 +236,13 @@ uint32_t pipeline_create(VkDevice *p_device)
     return SUCCESS;
 }
 
+VkRenderPass *pipeline_get_renderpass_object(void)
+{
+    return &pipeline_ctx.renderpass_ctx.renderpass;
+}
+
 uint32_t pipeline_show_pipeline_info(uint32_t stage)
 {
 
 }
+

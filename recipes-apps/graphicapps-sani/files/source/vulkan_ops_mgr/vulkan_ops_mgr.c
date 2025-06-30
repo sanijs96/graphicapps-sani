@@ -17,3 +17,8 @@ uint32_t vulkan_ops_mgr_create_pipeline(VkDevice *p_device)
 {
     pipeline_create(p_device);
 }
+
+VkRenderPass *vulkan_ops_mgr_get_renderpass_object(void)
+{
+    pipeline_get_renderpass_object();
+}

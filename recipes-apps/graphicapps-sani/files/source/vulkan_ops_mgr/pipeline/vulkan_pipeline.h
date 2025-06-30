@@ -21,5 +21,8 @@ uint32_t pipeline_add_viewport_ctx(VkExtent2D *p_extent, VkFormat *p_format);
 
 uint32_t pipeline_create(VkDevice *p_device);
 
+VkRenderPass *pipeline_get_renderpass_object(void);
+
 uint32_t pipeline_show_pipeline_info(uint32_t stage);
+
 #endif
