@@ -7,6 +7,7 @@
 
 #include "vulkan_app_cmd.h"
 #include "etc_app_cmd.h"
+#include "app_cmd.h"
 
 typedef const struct __command_handler_entry {
     const char * name;
@@ -19,74 +20,102 @@ typedef const struct __command_handler_entry {
 
 command_handler_entry_t vulkan_cmd_handler_instance[] = {
     {"create", NULL,
-        NULL, _vulkan_cmd_create_instance, NULL},
+        NULL, vulkan_cmd_create_instance, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t vulkan_cmd_handler_layer[] = {
-    {"add", "ns", NULL, _vulkan_cmd_enable_layer, NULL},
-    {"del", "ns" , NULL, _vulkan_cmd_disable_layer, NULL},
-    {"list", NULL, NULL, _vulkan_cmd_show_layers_list, NULL},
+    {"add", "ns", NULL, vulkan_cmd_enable_layer, NULL},
+    {"del", "ns" , NULL, vulkan_cmd_disable_layer, NULL},
+    {"list", NULL, NULL, vulkan_cmd_show_layers_list, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t vulkan_cmd_handler_extension[] = {
-    {"add", "ins", NULL, _vulkan_cmd_enable_extension, NULL},
-    {"del", "ins", NULL, _vulkan_cmd_disable_extension, NULL},
-    {"list", NULL, NULL, _vulkan_cmd_show_extensions_list, NULL},
+    {"add", "ins", NULL, vulkan_cmd_enable_extension, NULL},
+    {"del", "ins", NULL, vulkan_cmd_disable_extension, NULL},
+    {"list", NULL, NULL, vulkan_cmd_show_extensions_list, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t vulkan_cmd_handler_device[] = {
-    {"create", "i", NULL, _vulkan_cmd_create_device, NULL},
-    {"list", "ei", NULL, _vulkan_cmd_show_devices_list, NULL},
+    {"create", "i", NULL, vulkan_cmd_create_device, NULL},
+    {"list", "ei", NULL, vulkan_cmd_show_devices_list, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t vulkan_cmd_handler_pipeline[] = {
-    {"add", "if", NULL, _vulkan_cmd_setup_pipeline_stage, NULL},
-    {"run", NULL, NULL, _vulkan_cmd_run_pipeline, NULL},
-    {"info", NULL, NULL, _vulkan_cmd_show_pipeline_info, NULL},
+    {"add", "if", NULL, vulkan_cmd_setup_pipeline_stage, NULL},
+    {"run", NULL, NULL, vulkan_cmd_run_pipeline, NULL},
+    {"info", NULL, NULL, vulkan_cmd_show_pipeline_info, NULL},
+
+    {NULL, }
+};
+
+command_handler_entry_t vulkan_cmd_handler_command_buf[] = {
+    {"alloc", NULL, NULL, vulkan_cmd_allocate_command_buffer, NULL},
+    {"add", "ic", NULL, vulkan_cmd_add_vulkan_command, NULL},
+    {"info", "i", NULL, vulkan_cmd_show_command_buffer_info, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t etc_cmd_handler_window[] = {
-    {"display", "i", _etc_cmd_window_add_instance_obj, _etc_cmd_window_display, NULL},
-    {"resize", "hw", NULL, _etc_cmd_window_resize, NULL},
-    {"info", NULL, NULL, _etc_cmd_show_window_ctx_info, NULL},
+    {"display", "i", etc_cmd_window_add_instance_obj, etc_cmd_window_display, NULL},
+    {"resize", "hw", NULL, etc_cmd_window_resize, NULL},
+    {"info", NULL, NULL, etc_cmd_show_window_ctx_info, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t etc_cmd_handler_console[] = {
-    {"exit", NULL, NULL, NULL, NULL},
+    {"exit", NULL, NULL, etc_cmd_console_exit, NULL},
+
+    {NULL, }
+};
+
+command_handler_entry_t app_cmd_handler_app[] = {
+    {"runscript", "f", NULL, app_cmd_add_runscript_file, NULL},
 
     {NULL, }
 };
 
 typedef const struct __command_handler_entry_list {
-    const char * cid_list_name;
+    const char *cid_list_name;
 
     command_handler_entry_t *entries;
 } const command_handler_entry_list_t;
 
-command_handler_entry_list_t app_cmd_list[] = {
+command_handler_entry_list_t app_cmd_handler_list[] = {
     {"instance", vulkan_cmd_handler_instance},
     {"layer", vulkan_cmd_handler_layer},
     {"extension", vulkan_cmd_handler_extension},
     {"device", vulkan_cmd_handler_device},
     {"pipeline", vulkan_cmd_handler_pipeline},
+    {"cmdbuf", vulkan_cmd_handler_command_buf},
 
     {"window", etc_cmd_handler_window},
     {"console", etc_cmd_handler_console},
 
+    {"app", app_cmd_handler_app},
+
     {NULL, }
 };
+
+uint32_t app_cmd_handler_get_command_input(char *p_cmd_string)
+{
+    p_cmd_string = app_cmd_get_cmdstring();
+
+    if (p_cmd_string == NULL) {
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
 
 static command_handler_entry_t *__find_matching_cmd_entry_list(command_handler_entry_list_t *p_list, char *cmd_name)
 {
@@ -113,11 +142,11 @@ static command_handler_entry_t *__find_matching_cmd_entry(command_handler_entry_
     return NULL;
 }
 
-static command_handler_entry_t *__app_cmd_find_cmd_handler_entry(command_t *p_cmd)
+static command_handler_entry_t *__app_cmd_handler_find_cmd_handler_entry(command_t *p_cmd)
 {
     command_handler_entry_t *p_entry;
 
-    p_entry = __find_matching_cmd_entry_list(app_cmd_list, p_cmd->cmd_name);
+    p_entry = __find_matching_cmd_entry_list(app_cmd_handler_list, p_cmd->cmd_name);
 
     if (p_entry) {
         return __find_matching_cmd_entry(p_entry, p_cmd->subcmd_name);
@@ -126,10 +155,10 @@ static command_handler_entry_t *__app_cmd_find_cmd_handler_entry(command_t *p_cm
     return NULL;
 }
 
-uint32_t app_cmd_check_max_num_cmd_args(command_t *p_cmd)
+uint32_t app_cmd_handler_check_max_num_cmd_args(command_t *p_cmd)
 {
     command_handler_entry_t *p_entry;
-    p_entry = __app_cmd_find_cmd_handler_entry(p_cmd);
+    p_entry = __app_cmd_handler_find_cmd_handler_entry(p_cmd);
 
     if (p_entry && p_entry->args_list) {
         return strlen(p_entry->args_list);
@@ -139,12 +168,12 @@ uint32_t app_cmd_check_max_num_cmd_args(command_t *p_cmd)
     }
 }
 
-uint32_t app_cmd_process(command_t *p_cmd)
+uint32_t app_cmd_handler_process(command_t *p_cmd)
 {
     uint32_t res;
     command_handler_entry_t *p_cmd_entry;
 
-    p_cmd_entry = __app_cmd_find_cmd_handler_entry(p_cmd);
+    p_cmd_entry = __app_cmd_handler_find_cmd_handler_entry(p_cmd);
     if (!p_cmd_entry) {
         res = FAILURE;
         goto exit;
@@ -170,7 +199,7 @@ exit:
     return res;
 }
 
-uint32_t app_cmd_check_exited(command_t *p_cmd)
+uint32_t app_cmd_handler_check_exited(command_t *p_cmd)
 {
     if (!strcmp(p_cmd->cmd_name, "console") &&
         !strcmp(p_cmd->subcmd_name, "exit")) {
@@ -181,11 +210,11 @@ uint32_t app_cmd_check_exited(command_t *p_cmd)
     }
 }
 
-void app_cmd_show_usage(command_t *p_cmd)
+void app_cmd_handler_show_usage(command_t *p_cmd)
 {
     command_handler_entry_t *p_cmd_entry;
 
-    p_cmd_entry = __app_cmd_find_cmd_handler_entry(p_cmd);
+    p_cmd_entry = __app_cmd_handler_find_cmd_handler_entry(p_cmd);
 
     if (!p_cmd_entry || !p_cmd_entry->usage) {
         return;

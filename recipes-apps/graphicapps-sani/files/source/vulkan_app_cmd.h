@@ -2,21 +2,26 @@
 #define __VULKAN_CMD_LIST_H__
 
 #include "app/app_cmd_def.h"
-uint32_t _vulkan_cmd_enable_layer(command_t *p_cmd);
-uint32_t _vulkan_cmd_disable_layer(command_t *p_cmd);
-uint32_t _vulkan_cmd_show_layers_list(command_t *p_cmd);
+uint32_t vulkan_cmd_enable_layer(command_t *p_cmd);
+uint32_t vulkan_cmd_disable_layer(command_t *p_cmd);
+uint32_t vulkan_cmd_show_layers_list(command_t *p_cmd);
 
-uint32_t _vulkan_cmd_enable_extension(command_t *p_cmd);
-uint32_t _vulkan_cmd_disable_extension(command_t *p_cmd);
-uint32_t _vulkan_cmd_show_extensions_list(command_t *p_cmd);
+uint32_t vulkan_cmd_enable_extension(command_t *p_cmd);
+uint32_t vulkan_cmd_disable_extension(command_t *p_cmd);
+uint32_t vulkan_cmd_show_extensions_list(command_t *p_cmd);
 
-uint32_t _vulkan_cmd_create_instance(command_t *p_cmd);
+uint32_t vulkan_cmd_create_instance(command_t *p_cmd);
 
-uint32_t _vulkan_cmd_create_device(command_t *p_cmd);
-uint32_t _vulkan_cmd_show_devices_list(command_t *p_cmd);
+uint32_t vulkan_cmd_create_device(command_t *p_cmd);
+uint32_t vulkan_cmd_show_devices_list(command_t *p_cmd);
 
-uint32_t _vulkan_cmd_setup_pipeline_stage(command_t *p_cmd);
-uint32_t _vulkan_cmd_run_pipeline(command_t *p_cmd);
-uint32_t _vulkan_cmd_show_pipeline_info(command_t *p_cmd);
+uint32_t vulkan_cmd_setup_pipeline_stage(command_t *p_cmd);
+uint32_t vulkan_cmd_run_pipeline(command_t *p_cmd);
+uint32_t vulkan_cmd_show_pipeline_info(command_t *p_cmd);
+
+uint32_t vulkan_cmd_allocate_command_buffer(command_t *p_cmd);
+uint32_t vulkan_cmd_add_vulkan_command(command_t *p_cmd);
+uint32_t vulkan_cmd_show_command_buffer_info(command_t *p_cmd);
+
 
 #endif

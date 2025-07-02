@@ -214,6 +214,31 @@ uint32_t vulkan_obj_mgr_create_device(uint32_t phydev_idx)
     }
 }
 
+uint32_t vulkan_obj_mgr_check_device_created(void)
+{
+    if (device_get_current_status() == VULKAN_DEVICE_CREATION_STATE_CREATED) {
+        return SUCCESS;
+    }
+    else {
+        return FAILURE;
+    }
+}
+
+uint32_t vulkan_obj_mgr_get_graphics_queue_idx(VkDevice *p_device)
+{
+    return device_get_queue_idx(VULKAN_DEVICE_QUEUE_TYPE_GRAPHICS);
+}
+
+uint32_t vulkan_obj_mgr_get_compute_queue_idx(VkDevice *p_device)
+{
+    return device_get_queue_idx(VULKAN_DEVICE_QUEUE_TYPE_COMPUTE);
+}
+
+uint32_t vulkan_obj_mgr_get_transfer_queue_idx(VkDevice *p_device)
+{
+    return device_get_queue_idx(VULKAN_DEVICE_QUEUE_TYPE_TRANSFER);
+}
+
 static char *__vulkan_obj_mgr_get_device_type_string(uint32_t phydev_type)
 {
     char * str;

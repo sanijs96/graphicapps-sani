@@ -82,7 +82,7 @@ static uint32_t __setup_window_argument(command_arg_t arg, etc_cmd_args_list_t *
     return SUCCESS;
 }
 
-static uint32_t _etc_cmd_setup_argument_list(command_t *p_cmd, etc_cmd_args_list_t *p_arglist)
+static uint32_t etc_cmd_setup_argument_list(command_t *p_cmd, etc_cmd_args_list_t *p_arglist)
 {
     uint32_t res;
     uint32_t (*__arg_setup_func)(command_arg_t, etc_cmd_args_list_t *);
@@ -107,7 +107,7 @@ static uint32_t _etc_cmd_setup_argument_list(command_t *p_cmd, etc_cmd_args_list
     return res;
 }
 
-uint32_t _etc_cmd_window_add_instance_obj(command_t *p_cmd)
+uint32_t etc_cmd_window_add_instance_obj(command_t *p_cmd)
 {
     p_cmd->p_args[p_cmd->num_args].type = PARAM_ETC(WINDOW_INSTANCE);
     p_cmd->p_args[p_cmd->num_args].value = (char *)malloc(sizeof(uint32_t)); // unused
@@ -117,13 +117,18 @@ uint32_t _etc_cmd_window_add_instance_obj(command_t *p_cmd)
     return SUCCESS;
 }
 
-uint32_t _etc_cmd_window_display(command_t *p_cmd)
+uint32_t etc_cmd_window_display(command_t *p_cmd)
 {
     etc_cmd_args_list_t args_list;
     VkExtent2D *p_extent;
     VkFormat *p_format;
 
-    if (_etc_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+    if (etc_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (vulkan_obj_mgr_check_device_created() == FAILURE) {
+        printf("device is not created\n");
         return FAILURE;
     }
 
@@ -139,13 +144,13 @@ uint32_t _etc_cmd_window_display(command_t *p_cmd)
     return SUCCESS;
 }
 
-uint32_t _etc_cmd_show_window_ctx_info(command_t *p_cmd)
+uint32_t etc_cmd_show_window_ctx_info(command_t *p_cmd)
 {
     uint32_t phydev_count;
     VkPhysicalDevice *p_phydev;
     etc_cmd_args_list_t args_list;
 
-    if (_etc_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+    if (etc_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
 
@@ -164,7 +169,7 @@ uint32_t _etc_cmd_show_window_ctx_info(command_t *p_cmd)
     return SUCCESS;
 }
 
-static uint32_t __etc_cmd_check_arg_exist(command_t *p_cmd, uint32_t arg_type)
+static uint32_t etc_cmd_check_arg_exist(command_t *p_cmd, uint32_t arg_type)
 {
     for (uint32_t idx = 0; idx <p_cmd->num_args; idx++) {
         if (p_cmd->p_args[idx].type == arg_type) {
@@ -175,11 +180,11 @@ static uint32_t __etc_cmd_check_arg_exist(command_t *p_cmd, uint32_t arg_type)
     return FAILURE;
 }
 
-uint32_t _etc_cmd_window_resize(command_t *p_cmd)
+uint32_t etc_cmd_window_resize(command_t *p_cmd)
 {
     etc_cmd_args_list_t args_list;
 
-    if (_etc_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+    if (etc_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
 
@@ -187,7 +192,7 @@ uint32_t _etc_cmd_window_resize(command_t *p_cmd)
                                     args_list.window_resize.height);
 }
 
-uint32_t _etc_cmd_console_exit(command_t *p_cmd)
+uint32_t etc_cmd_console_exit(command_t *p_cmd)
 {
     return SUCCESS;
 }

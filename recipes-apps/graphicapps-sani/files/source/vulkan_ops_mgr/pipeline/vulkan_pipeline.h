@@ -13,7 +13,7 @@ enum pipeline_creation_state {
     VULKAN_PIPELINE_STATE_INVALID,
 };
 
-uint32_t pipeline_get_creation_state(uint32_t stage);
+uint32_t pipeline_get_creation_state(void);
 
 uint32_t pipeline_add_shader_file(uint32_t stage, char *filename, VkDevice *p_device);
 

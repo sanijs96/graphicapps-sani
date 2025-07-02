@@ -27,6 +27,8 @@ typedef struct logical_device_ctx {
     uint32_t phydev_idx;
     VkDeviceCreateInfo ldev_create_info;
 
+    uint32_t queue_idx[NUM_VULKAN_DEVICE_QUEUE_TYPES];
+
     ldev_capability_t *p_capabilities;
 } ldev_ctx_t;
 
@@ -186,6 +188,10 @@ static void __device_setup_ldev_queue_create_ctx(VkDeviceCreateInfo *p_ldev_crea
             p_ldev_create_info->queueCreateInfoCount++;
 
             p_ldev_cap[qinfo_idx].queue_status = VULKAN_DEVICE_QUEUE_USED;
+
+            device_ctx.ldev_ctx.queue_idx[VULKAN_DEVICE_QUEUE_TYPE_COMPUTE] = qinfo_idx;
+            device_ctx.ldev_ctx.queue_idx[VULKAN_DEVICE_QUEUE_TYPE_GRAPHICS] = qinfo_idx;
+            device_ctx.ldev_ctx.queue_idx[VULKAN_DEVICE_QUEUE_TYPE_TRANSFER] = qinfo_idx;
         }
     }
 }
@@ -281,8 +287,19 @@ uint32_t device_get_device_queue_property_count(uint32_t phydev_idx)
     return device_ctx.pdevs_ctx[phydev_idx].capability.queue_info_count;
 }
 
+uint32_t device_get_queue_idx(uint32_t queue_type)
+{
+    return device_ctx.ldev_ctx.queue_idx[queue_type];
+}
+
 VkDevice *device_get_current_device_object(void)
 {
+    if (device_get_current_status() != VULKAN_DEVICE_CREATION_STATE_CREATED) {
+        printf("device is not created\n");
+
+        return NULL;
+    }
+
     return device_ctx.p_device_handler;
 }
 

@@ -89,8 +89,13 @@ enum apps_param_type_etc {
     APPS_PARAM_TYPE_ETC_WINDOW_INSTANCE = 'i',
 };
 
+enum apps_param_type_app {
+    APPS_PARAM_TYPE_APP_SCRIPTFILE_NAME = 'f',
+};
+
 #define PARAM_VK(type)    (APPS_PARAM_TYPE_VULKAN_ ## type)
 #define PARAM_ETC(type)    (APPS_PARAM_TYPE_ETC_ ## type)
+#define PARAM_APP(type)    (APPS_PARAM_TYPE_APP_ ## type)
 
 typedef struct __command_arg {
     char type;

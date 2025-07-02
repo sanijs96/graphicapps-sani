@@ -164,7 +164,7 @@ static uint32_t __setup_args_list(command_t *p_cmd, char* input)
     p_cmd->subcmd_name = strndup(*input_cursor, input_length);
     __shift_cursor(input_cursor, input_length);
 
-    max_num_args = app_cmd_check_max_num_cmd_args(p_cmd);
+    max_num_args = app_cmd_handler_check_max_num_cmd_args(p_cmd);
     if (max_num_args == 0) {
         res = SUCCESS;
     }
@@ -208,26 +208,29 @@ exit:
 void run(void)
 {
     command_t cmd = {0, };
-    char input[MAX_LENGTH_APP_CMD];
+    char *p_input;
+
 input:
     __cleanup_args_list(&cmd);
 
     printf("[CMD]: ");
 
-    if (!fgets(input, MAX_LENGTH_APP_CMD, stdin)) return;
+    if (app_cmd_handler_get_command_input(p_input) == FAILURE) {
+        return;
+    }
 
-    if (__setup_args_list(&cmd, input) == FAILURE) {
+    if (__setup_args_list(&cmd, p_input) == FAILURE) {
         printf("arguments not valid\n");
-        app_cmd_show_usage(&cmd);
+        app_cmd_handler_show_usage(&cmd);
         goto input;
     }
 
-    if (app_cmd_process(&cmd) == FAILURE) {
+    if (app_cmd_handler_process(&cmd) == FAILURE) {
         printf("cmd failed\n");
-        app_cmd_show_usage(&cmd);
+        app_cmd_handler_show_usage(&cmd);
     }
 
-    if (!app_cmd_check_exited(&cmd)) {
+    if (!app_cmd_handler_check_exited(&cmd)) {
         goto input;
     }
 

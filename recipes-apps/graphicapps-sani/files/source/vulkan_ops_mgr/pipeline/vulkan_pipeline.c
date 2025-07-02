@@ -87,7 +87,7 @@ uint32_t pipeline_add_viewport_ctx(VkExtent2D *p_extent, VkFormat *p_format)
     return res;
 }
 
-uint32_t pipeline_get_creation_state(uint32_t idx)
+uint32_t pipeline_get_creation_state(void)
 {
     return pipeline_ctx.state;
 }

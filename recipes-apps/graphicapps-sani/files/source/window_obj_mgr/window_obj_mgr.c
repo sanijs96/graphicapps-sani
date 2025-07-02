@@ -30,7 +30,7 @@ typedef struct display_ctx {
 
     swapchain_ctx_t swapchain_ctx;
 
-    VkFramebuffer framebuffer;
+    VkFramebuffer *p_framebufs;
 } display_ctx_t;
 
 typedef struct window_ops {
@@ -356,24 +356,30 @@ uint32_t window_obj_mgr_create_framebuffer(VkRenderPass* p_renderpass)
 {
     uint32_t res;
     uint32_t image_count;
+    VkFramebuffer *p_framebuffers;
     VkFramebufferCreateInfo framebuffer_info;
 
     image_count = window_ctx.display_ctx.swapchain_ctx.image_count;
+
+    p_framebuffers = (VkFramebuffer *)malloc(sizeof(VkFramebuffer[image_count]));
+    window_ctx.display_ctx.p_framebufs = p_framebuffers;
 
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebuffer_info.pNext = NULL;
     framebuffer_info.flags = 0;
 
     framebuffer_info.renderPass = *p_renderpass;
-    framebuffer_info.attachmentCount = image_count;
+
+    framebuffer_info.attachmentCount = 1;
 
     framebuffer_info.width = window_ctx.display_ctx.base_extent.width;
     framebuffer_info.height = window_ctx.display_ctx.base_extent.height;
     framebuffer_info.layers = 1;
 
     for (uint32_t idx = 0; idx < image_count; idx++) {
+        framebuffer_info.pAttachments = &window_ctx.display_ctx.swapchain_ctx.p_views[idx];
         res = vkCreateFramebuffer(*window_ctx.p_device, &framebuffer_info, NULL,
-                                    &window_ctx.display_ctx.swapchain_ctx.p_views[idx]);
+                                        &window_ctx.display_ctx.p_framebufs[idx]);
 
         if (res != VK_SUCCESS) {
             printf("framebuffer creation failure: %d\n", res);

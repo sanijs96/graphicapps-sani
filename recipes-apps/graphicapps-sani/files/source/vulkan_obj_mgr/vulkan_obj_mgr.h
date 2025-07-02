@@ -25,6 +25,12 @@ VkDevice *vulkan_obj_mgr_get_current_device_object(void);
 VkPhysicalDevice *vulkan_obj_mgr_get_phydev_object(uint32_t phydev_idx);
 
 uint32_t vulkan_obj_mgr_create_device(uint32_t phydev_idx);
+uint32_t vulkan_obj_mgr_check_device_created(void);
+
+uint32_t vulkan_obj_mgr_get_graphics_queue_idx(VkDevice *p_device);
+uint32_t vulkan_obj_mgr_get_compute_queue_idx(VkDevice *p_device);
+uint32_t vulkan_obj_mgr_get_transfer_queue_idx(VkDevice *p_device);
+
 void vulkan_obj_mgr_show_device_info(uint32_t phydev_idx);
 void vulkan_obj_mgr_show_device_extensions_list(uint32_t phydev_idx);
 
