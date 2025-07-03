@@ -11,8 +11,6 @@ void app_cmd_handler_show_usage(command_t *p_cmd);
 
 uint32_t app_cmd_handler_check_max_num_cmd_args(command_t *p_cmd);
 
-uint32_t app_cmd_handler_check_fstream_input(void);
-
 uint32_t app_cmd_handler_get_command_input(char *input);
 
 #endif

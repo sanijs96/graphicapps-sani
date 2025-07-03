@@ -18,68 +18,64 @@ typedef const struct __command_handler_entry {
     uint32_t (*usage)(command_t *p_cmd);
 } const command_handler_entry_t;
 
-command_handler_entry_t vulkan_cmd_handler_instance[] = {
+command_handler_entry_t vulkan_app_cmd_handler_instance[] = {
     {"create", NULL,
-        NULL, vulkan_cmd_create_instance, NULL},
+        NULL, vulkan_app_cmd_create_instance, NULL},
 
     {NULL, }
 };
 
-command_handler_entry_t vulkan_cmd_handler_layer[] = {
-    {"add", "ns", NULL, vulkan_cmd_enable_layer, NULL},
-    {"del", "ns" , NULL, vulkan_cmd_disable_layer, NULL},
-    {"list", NULL, NULL, vulkan_cmd_show_layers_list, NULL},
+command_handler_entry_t vulkan_app_cmd_handler_layer[] = {
+    {"add", "ns", NULL, vulkan_app_cmd_enable_layer, NULL},
+    {"del", "ns" , NULL, vulkan_app_cmd_disable_layer, NULL},
+    {"list", NULL, NULL, vulkan_app_cmd_show_layers_list, NULL},
 
     {NULL, }
 };
 
-command_handler_entry_t vulkan_cmd_handler_extension[] = {
-    {"add", "ins", NULL, vulkan_cmd_enable_extension, NULL},
-    {"del", "ins", NULL, vulkan_cmd_disable_extension, NULL},
-    {"list", NULL, NULL, vulkan_cmd_show_extensions_list, NULL},
+command_handler_entry_t vulkan_app_cmd_handler_extension[] = {
+    {"add", "ins", NULL, vulkan_app_cmd_enable_extension, NULL},
+    {"del", "ins", NULL, vulkan_app_cmd_disable_extension, NULL},
+    {"list", NULL, NULL, vulkan_app_cmd_show_extensions_list, NULL},
 
     {NULL, }
 };
 
-command_handler_entry_t vulkan_cmd_handler_device[] = {
-    {"create", "i", NULL, vulkan_cmd_create_device, NULL},
-    {"list", "ei", NULL, vulkan_cmd_show_devices_list, NULL},
+command_handler_entry_t vulkan_app_cmd_handler_device[] = {
+    {"create", "i", NULL, vulkan_app_cmd_create_device, NULL},
+    {"list", "ei", NULL, vulkan_app_cmd_show_devices_list, NULL},
 
     {NULL, }
 };
 
-command_handler_entry_t vulkan_cmd_handler_pipeline[] = {
-    {"add", "if", NULL, vulkan_cmd_setup_pipeline_stage, NULL},
-    {"run", NULL, NULL, vulkan_cmd_run_pipeline, NULL},
-    {"info", NULL, NULL, vulkan_cmd_show_pipeline_info, NULL},
+command_handler_entry_t vulkan_app_cmd_handler_pipeline[] = {
+    {"add", "if", NULL, vulkan_app_cmd_setup_pipeline_stage, NULL},
+    {"create", NULL, NULL, vulkan_app_cmd_create_pipeline, NULL},
+    {"run", "i", NULL, vulkan_app_cmd_run_pipeline, NULL},
+    {"info", NULL, NULL, vulkan_app_cmd_show_pipeline_info, NULL},
 
     {NULL, }
 };
 
-command_handler_entry_t vulkan_cmd_handler_command_buf[] = {
-    {"alloc", NULL, NULL, vulkan_cmd_allocate_command_buffer, NULL},
-    {"add", "ic", NULL, vulkan_cmd_add_vulkan_command, NULL},
-    {"info", "i", NULL, vulkan_cmd_show_command_buffer_info, NULL},
+command_handler_entry_t vulkan_app_cmd_handler_command_buf[] = {
+    {"alloc", NULL, NULL, vulkan_app_cmd_allocate_command_buffer, NULL},
+    {"add", "ic", NULL, vulkan_app_cmd_add_vulkan_command, NULL},
+    {"info", "i", NULL, vulkan_app_cmd_show_command_buffer_info, NULL},
 
     {NULL, }
 };
 
-command_handler_entry_t etc_cmd_handler_window[] = {
-    {"display", "i", etc_cmd_window_add_instance_obj, etc_cmd_window_display, NULL},
-    {"resize", "hw", NULL, etc_cmd_window_resize, NULL},
-    {"info", NULL, NULL, etc_cmd_show_window_ctx_info, NULL},
-
-    {NULL, }
-};
-
-command_handler_entry_t etc_cmd_handler_console[] = {
-    {"exit", NULL, NULL, etc_cmd_console_exit, NULL},
+command_handler_entry_t etc_app_cmd_handler_window[] = {
+    {"display", "i", etc_app_cmd_window_add_instance_obj, etc_app_cmd_window_display, NULL},
+    {"resize", "hw", NULL, etc_app_cmd_window_resize, NULL},
+    {"info", NULL, NULL, etc_app_cmd_show_window_ctx_info, NULL},
 
     {NULL, }
 };
 
 command_handler_entry_t app_cmd_handler_app[] = {
     {"runscript", "f", NULL, app_cmd_add_runscript_file, NULL},
+    {"exit", NULL, NULL, app_cmd_console_exit, NULL},
 
     {NULL, }
 };
@@ -91,30 +87,28 @@ typedef const struct __command_handler_entry_list {
 } const command_handler_entry_list_t;
 
 command_handler_entry_list_t app_cmd_handler_list[] = {
-    {"instance", vulkan_cmd_handler_instance},
-    {"layer", vulkan_cmd_handler_layer},
-    {"extension", vulkan_cmd_handler_extension},
-    {"device", vulkan_cmd_handler_device},
-    {"pipeline", vulkan_cmd_handler_pipeline},
-    {"cmdbuf", vulkan_cmd_handler_command_buf},
-
-    {"window", etc_cmd_handler_window},
-    {"console", etc_cmd_handler_console},
-
     {"app", app_cmd_handler_app},
+
+    {"instance", vulkan_app_cmd_handler_instance},
+    {"layer", vulkan_app_cmd_handler_layer},
+    {"extension", vulkan_app_cmd_handler_extension},
+    {"device", vulkan_app_cmd_handler_device},
+    {"pipeline", vulkan_app_cmd_handler_pipeline},
+    {"cmdbuf", vulkan_app_cmd_handler_command_buf},
+
+    {"window", etc_app_cmd_handler_window},
 
     {NULL, }
 };
 
 uint32_t app_cmd_handler_get_command_input(char *p_cmd_string)
 {
-    p_cmd_string = app_cmd_get_cmdstring();
-
-    if (p_cmd_string == NULL) {
+    if (app_cmd_get_runscript_state() == APP_CMD_RUNSCRIPT_REGISTERED) {
+        return app_cmd_get_cmdstring_from_runscript(p_cmd_string);
+    }
+    else if (!fgets(p_cmd_string, MAX_LENGTH_APP_CMD, stdin)) {
         return FAILURE;
     }
-
-    return SUCCESS;
 }
 
 static command_handler_entry_t *__find_matching_cmd_entry_list(command_handler_entry_list_t *p_list, char *cmd_name)

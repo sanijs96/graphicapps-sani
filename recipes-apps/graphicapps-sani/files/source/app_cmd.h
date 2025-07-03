@@ -3,8 +3,16 @@
 
 #include "app/app_cmd_def.h"
 
-char *app_cmd_get_cmdstring(void);
+enum app_cmd_runscript_state {
+    APP_CMD_RUNSCRIPT_DEFAULT = 0,
+    APP_CMD_RUNSCRIPT_REGISTERED,
+    APP_CMD_RUNSCRIPT_FINISHED,
+};
 
 uint32_t app_cmd_add_runscript_file(command_t *p_cmd);
+uint32_t app_cmd_get_runscript_state(void);
+uint32_t app_cmd_get_cmdstring_from_runscript(char *p_input_buf);
+
+uint32_t app_cmd_console_exit(command_t *p_cmd);
 
 #endif

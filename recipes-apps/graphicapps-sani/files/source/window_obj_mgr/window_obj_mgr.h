@@ -30,13 +30,15 @@ uint32_t window_obj_mgr_check_display_status(void);
 void window_obj_mgr_setup_device_ctx(VkPhysicalDevice *p_phydev, VkDevice *p_device);
 
 uint32_t window_obj_mgr_show_display_ctx_info(VkPhysicalDevice *p_phydev);
-
 VkSurfaceKHR *window_obj_mgr_get_current_display_object(void);
+
 VkSwapchainKHR *window_obj_mgr_get_current_swapchain_object(void);
 VkExtent2D *window_obj_mgr_get_current_swapchain_extent(void);
 VkFormat *window_obj_mgr_get_current_swapchain_format(void);
 
-uint32_t window_obj_mgr_create_framebuffer(VkRenderPass* p_renderpass);
+uint32_t window_obj_mgr_create_framebuffers(VkRenderPass* p_renderpass);
+uint32_t window_obj_mgr_get_framebuffer_object_count(void);
+VkFramebuffer *window_obj_mgr_get_framebuffer_objects(void);
 
 void window_obj_mgr_exit(VkInstance *p_instance);
 

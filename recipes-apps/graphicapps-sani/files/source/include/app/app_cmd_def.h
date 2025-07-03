@@ -9,65 +9,6 @@
 
 #define MAX_LENGTH_APP_CMD              (VK_MAX_EXTENSION_NAME_SIZE + 100)
 
-//#define _APPS_CMD_OPCODE(cmd_type, cmd_id, subcmd_id)                       \
-//                        (cmd_type   << APPS_CMD_TYPE_SHIFT |                \
-//                         cmd_id     << APPS_CMD_ID_SHIFT   |                \
-//                         subcmd_id)
-//
-//enum apps_cmd_type {
-//    APPS_CMD_TYPE_VULKAN,
-//    APPS_CMD_TYPE_ETC,
-//};
-//
-//#define CMD_V(cid)              APPS_CMD_ID_VULKAN_ ## cid
-//#define CMD_E(cid)              APPS_CMD_ID_ETC_ ## cid
-//
-//#define SUBCMD_V(cid, subcid)   APPS_SUBCMD_ID_VULKAN_ ## cid ## _ ## subcid
-//#define SUBCMD_E(cid, subcid)   APPS_SUBCMD_ID_ETC_ ## cid ## _ ## subcid
-//
-//#define OPCODE_VK(cmd_id, subcmd_id) _APPS_CMD_OPCODE(APPS_CMD_TYPE_VULKAN, \
-//                                    CMD_V(cmd_id), SUBCMD_V(cmd_id, subcmd_id))
-//#define OPCODE_ETC(cmd_id, subcmd_id) _APPS_CMD_OPCODE(APPS_CMD_TYPE_ETC,   \
-//                                    CMD_E(cmd_id), SUBCMD_E(cmd_id, subcmd_id))
-//
-//enum apps_cmd_id_vulkan {
-//    APPS_CMD_ID_VULKAN_INSTANCE,
-//    APPS_CMD_ID_VULKAN_LAYER,
-//    APPS_CMD_ID_VULKAN_EXTENSION,
-//    APPS_CMD_ID_VULKAN_DEVICE,
-//    APPS_CMD_ID_VULKAN_PIPELINE,
-//};
-//
-//enum apps_subcmd_id_vulkan {
-//    APPS_SUBCMD_ID_VULKAN_INSTANCE_CREATE,
-//
-//    APPS_SUBCMD_ID_VULKAN_LAYER_ADD,
-//    APPS_SUBCMD_ID_VULKAN_LAYER_DEL,
-//    APPS_SUBCMD_ID_VULKAN_LAYER_SHOW_LIST,
-//
-//    APPS_SUBCMD_ID_VULKAN_EXTENSION_ADD,
-//    APPS_SUBCMD_ID_VULKAN_EXTENSION_DEL,
-//    APPS_SUBCMD_ID_VULKAN_EXTENSION_SHOW_LIST,
-//
-//    APPS_SUBCMD_ID_VULKAN_DEVICE_CREATE,
-//    APPS_SUBCMD_ID_VULKAN_DEVICE_SHOW_LIST,
-//
-//    APPS_SUBCMD_ID_VULKAN_PIPELINE_ADD_CMD,
-//    APPS_SUBCMD_ID_VULKAN_PIPELINE_BIND_SHADER,
-//    APPS_SUBCMD_ID_VULKAN_PIPELINE_BIND_OBJECT,
-//};
-//
-//enum apps_cmd_id_etc {
-//    APPS_CMD_ID_ETC_WINDOW,
-//    APPS_CMD_ID_ETC_CONSOLE,
-//};
-//
-//enum apps_subcmd_id_etc {
-//    APPS_SUBCMD_ID_ETC_WINDOW_DISPLAY,
-//    APPS_SUBCMD_ID_ETC_WINDOW_RESIZE,
-//    APPS_SUBCMD_ID_ETC_CONSOLE_EXIT,
-//};
-
 enum apps_param_type_vulkan {
     APPS_PARAM_TYPE_VULKAN_LAYER_NAME = 'n',
 
@@ -78,8 +19,12 @@ enum apps_param_type_vulkan {
     APPS_PARAM_TYPE_VULKAN_DEVICE_PHYDEV_IDX = 'i',
     APPS_PARAM_TYPE_VULKAN_DEVICE_SHOW_EXTENSION = 'e',
 
-    APPS_PARAM_TYPE_VULKAN_PIPELINE_STAGE_IDX = 'i',
+    APPS_PARAM_TYPE_VULKAN_PIPELINE_BINDING_CMDBUF_IDX = 'b',
     APPS_PARAM_TYPE_VULKAN_PIPELINE_SHADER_FILENAME = 'f',
+    APPS_PARAM_TYPE_VULKAN_PIPELINE_STAGE_IDX = 'i',
+
+    APPS_PARAM_TYPE_VULKAN_CMDBUF_COMMAND_TYPE = 'c',
+    APPS_PARAM_TYPE_VULKAN_CMDBUF_BUFFER_IDX = 'i',
 };
 
 enum apps_param_type_etc {

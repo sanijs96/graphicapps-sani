@@ -98,6 +98,9 @@ static void __cleanup_args_list(command_t *p_cmd)
         return;
     }
 
+    free(p_cmd->cmd_name);
+    free(p_cmd->subcmd_name);
+
     for (uint32_t idx = 0; idx < p_cmd->num_args; idx++ ) {
         free(p_cmd->p_args[idx].value);
     }
@@ -208,18 +211,19 @@ exit:
 void run(void)
 {
     command_t cmd = {0, };
-    char *p_input;
+    char p_input_str[MAX_LENGTH_APP_CMD];
 
 input:
     __cleanup_args_list(&cmd);
 
     printf("[CMD]: ");
 
-    if (app_cmd_handler_get_command_input(p_input) == FAILURE) {
+    memset(p_input_str, 0, MAX_LENGTH_APP_CMD);
+    if (app_cmd_handler_get_command_input(p_input_str) == FAILURE) {
         return;
     }
 
-    if (__setup_args_list(&cmd, p_input) == FAILURE) {
+    if (__setup_args_list(&cmd, p_input_str) == FAILURE) {
         printf("arguments not valid\n");
         app_cmd_handler_show_usage(&cmd);
         goto input;

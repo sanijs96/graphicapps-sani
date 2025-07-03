@@ -1,0 +1,12 @@
+instance create
+
+extension add -n VK_KHR_swapchain -i 0 -s 1
+
+device create -i 0
+
+window display
+
+pipeline add -i 0 -f /home/root/graphicapps-source/shaders/shader_vert.spv
+pipeline add -i 1 -f /home/root/graphicapps-source/shaders/shader_frag.spv
+
+pipeline run

@@ -6,19 +6,13 @@
 
 #include "app_cmd.h"
 
-enum app_cmd_input_src_type {
-    APP_CMD_INPUT_SRC_TYPE_STDIN = 0,
-    APP_CMD_INPUT_SRC_TYPE_SCRIPTFILE,
-    NUM_APP_CMD_INPUT_SRC_TYPES,
-};
-
 static struct {
-    uint32_t input_src_type;
+    uint32_t runscript_state;
 
-    uint32_t inputfile_offset;
-    char *p_inputfile_data;
-
-    char p_input_entry_str[MAX_LENGTH_APP_CMD];
+    uint32_t runscript_offset;
+    uint32_t runscript_cmd_seq;
+    uint32_t runscript_total_length;
+    char *p_runscript_data;
 } app_cmd_ctx;
 
 typedef union app_cmd_args_list {
@@ -63,13 +57,12 @@ static uint32_t __app_cmd_get_file_length(FILE *p_fstream)
 
     return file_len;
 }
-
 uint32_t app_cmd_add_runscript_file(command_t *p_cmd)
 {
     uint32_t file_len;
     FILE * p_fstream;
     app_cmd_args_list_t args_list;
-    char *p_inputfile_data;
+    char *p_runscript_data;
 
     for (uint32_t idx = 0; idx < p_cmd->num_args; idx++) {
         if (__setup_app_argument(p_cmd->p_args[idx], &args_list) == FAILURE) {
@@ -89,69 +82,72 @@ uint32_t app_cmd_add_runscript_file(command_t *p_cmd)
         return FAILURE;
     }
 
-    app_cmd_ctx.p_inputfile_data = (char *)malloc(file_len);
+    app_cmd_ctx.p_runscript_data = (char *)malloc(file_len);
 
-    if (fread(app_cmd_ctx.p_inputfile_data, file_len, 1, p_fstream) == 0) {
+    if (fread(app_cmd_ctx.p_runscript_data, file_len, 1, p_fstream) == 0) {
         printf("file read failure\n");
         return FAILURE;
     }
 
-    app_cmd_ctx.input_src_type = APP_CMD_INPUT_SRC_TYPE_SCRIPTFILE;
+    app_cmd_ctx.runscript_offset = 0;
+    app_cmd_ctx.runscript_cmd_seq = 0;
+    app_cmd_ctx.runscript_total_length = file_len;
+
+    app_cmd_ctx.runscript_state = APP_CMD_RUNSCRIPT_REGISTERED;
 }
 
 static void __app_cmd_cleanup_runscript_ctx(void)
 {
-    app_cmd_ctx.input_src_type = APP_CMD_INPUT_SRC_TYPE_STDIN;
-    app_cmd_ctx.inputfile_offset = 0;
+    app_cmd_ctx.runscript_offset = 0;
+    app_cmd_ctx.runscript_cmd_seq = 0;
+    app_cmd_ctx.runscript_total_length = 0;
 
-    free(app_cmd_ctx.p_inputfile_data);
+    free(app_cmd_ctx.p_runscript_data);
+
+    app_cmd_ctx.runscript_state = APP_CMD_RUNSCRIPT_FINISHED;
 }
 
-static void __app_cmd_get_cmd_entry_from_runscript(char *p_input_str)
+uint32_t app_cmd_get_runscript_state(void)
+{
+    return app_cmd_ctx.runscript_state;
+}
+
+uint32_t app_cmd_get_cmdstring_from_runscript(char *p_input_str)
 {
     uint64_t cmd_strlen;
-    uint32_t inputfile_offset;
-    char **pp_inputfile_data;
+    uint32_t runscript_offset;
+    char *p_runscript_data;
 
-    inputfile_offset = app_cmd_ctx.inputfile_offset;
+get_cmd:
+    runscript_offset = app_cmd_ctx.runscript_offset;
 
-    *pp_inputfile_data = &app_cmd_ctx.p_inputfile_data[inputfile_offset];
+    p_runscript_data = &app_cmd_ctx.p_runscript_data[runscript_offset];
 
-    cmd_strlen = (uint64_t)(strstr(*pp_inputfile_data, "\n\0") - *pp_inputfile_data);
+    cmd_strlen = (uint64_t)(strstr(p_runscript_data, "\n\0") - p_runscript_data);
     if (cmd_strlen != 0) {
-        printf("cmdlen: %lu, %s\n", cmd_strlen, *pp_inputfile_data);
-        p_input_str = strndup(*pp_inputfile_data, cmd_strlen);
+        cmd_strlen++; // include eol
 
-        app_cmd_ctx.inputfile_offset += cmd_strlen;
+        strncpy(p_input_str, p_runscript_data, cmd_strlen);
+        printf("[%u] %s\n", app_cmd_ctx.runscript_cmd_seq, p_input_str);
+
+        app_cmd_ctx.runscript_offset += cmd_strlen;
+        app_cmd_ctx.runscript_cmd_seq++;
     }
     else {
-        printf("parsing failure\n");
-        p_input_str = NULL;
+        app_cmd_ctx.runscript_offset++;
+        if (app_cmd_ctx.runscript_offset < app_cmd_ctx.runscript_total_length) {
+            goto get_cmd; // skip single eol character
+        }
     }
 
-    // check EOF
-    if (app_cmd_ctx.p_inputfile_data[app_cmd_ctx.inputfile_offset] == '\0') {
+    if (app_cmd_ctx.runscript_offset == app_cmd_ctx.runscript_total_length) {
         __app_cmd_cleanup_runscript_ctx();
     }
 
-    return;
+    return SUCCESS;
 }
 
-char *app_cmd_get_cmdstring(void)
+uint32_t app_cmd_console_exit(command_t *p_cmd)
 {
-    char *p_input_str;
-
-    p_input_str = app_cmd_ctx.p_input_entry_str;
-
-    memset(p_input_str, 0, sizeof(MAX_LENGTH_APP_CMD));
-
-    if (app_cmd_ctx.input_src_type == APP_CMD_INPUT_SRC_TYPE_SCRIPTFILE) {
-        __app_cmd_get_cmd_entry_from_runscript(p_input_str);
-    }
-    else if (!fgets(p_input_str, MAX_LENGTH_APP_CMD, stdin)) {
-        p_input_str = NULL;
-    }
-
-    return p_input_str;
+    return SUCCESS;
 }
-

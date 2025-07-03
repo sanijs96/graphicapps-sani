@@ -1,6 +1,7 @@
 FILESEXTRAPATHS:prepend = " ${THISDIR}/files:"
 SRC_URI += " file://weston_window_setup.env"
 SRC_URI += " file://shaders"
+SRC_URI += " file://scripts"
 
 RDEPENDS:${PN}:append = " bash"
 
@@ -15,6 +16,7 @@ DEPENDS:append = " glslang-native"
 
 GLSLC = "${WORKDIR}/recipe-sysroot-native${bindir}/glslang"
 SHADER_DIR = "${WORKDIR}/shaders"
+SCRIPT_DIR = "${WORKDIR}/scripts"
 
 do_install[depends] += " glslang:do_populate_sysroot"
 
@@ -31,6 +33,8 @@ do_install:append() {
 
     install -d ${D}/home/root/graphicapps-source
     install -d ${D}/home/root/graphicapps-source/shaders
+    install -d ${D}/home/root/graphicapps-source/scripts
 
     cp -r ${SHADER_DIR} ${D}/home/root/graphicapps-source
+    cp -r ${SCRIPT_DIR} ${D}/home/root/graphicapps-source
 }

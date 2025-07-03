@@ -143,7 +143,7 @@ static uint32_t __pipeline_create_renderpass(VkDevice *p_device, VkFormat *p_for
 
 static uint32_t __pipeline_create(VkDevice *p_device)
 {
-    stage_creation_info_t *p_stage_info;
+    pipeline_stage_template_t *p_stage_info;
     VkGraphicsPipelineCreateInfo pipeline_info;
     VkPipelineShaderStageCreateInfo p_shader_stages[2];
 
@@ -234,6 +234,11 @@ uint32_t pipeline_create(VkDevice *p_device)
     pipeline_ctx.state = VULKAN_PIPELINE_STATE_CREATED;
 
     return SUCCESS;
+}
+
+VkRenderPass *pipeline_get_pipeline_object(void)
+{
+    return &pipeline_ctx.pipeline;
 }
 
 VkRenderPass *pipeline_get_renderpass_object(void)

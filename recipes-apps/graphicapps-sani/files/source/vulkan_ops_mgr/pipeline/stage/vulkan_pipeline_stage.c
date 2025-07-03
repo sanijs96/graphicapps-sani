@@ -1,13 +1,14 @@
-
 #include <stdio.h>
 #include <malloc.h>
 
 #include "common/common_def.h"
+#include "vulkan/pipeline_stages.h"
+
 #include "vulkan_pipeline_stage.h"
 
 typedef struct stage_ctx {
     uint32_t state;
-    stage_creation_info_t setting;
+    pipeline_stage_template_t setting;
 } stage_ctx_t;
 
 const VkDynamicState dynamic_state[NUM_VULKAN_PIPELINE_DYNAMIC_STATES] = {
@@ -117,7 +118,7 @@ uint32_t pipeline_stage_get_status(uint32_t stage_idx)
     return stages[stage_idx].state;
 }
 
-stage_creation_info_t *pipeline_stage_get_creation_info(uint32_t stage_idx)
+pipeline_stage_template_t *pipeline_stage_get_creation_info(uint32_t stage_idx)
 {
     return &stages[stage_idx].setting;
 }
@@ -145,7 +146,7 @@ static uint32_t __pipeline_stage_get_shader_file_length(FILE *p_fstream)
     return file_len;
 }
 
-static uint32_t __pipeline_stage_create_shader_module(stage_creation_info_t *p_setting,
+static uint32_t __pipeline_stage_create_shader_module(pipeline_stage_template_t *p_setting,
                                                         char *filename, VkDevice *p_device)
 {
     uint32_t res;
@@ -195,7 +196,7 @@ static uint32_t __pipeline_stage_create_shader_module(stage_creation_info_t *p_s
 uint32_t pipeline_stage_setup_vertex_shader_ctx(char *filename, VkDevice* p_device)
 {
     uint32_t res;
-    stage_creation_info_t *p_setting;
+    pipeline_stage_template_t *p_setting;
 
     p_setting = &stages[VULKAN_PIPELINE_STAGE_VERTEX_SHADER].setting;
 
@@ -223,7 +224,7 @@ uint32_t pipeline_stage_setup_vertex_shader_ctx(char *filename, VkDevice* p_devi
 uint32_t pipeline_stage_setup_fragment_shader_ctx(char *filename, VkDevice* p_device)
 {
     uint32_t res;
-    stage_creation_info_t *p_setting;
+    pipeline_stage_template_t *p_setting;
 
     p_setting = &stages[VULKAN_PIPELINE_STAGE_FRAGMENT_SHADER].setting;
 
@@ -264,7 +265,7 @@ uint32_t pipeline_stage_setup_viewport_ctx(VkViewport *p_viewport, VkRect2D *p_s
     uint32_t viewport_cnt;
     VkRect2D *p_scissors;
     VkViewport *p_viewports;
-    stage_creation_info_t *p_setting;
+    pipeline_stage_template_t *p_setting;
 
     p_setting = &stages[VULKAN_PIPELINE_STAGE_VIEWPORT].setting;
 

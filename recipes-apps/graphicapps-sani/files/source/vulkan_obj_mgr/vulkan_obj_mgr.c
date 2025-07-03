@@ -3,7 +3,9 @@
 
 #include "common/common_def.h"
 
+// TODO: remove function header
 #include "vulkan_function.h"
+
 #include "device/vulkan_device.h"
 #include "instance/vulkan_instance.h"
 

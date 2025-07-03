@@ -16,6 +16,11 @@ typedef struct swapchain_ctx {
     VkImageView *p_views;
 } swapchain_ctx_t;
 
+typedef struct framebuffer_ctx {
+    uint32_t framebuffer_count;
+    VkFramebuffer *p_framebufs;
+} framebuffer_ctx_t;
+
 typedef struct display_ctx {
     uint32_t state;
 
@@ -30,7 +35,7 @@ typedef struct display_ctx {
 
     swapchain_ctx_t swapchain_ctx;
 
-    VkFramebuffer *p_framebufs;
+    framebuffer_ctx_t framebuffer_ctx;
 } display_ctx_t;
 
 typedef struct window_ops {
@@ -352,7 +357,7 @@ VkFormat *window_obj_mgr_get_current_swapchain_format(void)
     return &window_ctx.display_ctx.base_format.format;
 }
 
-uint32_t window_obj_mgr_create_framebuffer(VkRenderPass* p_renderpass)
+uint32_t window_obj_mgr_create_framebuffers(VkRenderPass* p_renderpass)
 {
     uint32_t res;
     uint32_t image_count;
@@ -362,7 +367,7 @@ uint32_t window_obj_mgr_create_framebuffer(VkRenderPass* p_renderpass)
     image_count = window_ctx.display_ctx.swapchain_ctx.image_count;
 
     p_framebuffers = (VkFramebuffer *)malloc(sizeof(VkFramebuffer[image_count]));
-    window_ctx.display_ctx.p_framebufs = p_framebuffers;
+    window_ctx.display_ctx.framebuffer_ctx.p_framebufs = p_framebuffers;
 
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebuffer_info.pNext = NULL;
@@ -379,7 +384,7 @@ uint32_t window_obj_mgr_create_framebuffer(VkRenderPass* p_renderpass)
     for (uint32_t idx = 0; idx < image_count; idx++) {
         framebuffer_info.pAttachments = &window_ctx.display_ctx.swapchain_ctx.p_views[idx];
         res = vkCreateFramebuffer(*window_ctx.p_device, &framebuffer_info, NULL,
-                                        &window_ctx.display_ctx.p_framebufs[idx]);
+                                                            &p_framebuffers[idx]);
 
         if (res != VK_SUCCESS) {
             printf("framebuffer creation failure: %d\n", res);
@@ -393,6 +398,17 @@ uint32_t window_obj_mgr_create_framebuffer(VkRenderPass* p_renderpass)
 
 exit:
     return res;
+}
+
+uint32_t window_obj_mgr_get_framebuffer_object_count(void)
+{
+    return window_ctx.display_ctx.framebuffer_ctx.framebuffer_count;
+}
+
+
+VkFramebuffer *window_obj_mgr_get_framebuffer_objects(void)
+{
+    return window_ctx.display_ctx.framebuffer_ctx.p_framebufs;
 }
 
 void window_obj_mgr_exit(VkInstance *p_instance)
