@@ -17,7 +17,6 @@
 
 #include "window_obj_mgr/window_obj_mgr.h"
 #include "vulkan_obj_mgr/vulkan_obj_mgr.h"
-#include "vulkan_obj_mgr/vulkan_function.h"
 
 uint32_t __select_window_obj_type(void)
 {

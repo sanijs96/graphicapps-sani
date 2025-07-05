@@ -2,8 +2,7 @@
 #include <string.h>
 
 #include "common/common_def.h"
-
-#include "device/vulkan_device.h"
+#include "vulkan/function_scope.h"
 
 #include "vulkan_function.h"
 

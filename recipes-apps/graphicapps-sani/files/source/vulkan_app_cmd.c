@@ -3,13 +3,13 @@
 
 #include "common/common_def.h"
 #include "vulkan/cmd_types.h"
+#include "vulkan/function_scope.h"
 #include "vulkan/pipeline_stages.h"
 
 #include "vulkan_app_cmd.h"
 
 // TODO: remove mgr prepend from folder name
 #include "vulkan_obj_mgr/vulkan_obj_mgr.h"
-#include "vulkan_obj_mgr/vulkan_function.h"
 #include "vulkan_obj_mgr/device/vulkan_device.h"
 #include "vulkan_obj_mgr/instance/vulkan_instance.h"
 

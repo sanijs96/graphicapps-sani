@@ -3,12 +3,11 @@
 
 #include "common/common_def.h"
 #include "vulkan/queue_types.h"
-
-// TODO: remove function header
-#include "vulkan_function.h"
+#include "vulkan/function_scope.h"
 
 #include "device/vulkan_device.h"
 #include "instance/vulkan_instance.h"
+#include "functions/vulkan_function.h"
 
 #include "vulkan_obj_mgr.h"
 

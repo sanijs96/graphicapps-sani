@@ -10,13 +10,6 @@ enum function_state {
     VULKAN_FUNCTION_STATE_INVALID,
 };
 
-enum function_scope {
-    VULKAN_FUNCTION_SCOPE_DEFAULT = 0,
-    VULKAN_FUNCTION_SCOPE_DEVICE,
-    VULKAN_FUNCTION_SCOPE_INSTANCE,
-    VULKAN_FUNCTION_SCOPE_INVALID,
-};
-
 void function_init_layers_ctx(void);
 uint32_t function_init_phydevs_ctx(uint32_t phydev_count, VkPhysicalDevice *p_phydevs);
 
