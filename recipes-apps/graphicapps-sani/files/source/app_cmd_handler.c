@@ -195,7 +195,7 @@ exit:
 
 uint32_t app_cmd_handler_check_exited(command_t *p_cmd)
 {
-    if (!strcmp(p_cmd->cmd_name, "console") &&
+    if (!strcmp(p_cmd->cmd_name, "app") &&
         !strcmp(p_cmd->subcmd_name, "exit")) {
         return TRUE;
     }

@@ -18,7 +18,4 @@ VkResult instance_create(void);
 VkInstance *instance_get_instance_object(void);
 void instance_destroy(void);
 
-uint32_t instance_get_physical_devices_count(void);
-VkPhysicalDevice *instance_create_physical_device_list(uint32_t device_count);
-
 #endif

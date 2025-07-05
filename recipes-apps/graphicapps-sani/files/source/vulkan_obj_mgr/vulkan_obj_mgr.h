@@ -6,13 +6,15 @@
 void vulkan_obj_mgr_init(void);
 
 uint32_t vulkan_obj_mgr_enable_layer(char *layer_name);
-uint32_t vulkan_obj_mgr_disable_layer(char *layer_namee);
+uint32_t vulkan_obj_mgr_disable_layer(char *layer_name);
 void vulkan_obj_mgr_show_layers_list(void);
 
 uint32_t vulkan_obj_mgr_enable_extension(char *extension_name);
 uint32_t vulkan_obj_mgr_disable_extension(char *extension_name);
 void vulkan_obj_mgr_show_extensions_list(void);
 
+uint32_t vulkan_obj_mgr_enable_phydev_layer(char *extension_name, uint32_t phydev_idx);
+uint32_t vulkan_obj_mgr_disable_phydev_layer(char *extension_name, uint32_t phydev_idx);
 uint32_t vulkan_obj_mgr_enable_phydev_extension(char *extension_name, uint32_t phydev_idx);
 uint32_t vulkan_obj_mgr_disable_phydev_extension(char *extension_name, uint32_t phydev_idx);
 

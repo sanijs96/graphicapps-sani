@@ -17,12 +17,12 @@ typedef struct vulkan_cmd_proc_ctx{
 static vulkan_cmd_proc_ctx_t cmd_proc_ctx[NUM_VULKAN_SUPPORTED_CMD_TYPES] =
 {
     [VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS] = {
-        .setup = vulkan_cmd_template_setup_renderpass_command,
-        .add = vulkan_cmd_pool_add_renderpass_command,
+        .setup = cmd_template_setup_renderpass_command,
+        .add = cmd_pool_add_renderpass_command,
     },
     [VULKAN_SUPPORTED_CMD_TYPE_DRAW] = {
         .setup = NULL,
-        .add = vulkan_cmd_pool_add_draw_command,
+        .add = cmd_pool_add_draw_command,
     },
 };
 
@@ -71,7 +71,7 @@ VkRenderPass *vulkan_ops_mgr_get_renderpass_object(void)
 
 uint32_t vulkan_ops_mgr_check_cmd_buffer_allocated(uint32_t buf_idx)
 {
-    if (vulkan_cmd_pool_get_cmd_buffer_state(buf_idx) == VULKAN_CMD_POOL_CMDBUF_STATE_ALLOCATED) {
+    if (cmd_pool_get_cmd_buffer_state(buf_idx) == VULKAN_CMD_POOL_CMDBUF_STATE_ALLOCATED) {
         return TRUE;
     }
 
@@ -82,21 +82,21 @@ uint32_t vulkan_ops_mgr_allocate_cmd_buffer(VkDevice *p_device, uint32_t graphic
 {
     uint32_t res;
 
-    if (vulkan_cmd_pool_get_state() != VULKAN_CMD_POOL_STATE_CREATED) {
-        res = vulkan_cmd_pool_create(p_device, graphics_queue_idx);
+    if (cmd_pool_get_state() != VULKAN_CMD_POOL_STATE_CREATED) {
+        res = cmd_pool_create(p_device, graphics_queue_idx);
         if (res == FAILURE) {
             return res;
         }
     }
 
-    res = vulkan_cmd_pool_allocate_buffer(p_device);
+    res = cmd_pool_allocate_buffer(p_device);
 
     return res;
 }
 
 uint32_t vulkan_ops_mgr_activate_cmd_buffer(uint32_t cmdbuf_idx, VkPipeline *p_pipeline)
 {
-    return vulkan_cmd_pool_bind_cmd_buffer_to_pipeline(cmdbuf_idx, p_pipeline);
+    return cmd_pool_bind_cmd_buffer_to_pipeline(cmdbuf_idx, p_pipeline);
 }
 
 uint32_t vulkan_ops_mgr_add_vulkan_command(uint32_t cmd_type, vulkan_cmd_param_t *p_param)

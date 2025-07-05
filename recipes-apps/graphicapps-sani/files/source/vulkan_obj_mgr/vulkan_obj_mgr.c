@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "common/common_def.h"
+#include "vulkan/queue_types.h"
 
 // TODO: remove function header
 #include "vulkan_function.h"
@@ -16,40 +17,41 @@ void vulkan_obj_mgr_init(void)
 {
     instance_init("Sani Vulkan Application");
 
-    function_init();
+    function_init_layers_ctx();
 }
 
 uint32_t vulkan_obj_mgr_enable_layer(char * layer_name)
 {
-    return function_enable_layer(layer_name);
+    return function_enable_instance_layer(layer_name);
 }
 
 uint32_t vulkan_obj_mgr_disable_layer(char * layer_name)
 {
-    return function_disable_layer(layer_name);
+    return function_disable_instance_layer(layer_name);
 }
 
 void vulkan_obj_mgr_show_layers_list(void)
 {
     uint32_t layer_cnt;
-    uint32_t layer_status;
+    uint32_t layer_state;
 
-    layer_cnt = function_get_layers_count(VULKAN_FUNCTION_STATE_DEFAULT);
+    layer_state = VULKAN_FUNCTION_STATE_DEFAULT;
+    layer_cnt = function_get_instance_layers_count(layer_state);
 
     char p_layers_name[layer_cnt][VK_MAX_EXTENSION_NAME_SIZE];
 
     printf("[LAYER INFO]\n");
 
-    layer_cnt = function_get_layers_count(VULKAN_FUNCTION_STATE_ENABLED);
+    layer_cnt = function_get_instance_layers_count(VULKAN_FUNCTION_STATE_ENABLED);
 
-    function_get_layers_name_list(VULKAN_FUNCTION_STATE_ENABLED, (char **)p_layers_name);
+    function_get_instance_layers_name_list(VULKAN_FUNCTION_STATE_ENABLED, (char **)p_layers_name);
     for (uint32_t idx = 0; idx < layer_cnt; idx++) {
         printf("[%u] %s (%s)\n", idx, p_layers_name[idx], "EN");
     }
 
-    layer_cnt = function_get_layers_count(VULKAN_FUNCTION_STATE_DISABLED);
+    layer_cnt = function_get_instance_layers_count(VULKAN_FUNCTION_STATE_DISABLED);
 
-    function_get_layers_name_list(VULKAN_FUNCTION_STATE_DISABLED, (char **)p_layers_name);
+    function_get_instance_layers_name_list(VULKAN_FUNCTION_STATE_DISABLED, (char **)p_layers_name);
     for (uint32_t idx = 0; idx < layer_cnt; idx++) {
         printf("[%u] %s\n", idx, p_layers_name[idx]);
     }
@@ -59,12 +61,12 @@ void vulkan_obj_mgr_show_layers_list(void)
 
 uint32_t vulkan_obj_mgr_enable_extension(char *extension_name)
 {
-    return function_enable_extension(extension_name);
+    return function_enable_instance_extension(extension_name);
 }
 
 uint32_t vulkan_obj_mgr_disable_extension(char *extension_name)
 {
-    return function_disable_extension(extension_name);
+    return function_disable_instance_extension(extension_name);
 }
 
 void vulkan_obj_mgr_show_extensions_list(void)
@@ -72,20 +74,20 @@ void vulkan_obj_mgr_show_extensions_list(void)
     uint32_t ext_cnt;
     uint32_t ext_status;
 
-    ext_cnt = function_get_extensions_count(VULKAN_FUNCTION_STATE_DEFAULT);
+    ext_cnt = function_get_instance_extensions_count(VULKAN_FUNCTION_STATE_DEFAULT);
 
     char p_extensions_name[ext_cnt][VK_MAX_EXTENSION_NAME_SIZE];
 
     printf("[EXTENSION INFO]\n");
 
-    ext_cnt = function_get_extensions_count(VULKAN_FUNCTION_STATE_ENABLED);
-    function_get_extensions_name_list(VULKAN_FUNCTION_STATE_ENABLED, (char **)p_extensions_name);
+    ext_cnt = function_get_instance_extensions_count(VULKAN_FUNCTION_STATE_ENABLED);
+    function_get_instance_extensions_name_list(VULKAN_FUNCTION_STATE_ENABLED, (char **)p_extensions_name);
     for (uint32_t idx = 0; idx < ext_cnt; idx++) {
         printf("[%u] %s (%s)\n", idx, p_extensions_name[idx], "EN");
     }
 
-    ext_cnt = function_get_extensions_count(VULKAN_FUNCTION_STATE_DISABLED);
-    function_get_extensions_name_list(VULKAN_FUNCTION_STATE_DISABLED, (char **)p_extensions_name);
+    ext_cnt = function_get_instance_extensions_count(VULKAN_FUNCTION_STATE_DISABLED);
+    function_get_instance_extensions_name_list(VULKAN_FUNCTION_STATE_DISABLED, (char **)p_extensions_name);
     for (uint32_t idx = 0; idx < ext_cnt; idx++) {
         printf("[%u] %s\n", idx, p_extensions_name[idx]);
     }
@@ -93,32 +95,51 @@ void vulkan_obj_mgr_show_extensions_list(void)
     return;
 }
 
+uint32_t vulkan_obj_mgr_enable_phydev_layer(char *layer_name, uint32_t phydev_idx)
+{
+    VkPhysicalDevice *p_phydev;
+    p_phydev = device_get_phydev_object(phydev_idx);
+    return function_enable_phydev_layer(layer_name, phydev_idx, p_phydev);
+}
+
+uint32_t vulkan_obj_mgr_disable_phydev_layer(char *layer_name, uint32_t phydev_idx)
+{
+    VkPhysicalDevice *p_phydev;
+    p_phydev = device_get_phydev_object(phydev_idx);
+    return function_disable_phydev_layer(layer_name, phydev_idx, p_phydev);
+}
+
 uint32_t vulkan_obj_mgr_enable_phydev_extension(char *extension_name, uint32_t phydev_idx)
 {
-    return function_enable_phydev_extension(extension_name, phydev_idx);
+    VkPhysicalDevice *p_phydev;
+    p_phydev = device_get_phydev_object(phydev_idx);
+    return function_enable_phydev_extension(extension_name, phydev_idx, p_phydev);
 }
 
 uint32_t vulkan_obj_mgr_disable_phydev_extension(char *extension_name, uint32_t phydev_idx)
 {
-    return function_disable_phydev_extension(extension_name, phydev_idx);
+    VkPhysicalDevice *p_phydev;
+    p_phydev = device_get_phydev_object(phydev_idx);
+    return function_disable_phydev_extension(extension_name, phydev_idx, p_phydev);
 }
 
-static void __vulkan_obj_mgr_init_device_ctx(void)
+static inline void __vulkan_obj_mgr_init_device_ctx(void)
 {
-    uint32_t device_count;
-    device_count = instance_get_physical_devices_count();
+    uint32_t phydev_count;
+    VkInstance *p_instance;
 
-    VkPhysicalDevice *p_dev_list;
-    p_dev_list = instance_create_physical_device_list(device_count);
+    p_instance = instance_get_instance_object();
 
-    device_create_physical_device_ctx(device_count);
+    device_init_device_ctx(p_instance);
 
-    for (uint32_t idx; idx < device_count; idx++) {
-        device_register_physical_device(&p_dev_list[idx], idx);
-        device_register_device_capability(idx);
+    phydev_count = device_get_phydevs_count();
+
+    VkPhysicalDevice p_phydevs[phydev_count];
+    for (uint32_t idx = 0; idx < phydev_count; idx++) {
+        p_phydevs[phydev_count] = *device_get_phydev_object(idx);
     }
 
-    function_init_phydev_extension_info();
+    function_init_phydevs_ctx(phydev_count, p_phydevs);
 }
 
 uint32_t vulkan_obj_mgr_create_instance(void)
@@ -126,14 +147,14 @@ uint32_t vulkan_obj_mgr_create_instance(void)
     uint32_t layers_cnt;
     uint32_t exts_cnt;
 
-    layers_cnt = function_get_layers_count(VULKAN_FUNCTION_STATE_ENABLED);
-    exts_cnt = function_get_extensions_count(VULKAN_FUNCTION_STATE_ENABLED);
+    layers_cnt = function_get_instance_layers_count(VULKAN_FUNCTION_STATE_ENABLED);
+    exts_cnt = function_get_instance_extensions_count(VULKAN_FUNCTION_STATE_ENABLED);
 
     char p_layers_list[layers_cnt][VK_MAX_EXTENSION_NAME_SIZE];
     char p_exts_list[exts_cnt][VK_MAX_EXTENSION_NAME_SIZE];
 
-    function_get_layers_name_list(VULKAN_FUNCTION_STATE_ENABLED, (char **)p_layers_list);
-    function_get_extensions_name_list(VULKAN_FUNCTION_STATE_ENABLED, (char **)p_exts_list);
+    function_get_instance_layers_name_list(VULKAN_FUNCTION_STATE_ENABLED, (char **)p_layers_list);
+    function_get_instance_extensions_name_list(VULKAN_FUNCTION_STATE_ENABLED, (char **)p_exts_list);
 
     char *layers_list_ptr[layers_cnt];
     char *exts_list_ptr[exts_cnt];
@@ -190,30 +211,46 @@ VkPhysicalDevice *vulkan_obj_mgr_get_phydev_object(uint32_t phydev_idx)
 uint32_t vulkan_obj_mgr_create_device(uint32_t phydev_idx)
 {
     uint32_t exts_cnt;
+    uint32_t layers_cnt;
+    VkPhysicalDevice *p_phydev;
 
     if (instance_check_creation_state() != VULKAN_INSTANCE_CREATION_STATE_CREATED) {
+        printf("instance already created\n");
         return FAILURE;
     }
 
-    exts_cnt = function_get_phydev_exts_count(VULKAN_FUNCTION_STATE_ENABLED, phydev_idx);
+    if (vulkan_obj_mgr_check_device_created() == SUCCESS) {
+        printf("device already created\n");
+        return FAILURE;
+    }
 
+    p_phydev = device_get_phydev_object(phydev_idx);
+
+    layers_cnt = function_get_phydev_layers_count(VULKAN_FUNCTION_STATE_ENABLED, phydev_idx);
+    exts_cnt = function_get_phydev_extensions_count(VULKAN_FUNCTION_STATE_ENABLED, phydev_idx);
+
+    char *layers_list_ptr[layers_cnt];
+    char *exts_list_ptr[exts_cnt];
+
+    char layers_list[layers_cnt][VK_MAX_EXTENSION_NAME_SIZE];
     char exts_list[exts_cnt][VK_MAX_EXTENSION_NAME_SIZE];
-    function_get_phydev_exts_name_list(VULKAN_FUNCTION_STATE_ENABLED,
-                                        (char **)exts_list, phydev_idx);
 
-    char *name_list_ptr[exts_cnt];
+    function_get_phydev_extensions_name_list(VULKAN_FUNCTION_STATE_ENABLED,
+                                        (char **)layers_list, phydev_idx, p_phydev);
+    function_get_phydev_extensions_name_list(VULKAN_FUNCTION_STATE_ENABLED,
+                                        (char **)exts_list, phydev_idx, p_phydev);
+
+    for (uint32_t idx = 0; idx < layers_cnt; idx++) {
+        layers_list_ptr[idx] = layers_list[idx];
+    }
+    device_add_enabled_layers_list(layers_cnt, layers_list_ptr);
+
     for (uint32_t idx = 0; idx < exts_cnt; idx++) {
-        name_list_ptr[idx] = exts_list[idx];
+        exts_list_ptr[idx] = exts_list[idx];
     }
+    device_add_enabled_extensions_list(exts_cnt, exts_list_ptr);
 
-    device_add_enabled_exts_info(exts_cnt, name_list_ptr);
-
-    if (device_create(phydev_idx) == VK_SUCCESS) {
-        return SUCCESS;
-    }
-    else {
-        return FAILURE;
-    }
+    return device_create(phydev_idx);
 }
 
 uint32_t vulkan_obj_mgr_check_device_created(void)
@@ -289,21 +326,22 @@ void vulkan_obj_mgr_show_device_info(uint32_t phydev_idx)
 {
     char *device_type_str;
     uint32_t device_cnt;
-    uint32_t queue_pty_count;
+    uint32_t queue_property_count;
     uint32_t current_phydev_idx;
     uint32_t current_device_status;
-    VkQueueFamilyProperties *p_queue_pty;
-    VkPhysicalDeviceProperties *p_pty;
+    VkPhysicalDeviceProperties phydev_property;
 
-    device_cnt = instance_get_physical_devices_count();
+    device_cnt = device_get_phydevs_count();
 
-    p_pty = device_get_device_property(phydev_idx);
+    device_get_device_property(phydev_idx, &phydev_property);
 
-    queue_pty_count = device_get_device_queue_property_count(phydev_idx);
+    device_type_str = __vulkan_obj_mgr_get_device_type_string(phydev_property.deviceType);
 
-    p_queue_pty = device_get_device_queue_property(phydev_idx);
+    queue_property_count = device_get_device_queue_property_count(phydev_idx);
 
-    device_type_str = __vulkan_obj_mgr_get_device_type_string(p_pty->deviceType);
+    VkQueueFamilyProperties queue_properties[queue_property_count];
+
+    device_get_device_queue_properties(phydev_idx, queue_properties);
 
     current_device_status = device_get_current_status();
     if (current_device_status == VULKAN_DEVICE_CREATION_STATE_CREATED) {
@@ -315,21 +353,21 @@ void vulkan_obj_mgr_show_device_info(uint32_t phydev_idx)
         printf("*");
     }
 
-    printf("[%u] %s\n", phydev_idx, p_pty->deviceName);
+    printf("[%u] %s\n", phydev_idx, phydev_property.deviceName);
 
     printf("\t type: %s\n", device_type_str);
 
     printf("\t queues:\n");
-    for (uint32_t queue_idx = 0; queue_idx < queue_pty_count; queue_idx++) {
+    for (uint32_t queue_idx = 0; queue_idx < queue_property_count; queue_idx++) {
         printf("\t\t[%u]: ", queue_idx);
-        __vulkan_obj_mgr_print_queue_flags(p_queue_pty->queueFlags);
+        __vulkan_obj_mgr_print_queue_flags(queue_properties[queue_idx].queueFlags);
         printf("\n");
 
-        printf("\t\tsupported queues: %u\n", p_queue_pty->queueCount);
+        printf("\t\tsupported queues: %u\n", queue_properties[queue_idx].queueCount);
         printf("\t\tgranularity: %u %u %u\n",
-                p_queue_pty->minImageTransferGranularity.width,
-                p_queue_pty->minImageTransferGranularity.height,
-                p_queue_pty->minImageTransferGranularity.depth);
+                queue_properties[queue_idx].minImageTransferGranularity.width,
+                queue_properties[queue_idx].minImageTransferGranularity.height,
+                queue_properties[queue_idx].minImageTransferGranularity.depth);
     }
 
     return;
@@ -339,21 +377,27 @@ void vulkan_obj_mgr_show_device_extensions_list(uint32_t phydev_idx)
 {
     uint32_t ret;
     uint32_t ext_cnt;
+    VkPhysicalDevice *p_phydev;
 
-    ext_cnt = function_get_phydev_exts_count(VULKAN_FUNCTION_STATE_DEFAULT, phydev_idx);
+    ext_cnt = function_get_phydev_extensions_count(VULKAN_FUNCTION_STATE_DEFAULT, phydev_idx);
 
     char ext_list[ext_cnt][VK_MAX_EXTENSION_NAME_SIZE];
 
     printf("[Extensions]\n");
 
-    ext_cnt = function_get_phydev_exts_count(VULKAN_FUNCTION_STATE_ENABLED, phydev_idx);
-    function_get_phydev_exts_name_list(VULKAN_FUNCTION_STATE_ENABLED, (char **)ext_list, phydev_idx);
+    ext_cnt = function_get_phydev_extensions_count(VULKAN_FUNCTION_STATE_ENABLED, phydev_idx);
+    p_phydev = device_get_phydev_object(phydev_idx);
+
+    function_get_phydev_extensions_name_list(VULKAN_FUNCTION_STATE_ENABLED, (char **)ext_list,
+                                                                            phydev_idx, p_phydev);
+
     for (uint32_t idx = 0; idx < ext_cnt; idx++) {
         printf("%u: %s (%s)\n", idx, ext_list[idx], "EN");
     }
 
-    ext_cnt = function_get_phydev_exts_count(VULKAN_FUNCTION_STATE_DISABLED, phydev_idx);
-    function_get_phydev_exts_name_list(VULKAN_FUNCTION_STATE_DISABLED, (char **)ext_list, phydev_idx);
+    ext_cnt = function_get_phydev_extensions_count(VULKAN_FUNCTION_STATE_DISABLED, phydev_idx);
+    function_get_phydev_extensions_name_list(VULKAN_FUNCTION_STATE_DISABLED, (char **)ext_list,
+                                                                            phydev_idx, p_phydev);
     for (uint32_t idx = 0; idx < ext_cnt; idx++) {
         printf("%u: %s\n", idx, ext_list[idx]);
     }

@@ -17,7 +17,7 @@ static struct {
     cmd_buf_ctx_t buffer_ctx[MAX_NUM_CMD_BUFFERS];
 } cmd_pool_ctx;
 
-uint32_t vulkan_cmd_pool_create(VkDevice *p_device, uint32_t device_queue_idx)
+uint32_t cmd_pool_create(VkDevice *p_device, uint32_t device_queue_idx)
 {
     uint32_t res;
     VkCommandPoolCreateInfo cmd_pool_info;
@@ -39,15 +39,15 @@ uint32_t vulkan_cmd_pool_create(VkDevice *p_device, uint32_t device_queue_idx)
     return res;
 }
 
-uint32_t vulkan_cmd_pool_get_state(void)
+uint32_t cmd_pool_get_state(void)
 {
     return cmd_pool_ctx.state;
 }
 
-static uint32_t __vulkan_cmd_pool_get_available_buffer_idx(void)
+static uint32_t __cmd_pool_get_available_buffer_idx(void)
 {
     for (uint32_t idx = 0; idx < MAX_NUM_CMD_BUFFERS; idx++) {
-        if (vulkan_cmd_pool_get_cmd_buffer_state(idx) == VULKAN_CMD_POOL_CMDBUF_STATE_UNALLOCATED) {
+        if (cmd_pool_get_cmd_buffer_state(idx) == VULKAN_CMD_POOL_CMDBUF_STATE_UNALLOCATED) {
             return idx;
         }
     }
@@ -55,7 +55,7 @@ static uint32_t __vulkan_cmd_pool_get_available_buffer_idx(void)
     return MAX_NUM_CMD_BUFFERS;
 }
 
-static uint32_t __vulkan_cmd_pool_cmdbuf_start_recording(uint32_t buf_idx)
+static uint32_t __cmd_pool_cmdbuf_start_recording(uint32_t buf_idx)
 {
     uint32_t res;
     VkCommandBuffer *p_cmd_buf;
@@ -78,19 +78,19 @@ static uint32_t __vulkan_cmd_pool_cmdbuf_start_recording(uint32_t buf_idx)
     return SUCCESS;
 }
 
-uint32_t vulkan_cmd_pool_allocate_buffer(VkDevice *p_device)
+uint32_t cmd_pool_allocate_buffer(VkDevice *p_device)
 {
     uint32_t res;
     uint32_t buf_idx;
     cmd_buf_ctx_t *p_buf_ctx;
     VkCommandBufferAllocateInfo alloc_info;
 
-    if (vulkan_cmd_pool_get_state() != VULKAN_CMD_POOL_STATE_CREATED) {
+    if (cmd_pool_get_state() != VULKAN_CMD_POOL_STATE_CREATED) {
         printf("command pool not created\n");
         return FAILURE;
     }
 
-    buf_idx = __vulkan_cmd_pool_get_available_buffer_idx();
+    buf_idx = __cmd_pool_get_available_buffer_idx();
     if (buf_idx == MAX_NUM_CMD_BUFFERS) {
         printf("buffers fully allocated\n");
 
@@ -113,7 +113,7 @@ uint32_t vulkan_cmd_pool_allocate_buffer(VkDevice *p_device)
         return FAILURE;
     }
 
-    res = __vulkan_cmd_pool_cmdbuf_start_recording(buf_idx);
+    res = __cmd_pool_cmdbuf_start_recording(buf_idx);
     if (res != VK_SUCCESS) {
         printf("command buffer startup failure: %d\n", res);
         return FAILURE;
@@ -126,14 +126,14 @@ uint32_t vulkan_cmd_pool_allocate_buffer(VkDevice *p_device)
     return SUCCESS;
 }
 
-uint32_t vulkan_cmd_pool_bind_cmd_buffer_to_pipeline(uint32_t buf_idx, VkPipeline *p_pipeline)
+uint32_t cmd_pool_bind_cmd_buffer_to_pipeline(uint32_t buf_idx, VkPipeline *p_pipeline)
 {
     uint32_t res;
     VkCommandBuffer *p_cmd_buf;
 
     p_cmd_buf = &cmd_pool_ctx.buffer_ctx[buf_idx].buffer;
 
-    vkCmdBindPipeline(*p_cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, p_pipeline);
+    vkCmdBindPipeline(*p_cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, *p_pipeline);
 
     vkCmdEndRenderPass(*p_cmd_buf);
 
@@ -147,12 +147,12 @@ uint32_t vulkan_cmd_pool_bind_cmd_buffer_to_pipeline(uint32_t buf_idx, VkPipelin
     return SUCCESS;
 }
 
-uint32_t vulkan_cmd_pool_get_cmd_buffer_state(uint32_t buf_idx)
+uint32_t cmd_pool_get_cmd_buffer_state(uint32_t buf_idx)
 {
     return cmd_pool_ctx.buffer_ctx[buf_idx].state;
 }
 
-void vulkan_cmd_pool_add_renderpass_command(vulkan_cmd_template_t *p_template,
+void cmd_pool_add_renderpass_command(vulkan_cmd_template_t *p_template,
                                                     vulkan_cmd_param_t *p_param)
 {
     uint32_t cmdbuf_idx;
@@ -167,7 +167,7 @@ void vulkan_cmd_pool_add_renderpass_command(vulkan_cmd_template_t *p_template,
     cmd_pool_ctx.buffer_ctx[cmdbuf_idx].cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS);
 }
 
-void vulkan_cmd_pool_add_draw_command(vulkan_cmd_template_t *p_template,
+void cmd_pool_add_draw_command(vulkan_cmd_template_t *p_template,
                                             vulkan_cmd_param_t *p_param)
 {
     uint32_t cmdbuf_idx;
@@ -194,9 +194,9 @@ void vulkan_cmd_pool_add_draw_command(vulkan_cmd_template_t *p_template,
     cmd_pool_ctx.buffer_ctx[cmdbuf_idx].cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS);
 }
 
-uint32_t vulkan_cmd_pool_check_buffer_allocated(uint32_t buf_idx)
+uint32_t cmd_pool_check_buffer_allocated(uint32_t buf_idx)
 {
-    if (vulkan_cmd_pool_get_cmd_buffer_state(buf_idx) == VULKAN_CMD_POOL_CMDBUF_STATE_ALLOCATED) {
+    if (cmd_pool_get_cmd_buffer_state(buf_idx) == VULKAN_CMD_POOL_CMDBUF_STATE_ALLOCATED) {
         return TRUE;
     }
 

@@ -43,6 +43,7 @@ static void __init_creation_info(void)
 
     p_creation_info->sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     p_creation_info->pNext = NULL;
+    p_creation_info->flags = 0;
     p_creation_info->pApplicationInfo = &instance_ctx.apps_info;
 
     p_creation_info->enabledLayerCount = 0;
@@ -78,10 +79,11 @@ VkResult instance_create(void)
     VkResult res;
 
     res = vkCreateInstance(&instance_ctx.creation_info, NULL, &instance_ctx.instance);
-
-    if (res == VK_SUCCESS) {
-        instance_ctx.creation_state = VULKAN_INSTANCE_CREATION_STATE_CREATED;
+    if (res != VK_SUCCESS) {
+        printf("instance creation failure: %d\n", res);
     }
+
+    instance_ctx.creation_state = VULKAN_INSTANCE_CREATION_STATE_CREATED;
 
     return res;
 }
@@ -95,31 +97,4 @@ void instance_destroy(void)
 {
     vkDestroyInstance(instance_ctx.instance, NULL);
     instance_ctx.creation_state = VULKAN_INSTANCE_CREATION_STATE_DELETED;
-}
-
-uint32_t instance_get_physical_devices_count(void)
-{
-    uint32_t deviceCount;
-    VkPhysicalDevice * deviceList;
-
-    deviceCount = 0;
-
-    vkEnumeratePhysicalDevices(instance_ctx.instance, &deviceCount, NULL);
-
-    return deviceCount;
-}
-
-VkPhysicalDevice *instance_create_physical_device_list(uint32_t device_count)
-{
-    VkPhysicalDevice *p_dev_list;
-
-    if (instance_ctx.creation_state != VULKAN_INSTANCE_CREATION_STATE_CREATED) {
-        return NULL;
-    }
-
-    p_dev_list = (VkPhysicalDevice *)malloc(sizeof(VkPhysicalDevice) * device_count);
-
-    vkEnumeratePhysicalDevices(instance_ctx.instance, &device_count, p_dev_list);
-
-    return p_dev_list;
 }

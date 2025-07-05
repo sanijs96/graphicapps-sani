@@ -367,7 +367,6 @@ uint32_t window_obj_mgr_create_framebuffers(VkRenderPass* p_renderpass)
     image_count = window_ctx.display_ctx.swapchain_ctx.image_count;
 
     p_framebuffers = (VkFramebuffer *)malloc(sizeof(VkFramebuffer[image_count]));
-    window_ctx.display_ctx.framebuffer_ctx.p_framebufs = p_framebuffers;
 
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebuffer_info.pNext = NULL;
@@ -393,6 +392,9 @@ uint32_t window_obj_mgr_create_framebuffers(VkRenderPass* p_renderpass)
             goto exit;
         }
     }
+
+    window_ctx.display_ctx.framebuffer_ctx.p_framebufs = p_framebuffers;
+    window_ctx.display_ctx.framebuffer_ctx.framebuffer_count = image_count;
 
     res = SUCCESS;
 

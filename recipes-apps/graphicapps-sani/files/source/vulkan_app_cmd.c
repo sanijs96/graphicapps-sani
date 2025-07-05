@@ -21,6 +21,7 @@
 typedef union vulkan_cmd_args_list {
     struct {
         uint32_t scope;
+        uint32_t phydev_idx;
         char name[VK_MAX_EXTENSION_NAME_SIZE];
     } layer;
 
@@ -121,6 +122,7 @@ static uint32_t __setup_pipeline_argument(command_arg_t arg, vulkan_cmd_args_lis
 
         case PARAM_VK(PIPELINE_BINDING_CMDBUF_IDX):
             p_arglist->pipeline.cmdbuf_idx = (uint32_t)(*(char *)arg.value - '0');
+            break;
 
         default:
             return FAILURE;
@@ -585,13 +587,15 @@ static uint32_t __vulkan_app_cmd_setup_draw_command_param(vulkan_cmd_param_t *p_
 static uint32_t __vulkan_app_cmd_setup_command_param(uint32_t cmd_type, uint32_t cmdbuf_idx,
                                                                     vulkan_cmd_param_t *p_param)
 {
+    uint32_t res;
+
     switch (cmd_type) {
         case VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS:
-            return __vulkan_app_cmd_setup_renderpass_command_param(p_param, cmdbuf_idx);
+            res = __vulkan_app_cmd_setup_renderpass_command_param(p_param, cmdbuf_idx);
             break;
 
         case VULKAN_SUPPORTED_CMD_TYPE_DRAW:
-            return __vulkan_app_cmd_setup_draw_command_param(p_param, cmdbuf_idx);
+            res = __vulkan_app_cmd_setup_draw_command_param(p_param, cmdbuf_idx);
             break;
 
         default:
@@ -600,7 +604,7 @@ static uint32_t __vulkan_app_cmd_setup_command_param(uint32_t cmd_type, uint32_t
 
     p_param->cmdbuf_idx = cmdbuf_idx;
 
-    return SUCCESS;
+    return res;
 }
 
 uint32_t vulkan_app_cmd_add_vulkan_command(command_t *p_cmd)
