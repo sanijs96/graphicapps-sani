@@ -19,6 +19,7 @@ uint32_t vulkan_obj_mgr_enable_phydev_extension(char *extension_name, uint32_t p
 uint32_t vulkan_obj_mgr_disable_phydev_extension(char *extension_name, uint32_t phydev_idx);
 
 uint32_t vulkan_obj_mgr_create_instance(void);
+uint32_t vulkan_obj_mgr_delete_instance(void);
 VkInstance *vulkan_obj_mgr_get_instance_object(void);
 
 uint32_t vulkan_obj_mgr_get_phydev_count(void);

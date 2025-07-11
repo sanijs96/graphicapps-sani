@@ -168,11 +168,18 @@ uint32_t vulkan_obj_mgr_create_instance(void)
     }
     instance_add_extension_info(exts_cnt, exts_list_ptr);
 
-    if (instance_create() != VK_SUCCESS) {
+    if (instance_create() == FAILURE) {
         return FAILURE;
     }
 
     __vulkan_obj_mgr_init_device_ctx();
+
+    return SUCCESS;
+}
+
+uint32_t vulkan_obj_mgr_delete_instance(void)
+{
+    instance_destroy();
 
     return SUCCESS;
 }

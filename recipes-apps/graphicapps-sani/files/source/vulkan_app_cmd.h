@@ -12,6 +12,7 @@ uint32_t vulkan_app_cmd_disable_extension(command_t *p_cmd);
 uint32_t vulkan_app_cmd_show_extensions_list(command_t *p_cmd);
 
 uint32_t vulkan_app_cmd_create_instance(command_t *p_cmd);
+uint32_t vulkan_app_cmd_delete_instance(command_t *p_cmd);
 
 uint32_t vulkan_app_cmd_create_device(command_t *p_cmd);
 uint32_t vulkan_app_cmd_show_devices_list(command_t *p_cmd);

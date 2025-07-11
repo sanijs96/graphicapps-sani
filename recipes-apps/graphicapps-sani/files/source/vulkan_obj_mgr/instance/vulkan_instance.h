@@ -9,7 +9,7 @@ enum instance_creation_state {
     VULKAN_INSTANCE_CREATION_STATE_DELETED,
 };
 
-void instance_init(const char *app_name);
+void instance_init(void);
 uint32_t instance_check_creation_state(void);
 
 void instance_add_layer_info(uint32_t layers_count, char **pp_layers_name);

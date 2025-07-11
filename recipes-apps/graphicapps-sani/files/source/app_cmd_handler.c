@@ -21,6 +21,8 @@ typedef const struct __command_handler_entry {
 command_handler_entry_t vulkan_app_cmd_handler_instance[] = {
     {"create", NULL,
         NULL, vulkan_app_cmd_create_instance, NULL},
+    {"delete", NULL,
+        NULL, vulkan_app_cmd_delete_instance, NULL},
 
     {NULL, }
 };

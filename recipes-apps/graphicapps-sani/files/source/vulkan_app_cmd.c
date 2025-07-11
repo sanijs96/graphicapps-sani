@@ -313,6 +313,11 @@ uint32_t vulkan_app_cmd_create_instance(command_t *p_cmd)
     return vulkan_obj_mgr_create_instance();
 }
 
+uint32_t vulkan_app_cmd_delete_instance(command_t *p_cmd)
+{
+    return vulkan_obj_mgr_delete_instance();
+}
+
 uint32_t vulkan_app_cmd_create_device(command_t *p_cmd)
 {
     vulkan_cmd_args_list_t args_list;

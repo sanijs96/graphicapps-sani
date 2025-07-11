@@ -38,7 +38,7 @@ uint32_t function_enable_phydev_extension(char *extension_name, uint32_t phydev_
 uint32_t function_disable_phydev_extension(char *extension_name, uint32_t phydev_idx,
                                                             VkPhysicalDevice *p_phydev);
 void function_get_phydev_extensions_name_list(uint32_t state, char ** names_list,
-                                        uint32_t phydev_idx, VkPhysicalDevice *p_phydev);
+                                                uint32_t phydev_idx, VkPhysicalDevice *p_phydev);
 uint32_t function_get_phydev_extensions_count(uint32_t state, uint32_t phydev_idx);
 
 #endif
