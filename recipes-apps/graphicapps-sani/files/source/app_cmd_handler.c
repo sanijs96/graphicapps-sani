@@ -49,9 +49,10 @@ command_handler_entry_t vulkan_app_cmd_handler_device[] = {
 };
 
 command_handler_entry_t vulkan_app_cmd_handler_pipeline[] = {
-    {"add", "if", NULL, vulkan_app_cmd_setup_pipeline_stage, NULL},
-    {"create", NULL, NULL, vulkan_app_cmd_create_pipeline, NULL},
-    {"run", "i", NULL, vulkan_app_cmd_run_pipeline, NULL},
+    {"add", "if", NULL, vulkan_app_cmd_add_pipeline_stage, NULL},
+    {"create", "t", NULL, vulkan_app_cmd_create_pipeline, NULL},
+    {"setup", "b", NULL, vulkan_app_cmd_setup_pipeline, NULL},
+    {"run", "t", NULL, vulkan_app_cmd_run_pipeline, NULL},
     {"info", NULL, NULL, vulkan_app_cmd_show_pipeline_info, NULL},
 
     {NULL, }
@@ -59,7 +60,7 @@ command_handler_entry_t vulkan_app_cmd_handler_pipeline[] = {
 
 command_handler_entry_t vulkan_app_cmd_handler_command_buf[] = {
     {"alloc", NULL, NULL, vulkan_app_cmd_allocate_command_buffer, NULL},
-    {"add", "ic", NULL, vulkan_app_cmd_add_vulkan_command, NULL},
+    {"add", "cis", NULL, vulkan_app_cmd_add_vulkan_command, NULL},
     {"info", "i", NULL, vulkan_app_cmd_show_command_buffer_info, NULL},
 
     {NULL, }

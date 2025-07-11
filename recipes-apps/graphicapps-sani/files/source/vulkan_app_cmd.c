@@ -3,6 +3,7 @@
 
 #include "common/common_def.h"
 #include "vulkan/cmd_types.h"
+#include "vulkan/queue_types.h"
 #include "vulkan/function_scope.h"
 #include "vulkan/pipeline_stages.h"
 
@@ -39,12 +40,14 @@ typedef union vulkan_cmd_args_list {
     struct {
         uint32_t stage_idx;
         uint32_t cmdbuf_idx;
+        uint32_t pipeline_type;
         char filename[FILENAME_MAX];
     } pipeline;
 
     struct {
         uint32_t buf_idx;
         uint32_t cmdtype;
+        uint32_t enable_semaphore;
     } cmdbuf;
 
 } vulkan_cmd_args_list_t;
@@ -120,6 +123,10 @@ static uint32_t __setup_pipeline_argument(command_arg_t arg, vulkan_cmd_args_lis
             strcpy(p_arglist->pipeline.filename, arg.value);
             break;
 
+        case PARAM_VK(PIPELINE_TYPE):
+            p_arglist->pipeline.pipeline_type = (uint32_t)(*(char *)arg.value - '0');
+            break;
+
         case PARAM_VK(PIPELINE_BINDING_CMDBUF_IDX):
             p_arglist->pipeline.cmdbuf_idx = (uint32_t)(*(char *)arg.value - '0');
             break;
@@ -133,13 +140,21 @@ static uint32_t __setup_pipeline_argument(command_arg_t arg, vulkan_cmd_args_lis
 
 static uint32_t __setup_cmdbuf_argument(command_arg_t arg, vulkan_cmd_args_list_t *p_arglist)
 {
+    uint32_t intval;
     switch (arg.type) {
         case PARAM_VK(CMDBUF_COMMAND_TYPE):
-            p_arglist->cmdbuf.cmdtype = (uint32_t)(*(char *)arg.value - '0');
+            intval = (uint32_t)(*(char *)arg.value - '0');
+            p_arglist->cmdbuf.cmdtype = intval;
             break;
 
         case PARAM_VK(CMDBUF_BUFFER_IDX):
-            p_arglist->cmdbuf.buf_idx = (uint32_t)(*(char *)arg.value - '0');
+            intval = (uint32_t)(*(char *)arg.value - '0');
+            p_arglist->cmdbuf.buf_idx = intval;
+            break;
+
+        case PARAM_VK(CMDBUF_ENABLE_SEMAPHORE):
+            intval = (uint32_t)(*(char *)arg.value - '0');
+            p_arglist->cmdbuf.enable_semaphore = (intval == 1) ? TRUE : FALSE;
             break;
 
         default:
@@ -403,7 +418,7 @@ uint32_t vulkan_app_cmd_show_devices_list(command_t *p_cmd)
     return SUCCESS;
 }
 
-uint32_t vulkan_app_cmd_setup_pipeline_stage(command_t *p_cmd)
+uint32_t vulkan_app_cmd_add_pipeline_stage(command_t *p_cmd)
 {
     uint32_t res;
     uint32_t pipeline_stage_idx;
@@ -468,10 +483,14 @@ uint32_t vulkan_app_cmd_create_pipeline(command_t *p_cmd)
         window_obj_mgr_create_framebuffers(p_renderpass);
     }
 
+    if (window_obj_mgr_start_display(p_device) == FAILURE) {
+        return FAILURE;
+    }
+
     return res;
 }
 
-uint32_t vulkan_app_cmd_run_pipeline(command_t *p_cmd)
+uint32_t vulkan_app_cmd_setup_pipeline(command_t *p_cmd)
 {
     uint32_t res;
     VkPipeline *p_pipeline;
@@ -494,12 +513,156 @@ uint32_t vulkan_app_cmd_run_pipeline(command_t *p_cmd)
         return FAILURE;
     }
 
-    res = vulkan_ops_mgr_activate_cmd_buffer(args_list.cmdbuf.buf_idx, p_pipeline);
+    res = vulkan_ops_mgr_activate_cmd_buffer(args_list.pipeline.cmdbuf_idx, p_pipeline);
     if (res == FAILURE) {
         return res;
     }
 
     return res;
+}
+
+static uint32_t __vulkan_app_cmd_add_signal_semaphores(VkDevice *p_device)
+{
+    uint32_t res;
+    VkSemaphore signal_semaphore;
+    VkSemaphoreCreateInfo semaphore_info;
+
+    semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    semaphore_info.flags = 0;
+    semaphore_info.pNext = NULL;
+
+    res = vkCreateSemaphore(*p_device, &semaphore_info, NULL, &signal_semaphore);
+    if (res != VK_SUCCESS) {
+        printf("signal semaphore create failure: %d\n", res);
+        return FAILURE;
+    }
+
+    if (vulkan_obj_mgr_add_signal_semaphore(&signal_semaphore) == FAILURE) {
+        printf("signal semaphore add failure\n");
+        return FAILURE;
+    }
+
+    window_obj_mgr_add_swapchain_signal_semaphore(&signal_semaphore);
+
+    return SUCCESS;
+}
+
+static uint32_t __vulkan_app_cmd_add_wait_semaphores(VkDevice *p_device)
+{
+    VkSemaphore *p_window_semaphore;
+    VkPipelineStageFlags semaphore_stage;
+
+    p_window_semaphore = window_obj_mgr_get_display_semaphore_object();
+
+    semaphore_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+    if (vulkan_obj_mgr_add_wait_semaphore(p_window_semaphore, semaphore_stage) == FAILURE) {
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
+static uint32_t __vulkan_app_cmd_setup_queue_submit_info(VkSubmitInfo *p_submit_info)
+{
+    VkCommandBuffer *p_cmdbuf;
+
+    p_submit_info->sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    p_submit_info->pNext = NULL;
+
+    p_cmdbuf = vulkan_ops_mgr_get_activated_cmd_buffer_object();
+    if (p_cmdbuf == NULL) {
+        printf("no command buffers bound to pipeline\n");
+        return FAILURE;
+    }
+
+    p_submit_info->commandBufferCount = 1;
+    p_submit_info->pCommandBuffers = p_cmdbuf;
+
+    p_submit_info->pWaitDstStageMask = vulkan_obj_mgr_get_wait_semaphore_stages();
+
+    p_submit_info->waitSemaphoreCount = vulkan_obj_mgr_get_wait_semaphore_count();
+    p_submit_info->pWaitSemaphores = vulkan_obj_mgr_get_wait_semaphore_objects();
+
+    p_submit_info->signalSemaphoreCount = vulkan_obj_mgr_get_signal_semaphore_count();
+    p_submit_info->pSignalSemaphores = vulkan_obj_mgr_get_signal_semaphore_objects();
+
+    return SUCCESS;
+}
+
+static uint32_t __vulkan_app_cmd_submit_queue(VkQueue *p_queue, uint32_t type)
+{
+    VkSubmitInfo submit_info;
+
+    if (__vulkan_app_cmd_setup_queue_submit_info(&submit_info) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (vulkan_obj_mgr_submit_queue(p_queue, &submit_info) == FAILURE) {
+        return FAILURE;
+    }
+}
+
+static uint32_t __vulkan_app_cmd_run_graphics_pipeline(vulkan_cmd_args_list_t *p_args_list)
+{
+    uint32_t queue_idx;
+    uint32_t queue_type;
+    VkQueue *p_queue;
+    VkDevice *p_device;
+
+    queue_type = VULKAN_DEVICE_QUEUE_TYPE_GRAPHICS;
+    queue_idx = vulkan_obj_mgr_select_available_queue_idx(queue_type);
+
+    p_queue = vulkan_obj_mgr_get_queue_object(queue_type, queue_idx);
+    p_device = vulkan_obj_mgr_get_current_device_object();
+
+    if (window_obj_mgr_check_display_status() != WINDOW_OBJ_DISPLAY_STATE_CREATED) {
+        return FAILURE;
+    }
+
+    if (__vulkan_app_cmd_add_signal_semaphores(p_device) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (__vulkan_app_cmd_add_wait_semaphores(p_device) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (__vulkan_app_cmd_submit_queue(p_queue, queue_type) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (window_obj_mgr_show_queue_result(p_queue) == FAILURE) {
+        return FAILURE;
+    }
+
+    vulkan_obj_mgr_release_queue(queue_type, queue_idx);
+
+    return SUCCESS;
+}
+
+uint32_t vulkan_app_cmd_run_pipeline(command_t *p_cmd)
+{
+    vulkan_cmd_args_list_t args_list;
+
+    if (vulkan_app_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (vulkan_ops_mgr_check_pipeline_created() == FALSE) {
+        printf("pipeline not created\n");
+        return FAILURE;
+    }
+
+    if (args_list.pipeline.pipeline_type == VULKAN_PIPELINE_TYPE_GRAPHICS) {
+        __vulkan_app_cmd_run_graphics_pipeline(&args_list);
+    }
+    else {
+        printf("pipeline type not supported yet\n");
+        return FAILURE;
+    }
+
+    return SUCCESS;
 }
 
 uint32_t vulkan_app_cmd_show_pipeline_info(command_t *p_cmd)
@@ -510,7 +673,7 @@ uint32_t vulkan_app_cmd_show_pipeline_info(command_t *p_cmd)
 uint32_t vulkan_app_cmd_allocate_command_buffer(command_t *p_cmd)
 {
     uint32_t res;
-    uint32_t graphics_queue_idx;
+    uint32_t queue_family_idx;
     VkDevice *p_device;
     VkRenderPass *p_renderpass;
     vulkan_cmd_args_list_t args_list;
@@ -525,15 +688,14 @@ uint32_t vulkan_app_cmd_allocate_command_buffer(command_t *p_cmd)
         return FAILURE;
     }
 
-    graphics_queue_idx = vulkan_obj_mgr_get_graphics_queue_idx(p_device);
+    queue_family_idx = vulkan_obj_mgr_get_graphics_queue_family_idx(p_device);
 
-    res = vulkan_ops_mgr_allocate_cmd_buffer(p_device, graphics_queue_idx);
+    res = vulkan_ops_mgr_allocate_cmd_buffer(p_device, queue_family_idx);
 
     return res;
 }
 
-static uint32_t __vulkan_app_cmd_setup_renderpass_command_param(vulkan_cmd_param_t *p_param,
-                                                                            uint32_t cmdbuf_idx)
+static uint32_t __vulkan_app_cmd_setup_renderpass_command_param(vulkan_cmd_param_t *p_param)
 {
     const VkClearValue clear_color = {{{ 0.0f, 0.0f, 0.0f, 1.0f }}};
 
@@ -543,17 +705,17 @@ static uint32_t __vulkan_app_cmd_setup_renderpass_command_param(vulkan_cmd_param
     }
 
     p_param->renderpass.clear_value_count = 1;
-    p_param->renderpass.p_clear_values = &clear_color;
+    p_param->renderpass.p_clear_values = (VkClearValue *)&clear_color;
     p_param->renderpass.p_renderpass = vulkan_ops_mgr_get_renderpass_object();
     p_param->renderpass.framebuffer_count = window_obj_mgr_get_framebuffer_object_count();
     p_param->renderpass.p_framebuffers = window_obj_mgr_get_framebuffer_objects();
     p_param->renderpass.p_swapchain_extent = window_obj_mgr_get_current_swapchain_extent();
+    p_param->renderpass.framebuffer_image_idx = window_obj_mgr_get_next_framebuffer_image_idx();
 
     return SUCCESS;
 }
 
-static uint32_t __vulkan_app_cmd_setup_draw_command_param(vulkan_cmd_param_t *p_param,
-                                                                    uint32_t cmdbuf_idx)
+static uint32_t __vulkan_app_cmd_setup_draw_command_param(vulkan_cmd_param_t *p_param)
 {
     VkRect2D scissor;
     VkViewport viewport;
@@ -571,8 +733,12 @@ static uint32_t __vulkan_app_cmd_setup_draw_command_param(vulkan_cmd_param_t *p_
 
     p_swapchain_extent = window_obj_mgr_get_current_swapchain_extent();
 
-    viewport.height = p_swapchain_extent->height;
-    viewport.width = p_swapchain_extent->width;
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.height = (float)p_swapchain_extent->height;
+    viewport.width = (float)p_swapchain_extent->width;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
 
     scissor.extent = *p_swapchain_extent;
     scissor.offset = (VkOffset2D){0, 0};
@@ -584,25 +750,22 @@ static uint32_t __vulkan_app_cmd_setup_draw_command_param(vulkan_cmd_param_t *p_
     return SUCCESS;
 }
 
-static uint32_t __vulkan_app_cmd_setup_command_param(uint32_t cmd_type, uint32_t cmdbuf_idx,
-                                                                    vulkan_cmd_param_t *p_param)
+static uint32_t __vulkan_app_cmd_setup_command_param(uint32_t cmd_type, vulkan_cmd_param_t *p_param)
 {
     uint32_t res;
 
     switch (cmd_type) {
         case VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS:
-            res = __vulkan_app_cmd_setup_renderpass_command_param(p_param, cmdbuf_idx);
+            res = __vulkan_app_cmd_setup_renderpass_command_param(p_param);
             break;
 
         case VULKAN_SUPPORTED_CMD_TYPE_DRAW:
-            res = __vulkan_app_cmd_setup_draw_command_param(p_param, cmdbuf_idx);
+            res = __vulkan_app_cmd_setup_draw_command_param(p_param);
             break;
 
         default:
             return FAILURE;
     }
-
-    p_param->cmdbuf_idx = cmdbuf_idx;
 
     return res;
 }
@@ -638,10 +801,13 @@ uint32_t vulkan_app_cmd_add_vulkan_command(command_t *p_cmd)
         return FAILURE;
     }
 
-    if (__vulkan_app_cmd_setup_command_param(cmd_type, cmdbuf_idx, &cmd_param) == FAILURE) {
+    if (__vulkan_app_cmd_setup_command_param(cmd_type, &cmd_param) == FAILURE) {
         printf("command param setup failure\n");
         return FAILURE;
     }
+
+    cmd_param.cmdbuf_idx = cmdbuf_idx;
+    cmd_param.enable_semaphore = args_list.cmdbuf.enable_semaphore;
 
     res = vulkan_ops_mgr_add_vulkan_command(cmd_type, &cmd_param);
 

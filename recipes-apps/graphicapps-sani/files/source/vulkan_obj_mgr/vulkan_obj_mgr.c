@@ -135,7 +135,7 @@ static inline void __vulkan_obj_mgr_init_device_ctx(void)
 
     VkPhysicalDevice p_phydevs[phydev_count];
     for (uint32_t idx = 0; idx < phydev_count; idx++) {
-        p_phydevs[phydev_count] = *device_get_phydev_object(idx);
+        p_phydevs[idx] = *device_get_phydev_object(idx);
     }
 
     function_init_phydevs_ctx(phydev_count, p_phydevs);
@@ -262,19 +262,88 @@ uint32_t vulkan_obj_mgr_check_device_created(void)
     }
 }
 
-uint32_t vulkan_obj_mgr_get_graphics_queue_idx(VkDevice *p_device)
+uint32_t vulkan_obj_mgr_add_wait_semaphore(VkSemaphore *p_semaphore, VkPipelineStageFlags stage)
 {
-    return device_get_queue_idx(VULKAN_DEVICE_QUEUE_TYPE_GRAPHICS);
+    return device_add_wait_semaphore_ctx(p_semaphore, stage);
 }
 
-uint32_t vulkan_obj_mgr_get_compute_queue_idx(VkDevice *p_device)
+uint32_t vulkan_obj_mgr_add_signal_semaphore(VkSemaphore *p_semaphore)
 {
-    return device_get_queue_idx(VULKAN_DEVICE_QUEUE_TYPE_COMPUTE);
+    return device_add_signal_semaphore_ctx(p_semaphore);
 }
 
-uint32_t vulkan_obj_mgr_get_transfer_queue_idx(VkDevice *p_device)
+uint32_t vulkan_obj_mgr_get_wait_semaphore_count(void)
 {
-    return device_get_queue_idx(VULKAN_DEVICE_QUEUE_TYPE_TRANSFER);
+    return device_get_wait_semaphore_count();
+}
+
+uint32_t vulkan_obj_mgr_get_signal_semaphore_count(void)
+{
+    return device_get_signal_semaphore_count();
+}
+
+VkPipelineStageFlags *vulkan_obj_mgr_get_wait_semaphore_stages(void)
+{
+    return device_get_wait_semaphore_stages();
+}
+
+VkSemaphore *vulkan_obj_mgr_get_wait_semaphore_objects(void)
+{
+    return device_get_wait_semaphore_objects();
+}
+
+VkSemaphore *vulkan_obj_mgr_get_signal_semaphore_objects(void)
+{
+    return device_get_signal_semaphore_objects();
+}
+
+uint32_t vulkan_obj_mgr_get_graphics_queue_family_idx(VkDevice *p_device)
+{
+    return device_get_queue_family_idx(VULKAN_DEVICE_QUEUE_TYPE_GRAPHICS);
+}
+
+uint32_t vulkan_obj_mgr_get_compute_queue_family_idx(VkDevice *p_device)
+{
+    return device_get_queue_family_idx(VULKAN_DEVICE_QUEUE_TYPE_COMPUTE);
+}
+
+uint32_t vulkan_obj_mgr_get_transfer_queue_family_idx(VkDevice *p_device)
+{
+    return device_get_queue_family_idx(VULKAN_DEVICE_QUEUE_TYPE_TRANSFER);
+}
+
+uint32_t vulkan_obj_mgr_select_available_queue_idx(uint32_t type)
+{
+    uint32_t queue_idx;
+    VkQueue *p_target_queue;
+
+    queue_idx = device_get_available_queue_idx(type);
+
+    while (device_lock_queue(type, queue_idx) == FAILURE) {
+        queue_idx = device_get_available_queue_idx(type);
+    }
+
+    return queue_idx;
+}
+
+VkQueue *vulkan_obj_mgr_get_queue_object(uint32_t type, uint32_t idx)
+{
+    device_get_queue_object(type, idx);
+}
+
+uint32_t vulkan_obj_mgr_submit_queue(VkQueue *p_queue, VkSubmitInfo *p_submit_info)
+{
+    if (device_submit_queue(p_queue, p_submit_info) == FAILURE) {
+        printf("queue submission failure\n");
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
+void vulkan_obj_mgr_release_queue(uint32_t type, uint32_t idx)
+{
+    device_unlock_queue(type, idx);
 }
 
 static char *__vulkan_obj_mgr_get_device_type_string(uint32_t phydev_type)

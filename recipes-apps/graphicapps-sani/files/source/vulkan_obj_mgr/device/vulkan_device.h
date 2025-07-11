@@ -3,6 +3,10 @@
 
 #include <vulkan/vulkan_core.h>
 
+#define MAX_VULKAN_DEVICE_WAIT_SEMPAHORES_COUNT     (1)
+#define MAX_VULKAN_DEVICE_SIGNAL_SEMPAHORES_COUNT   (1)
+#define MAX_VULKAN_DEVICE_CMD_BUFFERS_COUNT         (1)
+
 enum device_creation_state {
     VULKAN_DEVICE_CREATION_STATE_DEFAULT = 0,
     VULKAN_DEVICE_CREATION_STATE_CREATED,
@@ -31,7 +35,24 @@ VkPhysicalDevice *device_get_phydev_object(uint32_t phydev_idx);
 void device_get_device_property(uint32_t phydev_idx, VkPhysicalDeviceProperties *property);
 
 uint32_t device_get_device_queue_property_count(uint32_t phydev_idx);
-uint32_t device_get_queue_idx(uint32_t queue_type);
+uint32_t device_get_queue_family_idx(uint32_t queue_type);
+
+uint32_t device_add_cmdbuf_ctx(VkCommandBuffer *p_cmdbuf);
+uint32_t device_add_wait_semaphore_ctx(VkSemaphore *p_semaphore, VkPipelineStageFlags stage);
+uint32_t device_add_signal_semaphore_ctx(VkSemaphore *p_semaphore);
+uint32_t device_get_wait_semaphore_count(void);
+uint32_t device_get_signal_semaphore_count(void);
+
+VkPipelineStageFlags *device_get_wait_semaphore_stages(void);
+VkSemaphore *device_get_wait_semaphore_objects(void);
+VkSemaphore *device_get_signal_semaphore_objects(void);
+
+uint32_t device_get_available_queue_idx(uint32_t type);
+VkQueue *device_get_queue_object(uint32_t type, uint32_t idx);
+
+uint32_t device_lock_queue(uint32_t type, uint32_t queue_idx);
+void device_unlock_queue(uint32_t type, uint32_t queue_idx);
+uint32_t device_submit_queue(VkQueue *p_queue, VkSubmitInfo *p_submit_info);
 
 void device_get_device_queue_properties(uint32_t phydev_idx, VkQueueFamilyProperties *properteis);
 

@@ -23,7 +23,13 @@ uint32_t window_obj_mgr_init(uint32_t window_types);
 
 uint32_t window_obj_mgr_resize(uint32_t width, uint32_t height);
 
-uint32_t window_obj_mgr_start_display(VkInstance *p_instance);
+uint32_t window_obj_mgr_setup_display(VkInstance *p_instance);
+
+uint32_t window_obj_mgr_start_display(VkDevice *p_device);
+
+uint32_t window_obj_mgr_get_next_framebuffer_image_idx(void);
+
+uint32_t window_obj_mgr_show_queue_result(VkQueue *p_queue);
 
 uint32_t window_obj_mgr_check_display_status(void);
 
@@ -39,6 +45,9 @@ VkFormat *window_obj_mgr_get_current_swapchain_format(void);
 uint32_t window_obj_mgr_create_framebuffers(VkRenderPass* p_renderpass);
 uint32_t window_obj_mgr_get_framebuffer_object_count(void);
 VkFramebuffer *window_obj_mgr_get_framebuffer_objects(void);
+
+VkSemaphore *window_obj_mgr_get_display_semaphore_object(void);
+void window_obj_mgr_add_swapchain_signal_semaphore(VkSemaphore *p_semaphore);
 
 void window_obj_mgr_exit(VkInstance *p_instance);
 

@@ -41,9 +41,40 @@ uint32_t vulkan_ops_mgr_create_pipeline(VkDevice *p_device)
     return pipeline_create(p_device);
 }
 
-uint32_t vulkan_ops_mgr_run_pipeline(VkDevice *p_device)
+static uint32_t __vulkan_ops_mgr_get_activated_cmdbuf_idx(void)
 {
-    return FAILURE;
+    for (uint32_t idx = 0; idx < MAX_NUM_CMD_BUFFERS; idx++) {
+        if (cmd_pool_get_cmd_buffer_state(idx) != VULKAN_CMD_POOL_CMDBUF_STATE_ACTIVATED) {
+            continue;
+        }
+        return idx;
+    }
+
+    return MAX_NUM_CMD_BUFFERS;
+}
+
+uint32_t vulkan_ops_mgr_get_pipeline_submit_info(VkSubmitInfo *p_submit_info)
+{
+    uint32_t cmdbuf_idx;
+    VkSubmitInfo submit_info;
+    VkCommandBuffer *p_cmdbuf;
+
+    cmdbuf_idx = __vulkan_ops_mgr_get_activated_cmdbuf_idx();
+    if (cmdbuf_idx == MAX_NUM_CMD_BUFFERS) {
+        printf("no command buffers bound to pipeline\n");
+        return FAILURE;
+    }
+
+    p_cmdbuf = cmd_pool_get_cmd_buffer_object(cmdbuf_idx);
+
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.pNext = NULL;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = p_cmdbuf;
+
+    submit_info.waitSemaphoreCount = 1;
+
+    return SUCCESS;
 }
 
 uint32_t vulkan_ops_mgr_check_pipeline_created(void)
@@ -96,7 +127,20 @@ uint32_t vulkan_ops_mgr_allocate_cmd_buffer(VkDevice *p_device, uint32_t graphic
 
 uint32_t vulkan_ops_mgr_activate_cmd_buffer(uint32_t cmdbuf_idx, VkPipeline *p_pipeline)
 {
-    return cmd_pool_bind_cmd_buffer_to_pipeline(cmdbuf_idx, p_pipeline);
+    return cmd_pool_finish_buffer_recording(cmdbuf_idx, p_pipeline);
+}
+
+VkCommandBuffer *vulkan_ops_mgr_get_activated_cmd_buffer_object(void)
+{
+    uint32_t cmdbuf_idx;
+
+    cmdbuf_idx = __vulkan_ops_mgr_get_activated_cmdbuf_idx();
+    if (cmdbuf_idx == MAX_NUM_CMD_BUFFERS) {
+        printf("no command buffers allocated\n");
+        return NULL;
+    }
+
+    return cmd_pool_get_cmd_buffer_object(cmdbuf_idx);
 }
 
 uint32_t vulkan_ops_mgr_add_vulkan_command(uint32_t cmd_type, vulkan_cmd_param_t *p_param)
@@ -118,7 +162,7 @@ uint32_t vulkan_ops_mgr_add_vulkan_command(uint32_t cmd_type, vulkan_cmd_param_t
         return FAILURE;
     }
 
-    cmd_proc_ctx->add(&template, p_param);
+    cmd_proc_ctx[cmd_type].add(&template, p_param);
 
     return SUCCESS;
 }

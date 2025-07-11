@@ -22,8 +22,9 @@ uint32_t cmd_pool_create(VkDevice *p_device, uint32_t device_queue_idx);
 uint32_t cmd_pool_get_state(void);
 
 uint32_t cmd_pool_allocate_buffer(VkDevice *p_device);
-uint32_t cmd_pool_bind_cmd_buffer_to_pipeline(uint32_t buf_idx, VkPipeline *p_pipeline);
+uint32_t cmd_pool_finish_buffer_recording(uint32_t buf_idx, VkPipeline *p_pipeline);
 uint32_t cmd_pool_get_cmd_buffer_state(uint32_t buf_idx);
+VkCommandBuffer *cmd_pool_get_cmd_buffer_object(uint32_t buf_idx);
 
 void cmd_pool_add_renderpass_command(vulkan_cmd_template_t *p_template,
                                              vulkan_cmd_param_t *p_param);

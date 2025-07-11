@@ -132,7 +132,7 @@ uint32_t etc_app_cmd_window_display(command_t *p_cmd)
         return FAILURE;
     }
 
-    if (window_obj_mgr_start_display(args_list.window_display.p_instance) == FAILURE) {
+    if (window_obj_mgr_setup_display(args_list.window_display.p_instance) == FAILURE) {
         return FAILURE;
     }
 

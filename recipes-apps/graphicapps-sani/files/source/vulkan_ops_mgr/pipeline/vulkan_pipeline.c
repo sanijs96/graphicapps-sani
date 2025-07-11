@@ -11,6 +11,7 @@ typedef struct renderpass_ctx {
     VkAttachmentDescription color_attachment;
     VkAttachmentReference color_attachment_ref;
     VkSubpassDescription subpass;
+    VkSubpassDependency dependency;
     VkRenderPassCreateInfo renderpass_info;
     VkRenderPass renderpass;
 } renderpass_ctx_t;
@@ -131,17 +132,27 @@ static uint32_t __pipeline_create_renderpass(VkDevice *p_device, VkFormat *p_for
     p_ctx->subpass.colorAttachmentCount = 1;
     p_ctx->subpass.pColorAttachments = &p_ctx->color_attachment_ref;
 
+    p_ctx->dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    p_ctx->dependency.dstSubpass = 0;
+    p_ctx->dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    p_ctx->dependency.srcAccessMask = 0;
+    p_ctx->dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    p_ctx->dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    p_ctx->dependency.dependencyFlags = 0;
+
     p_ctx->renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     p_ctx->renderpass_info.flags = 0;
     p_ctx->renderpass_info.attachmentCount = 1;
     p_ctx->renderpass_info.pAttachments = &p_ctx->color_attachment;
     p_ctx->renderpass_info.subpassCount = 1;
     p_ctx->renderpass_info.pSubpasses = &p_ctx->subpass;
+    p_ctx->renderpass_info.dependencyCount = 1;
+    p_ctx->renderpass_info.pDependencies = &p_ctx->dependency;
 
     return vkCreateRenderPass(*p_device, &p_ctx->renderpass_info, NULL, &p_ctx->renderpass);
 }
 
-static uint32_t __pipeline_create(VkDevice *p_device)
+static uint32_t __pipeline_create_pipeline(VkDevice *p_device)
 {
     pipeline_stage_template_t *p_stage_info;
     VkGraphicsPipelineCreateInfo pipeline_info;
@@ -225,7 +236,7 @@ uint32_t pipeline_create(VkDevice *p_device)
         return FAILURE;
     }
 
-    res = __pipeline_create(p_device);
+    res = __pipeline_create_pipeline(p_device);
     if (res != VK_SUCCESS) {
         printf("pipeline create failure: %d\n", res);
         return FAILURE;
@@ -236,7 +247,7 @@ uint32_t pipeline_create(VkDevice *p_device)
     return SUCCESS;
 }
 
-VkRenderPass *pipeline_get_pipeline_object(void)
+VkPipeline *pipeline_get_pipeline_object(void)
 {
     return &pipeline_ctx.pipeline;
 }

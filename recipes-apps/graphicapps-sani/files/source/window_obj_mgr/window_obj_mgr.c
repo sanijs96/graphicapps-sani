@@ -12,8 +12,13 @@ typedef struct swapchain_ctx {
     VkSwapchainKHR swapchain;
 
     uint32_t image_count;
+    uint32_t current_image_idx;
     VkImage *p_images;
     VkImageView *p_views;
+
+    VkFence image_fence;
+    VkSemaphore render_finish_semaphore;
+    VkSemaphore image_available_semaphore;
 } swapchain_ctx_t;
 
 typedef struct framebuffer_ctx {
@@ -169,6 +174,7 @@ static uint32_t __window_obj_mgr_create_swapchain(void)
 
 static uint32_t __window_obj_mgr_create_swapchain_image_views(display_ctx_t *p_display_ctx)
 {
+    uint32_t res;
     swapchain_ctx_t *p_swapchain_ctx;
     VkImageViewCreateInfo create_info;
 
@@ -200,11 +206,43 @@ static uint32_t __window_obj_mgr_create_swapchain_image_views(display_ctx_t *p_d
 
     for (uint32_t idx = 0; idx < p_swapchain_ctx->image_count; idx++) {
         create_info.image = p_swapchain_ctx->p_images[idx];
-        if (vkCreateImageView(*window_ctx.p_device, &create_info,
-                                    NULL, &p_swapchain_ctx->p_views[idx]) != VK_SUCCESS) {
+
+        res = vkCreateImageView(*window_ctx.p_device, &create_info,
+                                NULL, &p_swapchain_ctx->p_views[idx]);
+        if (res != VK_SUCCESS) {
+            printf("image view creation failure: %d\n", res);
+
             return FAILURE;
         }
     }
+
+    return SUCCESS;
+}
+
+static uint32_t __window_obj_mgr_create_swapchain_sync_objects(void)
+{
+    uint32_t res;
+    VkFenceCreateInfo fence_info;
+    VkSemaphoreCreateInfo semaphore_info;
+
+    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT; // create with signaled state
+    fence_info.pNext = NULL;
+
+    res = vkCreateFence(*window_ctx.p_device, &fence_info, NULL,
+                            &window_ctx.display_ctx.swapchain_ctx.image_fence);
+    if (res != VK_SUCCESS) {
+        printf("fence creation failure: %d\n", res);
+
+        return FAILURE;
+    }
+
+    semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    semaphore_info.flags = 0;
+    semaphore_info.pNext = NULL;
+
+    res = vkCreateSemaphore(*window_ctx.p_device, &semaphore_info, NULL,
+                            &window_ctx.display_ctx.swapchain_ctx.image_available_semaphore);
 
     return SUCCESS;
 }
@@ -223,11 +261,16 @@ static uint32_t __window_obj_mgr_setup_swapchain_ctx(display_ctx_t *p_display_ct
                                         &p_swapchain_ctx->image_count, p_swapchain_ctx->p_images);
 
     res = __window_obj_mgr_create_swapchain_image_views(p_display_ctx);
+    if (res == FAILURE) {
+        return FAILURE;
+    }
+
+    res = __window_obj_mgr_create_swapchain_sync_objects();
 
     return res;
 }
 
-uint32_t window_obj_mgr_start_display(VkInstance *p_instance)
+uint32_t window_obj_mgr_setup_display(VkInstance *p_instance)
 {
     uint32_t res;
     display_ctx_t *p_display_ctx;
@@ -255,6 +298,90 @@ uint32_t window_obj_mgr_start_display(VkInstance *p_instance)
     }
 
     return res;
+}
+
+static uint32_t __window_obj_mgr_get_next_image(VkDevice *p_device)
+{
+    uint32_t image_idx;
+    VkSemaphore *p_semaphore;
+    VkSwapchainKHR *p_swapchain;
+
+    p_semaphore = &window_ctx.display_ctx.swapchain_ctx.image_available_semaphore;
+    p_swapchain = &window_ctx.display_ctx.swapchain_ctx.swapchain;
+
+    vkAcquireNextImageKHR(*p_device, *p_swapchain, UINT64_MAX,
+                            *p_semaphore, VK_NULL_HANDLE, &image_idx);
+
+    return image_idx;
+}
+
+uint32_t window_obj_mgr_start_display(VkDevice *p_device)
+{
+    uint32_t wait_all;
+    swapchain_ctx_t *p_swapchain_ctx;
+    VkFence *p_image_fence;
+
+    wait_all = VK_TRUE;
+    p_swapchain_ctx = &window_ctx.display_ctx.swapchain_ctx;
+    p_image_fence = &p_swapchain_ctx->image_fence;
+
+    vkWaitForFences(*p_device, 1, p_image_fence, wait_all, UINT64_MAX);
+
+    vkResetFences(*p_device, 1, p_image_fence);
+
+    p_swapchain_ctx->current_image_idx = __window_obj_mgr_get_next_image(p_device);
+
+    return SUCCESS;
+}
+
+uint32_t window_obj_mgr_get_next_framebuffer_image_idx(void)
+{
+    return window_ctx.display_ctx.swapchain_ctx.current_image_idx;
+}
+
+static uint32_t __window_obj_mgr_start_presentation(VkQueue *p_queue)
+{
+    uint32_t res;
+    swapchain_ctx_t *p_swapchain_ctx;
+    VkSemaphore *p_wait_semaphore;
+    VkPresentInfoKHR present_info;
+
+    p_swapchain_ctx = &window_ctx.display_ctx.swapchain_ctx;
+    p_wait_semaphore = &window_ctx.display_ctx.swapchain_ctx.render_finish_semaphore;
+
+    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    present_info.pNext = NULL;
+
+    present_info.waitSemaphoreCount = 1;
+    present_info.pWaitSemaphores = p_wait_semaphore;
+    present_info.swapchainCount = 1;
+    present_info.pSwapchains = &p_swapchain_ctx->swapchain;
+    present_info.pImageIndices = &p_swapchain_ctx->current_image_idx;
+
+    present_info.pResults = NULL;
+
+    res = vkQueuePresentKHR(*p_queue, &present_info);
+    if (res != VK_SUCCESS) {
+        printf("presentation failure: %d\n", res);
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
+uint32_t window_obj_mgr_show_queue_result(VkQueue *p_queue)
+{
+    return __window_obj_mgr_start_presentation(p_queue);
+}
+
+VkSemaphore *window_obj_mgr_get_display_semaphore_object(void)
+{
+    return &window_ctx.display_ctx.swapchain_ctx.image_available_semaphore;
+}
+
+void window_obj_mgr_add_swapchain_signal_semaphore(VkSemaphore *p_semaphore)
+{
+    window_ctx.display_ctx.swapchain_ctx.render_finish_semaphore = *p_semaphore;
 }
 
 uint32_t window_obj_mgr_check_display_status(void)
@@ -406,7 +533,6 @@ uint32_t window_obj_mgr_get_framebuffer_object_count(void)
 {
     return window_ctx.display_ctx.framebuffer_ctx.framebuffer_count;
 }
-
 
 VkFramebuffer *window_obj_mgr_get_framebuffer_objects(void)
 {

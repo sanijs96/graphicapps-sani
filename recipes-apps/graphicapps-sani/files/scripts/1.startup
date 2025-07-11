@@ -9,4 +9,13 @@ window display
 pipeline add -i 0 -f /home/root/graphicapps-source/shaders/shader_vert.spv
 pipeline add -i 1 -f /home/root/graphicapps-source/shaders/shader_frag.spv
 
-pipeline run
+pipeline create -t 0
+
+cmdbuf alloc
+
+cmdbuf add -i 0 -c 0
+cmdbuf add -i 0 -c 1
+
+pipeline setup -b 0
+
+pipeline run -t 0

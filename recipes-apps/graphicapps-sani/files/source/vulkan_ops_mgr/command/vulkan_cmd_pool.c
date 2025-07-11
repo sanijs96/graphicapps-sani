@@ -69,6 +69,8 @@ static uint32_t __cmd_pool_cmdbuf_start_recording(uint32_t buf_idx)
 
     begin_info.pInheritanceInfo = NULL;
 
+    vkResetCommandBuffer(*p_cmd_buf, 0);
+
     res = vkBeginCommandBuffer(*p_cmd_buf, &begin_info);
     if (res != VK_SUCCESS) {
         printf("command buffer start failure: %d\n", res);
@@ -126,14 +128,12 @@ uint32_t cmd_pool_allocate_buffer(VkDevice *p_device)
     return SUCCESS;
 }
 
-uint32_t cmd_pool_bind_cmd_buffer_to_pipeline(uint32_t buf_idx, VkPipeline *p_pipeline)
+uint32_t cmd_pool_finish_buffer_recording(uint32_t buf_idx, VkPipeline *p_pipeline)
 {
     uint32_t res;
     VkCommandBuffer *p_cmd_buf;
 
     p_cmd_buf = &cmd_pool_ctx.buffer_ctx[buf_idx].buffer;
-
-    vkCmdBindPipeline(*p_cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, *p_pipeline);
 
     vkCmdEndRenderPass(*p_cmd_buf);
 
@@ -144,6 +144,8 @@ uint32_t cmd_pool_bind_cmd_buffer_to_pipeline(uint32_t buf_idx, VkPipeline *p_pi
         return FAILURE;
     }
 
+    cmd_pool_ctx.buffer_ctx[buf_idx].state = VULKAN_CMD_POOL_CMDBUF_STATE_ACTIVATED;
+
     return SUCCESS;
 }
 
@@ -152,17 +154,24 @@ uint32_t cmd_pool_get_cmd_buffer_state(uint32_t buf_idx)
     return cmd_pool_ctx.buffer_ctx[buf_idx].state;
 }
 
+VkCommandBuffer *cmd_pool_get_cmd_buffer_object(uint32_t buf_idx)
+{
+    return &cmd_pool_ctx.buffer_ctx[buf_idx].buffer;
+}
+
 void cmd_pool_add_renderpass_command(vulkan_cmd_template_t *p_template,
                                                     vulkan_cmd_param_t *p_param)
 {
     uint32_t cmdbuf_idx;
+    uint32_t framebuf_image_idx;
 
     cmdbuf_idx = p_param->cmdbuf_idx;
-    for (uint32_t idx = 0; idx < p_param->renderpass.framebuffer_count; idx++) {
-        p_template->renderpass.framebuffer = p_param->renderpass.p_framebuffers[idx];
-        vkCmdBeginRenderPass(cmd_pool_ctx.buffer_ctx[cmdbuf_idx].buffer, &p_template->renderpass,
-                                                                        VK_SUBPASS_CONTENTS_INLINE);
-    }
+    framebuf_image_idx = p_param->renderpass.framebuffer_image_idx;
+
+    p_template->renderpass.framebuffer = p_param->renderpass.p_framebuffers[framebuf_image_idx];
+
+    vkCmdBeginRenderPass(cmd_pool_ctx.buffer_ctx[cmdbuf_idx].buffer, &p_template->renderpass,
+                                                                    VK_SUBPASS_CONTENTS_INLINE);
 
     cmd_pool_ctx.buffer_ctx[cmdbuf_idx].cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS);
 }
@@ -176,12 +185,11 @@ void cmd_pool_add_draw_command(vulkan_cmd_template_t *p_template,
     cmdbuf_idx = p_param->cmdbuf_idx;
     p_cmd_buf = &cmd_pool_ctx.buffer_ctx[cmdbuf_idx].buffer;
 
-    // moved to pipeline run command
-    //vkCmdBindPipeline(*p_cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, *p_param->draw.p_pipeline);
+    vkCmdBindPipeline(*p_cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, *p_param->draw.p_pipeline);
 
     vkCmdSetViewport(*p_cmd_buf, 0, 1, &p_param->draw.viewport);
 
-    vkCmdSetViewport(*p_cmd_buf, 0, 1, &p_param->draw.scissor);
+    vkCmdSetScissor(*p_cmd_buf, 0, 1, &p_param->draw.scissor);
 
     // TODO: modify vertex ctx
     uint32_t vertex_count = 3;

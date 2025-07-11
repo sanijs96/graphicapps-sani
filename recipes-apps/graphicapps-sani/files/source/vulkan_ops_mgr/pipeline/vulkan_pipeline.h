@@ -3,6 +3,12 @@
 
 #include <vulkan/vulkan_core.h>
 
+enum pipeline_type {
+    VULKAN_PIPELINE_TYPE_GRAPHICS = 0,
+    VULKAN_PIPELINE_TYPE_TRANSFER,
+    VULKAN_PIPELINE_TYPE_COMPUTE,
+};
+
 enum pipeline_creation_state {
     VULKAN_PIPELINE_STATE_DEFAULT = 0,
     VULKAN_PIPELINE_STATE_VIEWPORT_REGISTERED,
@@ -19,7 +25,7 @@ uint32_t pipeline_add_viewport_ctx(VkExtent2D *p_extent, VkFormat *p_format);
 
 uint32_t pipeline_create(VkDevice *p_device);
 
-VkRenderPass *pipeline_get_pipeline_object(void);
+VkPipeline *pipeline_get_pipeline_object(void);
 VkRenderPass *pipeline_get_renderpass_object(void);
 
 uint32_t pipeline_show_pipeline_info(uint32_t stage);

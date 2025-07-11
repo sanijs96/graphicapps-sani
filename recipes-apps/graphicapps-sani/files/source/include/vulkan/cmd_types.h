@@ -20,10 +20,12 @@ typedef union vulkan_cmd_template {
 
 typedef struct vulkan_cmd_param {
     uint32_t cmdbuf_idx;
+    uint32_t enable_semaphore;
     union {
         struct {
             uint32_t clear_value_count;
             uint32_t framebuffer_count;
+            uint32_t framebuffer_image_idx;
 
             VkRenderPass *p_renderpass;
             VkExtent2D *p_swapchain_extent;
