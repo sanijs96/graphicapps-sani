@@ -26,9 +26,5 @@ uint32_t cmd_template_setup_renderpass_command(vulkan_cmd_template_t *p_template
     p_renderpass_info->clearValueCount = p_param->renderpass.clear_value_count;
     p_renderpass_info->pClearValues = p_param->renderpass.p_clear_values;
 
-    for (uint32_t idx = 0; idx < p_param->renderpass.framebuffer_count; idx++) {
-        p_renderpass_info->framebuffer = p_param->renderpass.p_framebuffers[idx];
-    }
-
     return SUCCESS;
 }

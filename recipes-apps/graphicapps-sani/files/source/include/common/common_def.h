@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #define SUCCESS                 (0)
-#define FAILURE                 (1)
+#define FAILURE                 (UINT32_MAX)
 
 #define FALSE                   (0)
 #define TRUE                    (1)

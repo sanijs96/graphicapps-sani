@@ -16,13 +16,16 @@ typedef struct renderpass_ctx {
     VkRenderPass renderpass;
 } renderpass_ctx_t;
 
-static struct pipeline_ctx {
-    uint32_t state;
-    VkPipeline pipeline;
-    VkExtent2D swapchain_extent;
-    VkFormat swapchain_format;
-    renderpass_ctx_t renderpass_ctx;
+// TODO: support multiple pipelines
+static struct {
+    uint32_t states[MAX_NUM_VULKAN_PIPELINES];
+    VkPipeline pipelines[MAX_NUM_VULKAN_PIPELINES];
     VkPipelineLayout layout;
+
+    VkFormat swapchain_format;
+    VkExtent2D swapchain_extent;
+
+    renderpass_ctx_t renderpass_ctx;
 } pipeline_ctx;
 
 uint32_t pipeline_add_shader_file(uint32_t stage, char *filename, VkDevice *p_device)
@@ -40,18 +43,11 @@ uint32_t pipeline_add_shader_file(uint32_t stage, char *filename, VkDevice *p_de
         return FAILURE;
     }
 
-    if (res == SUCCESS) {
-        if (pipeline_ctx.state == VULKAN_PIPELINE_STATE_VIEWPORT_REGISTERED) {
-            pipeline_ctx.state = VULKAN_PIPELINE_STATE_READY;
-        }
-    }
-
     return res;
 }
 
 uint32_t pipeline_add_viewport_ctx(VkExtent2D *p_extent, VkFormat *p_format)
 {
-    uint32_t res;
     VkRect2D scissor;
     VkViewport viewport;
 
@@ -67,77 +63,118 @@ uint32_t pipeline_add_viewport_ctx(VkExtent2D *p_extent, VkFormat *p_format)
     scissor.offset.y = 0;
     scissor.extent = *p_extent;
 
-    viewport.height = p_extent->height;
-    viewport.width = p_extent->width;
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float)p_extent->width;
+    viewport.height = (float)p_extent->height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
-    res = pipeline_stage_setup_viewport_ctx(&viewport, &scissor);
-    if (res == SUCCESS) {
-        uint32_t stage_idx;
-        stage_idx = VULKAN_PIPELINE_STAGE_VERTEX_SHADER;
+    if (pipeline_stage_setup_viewport_ctx(&viewport, &scissor) == FAILURE) {
+        return FAILURE;
+    }
 
-        if (pipeline_stage_get_status(stage_idx) == VULKAN_PIPELINE_STAGE_STATE_REGISTERED) {
-            pipeline_ctx.state = VULKAN_PIPELINE_STATE_READY;
-        }
-        else {
-            pipeline_ctx.state = VULKAN_PIPELINE_STATE_VIEWPORT_REGISTERED;
+    return SUCCESS;
+}
+
+uint32_t pipeline_get_state(uint32_t idx)
+{
+    return pipeline_ctx.states[idx];
+}
+
+char *pipeline_get_stage_name(uint32_t idx)
+{
+    return pipeline_stage_get_stage_name(idx);
+}
+
+static uint32_t __pipeline_get_available_entry(void)
+{
+    for (uint32_t pipeline_idx = 0; pipeline_idx < MAX_NUM_VULKAN_PIPELINES; pipeline_idx++) {
+        if (pipeline_get_state(pipeline_idx) == VULKAN_PIPELINE_STATE_DEFAULT) {
+            return pipeline_idx;
         }
     }
 
-    return res;
+    return MAX_NUM_VULKAN_PIPELINES;
 }
 
-uint32_t pipeline_get_creation_state(void)
+uint32_t pipeline_start_setup(void)
 {
-    return pipeline_ctx.state;
+    uint32_t pipeline_entry_idx;
+
+    pipeline_entry_idx = __pipeline_get_available_entry();
+
+    if (pipeline_entry_idx == MAX_NUM_VULKAN_PIPELINES) {
+        printf("no pipeline entries available\n");
+
+        return FAILURE;
+    }
+
+    pipeline_ctx.states[pipeline_entry_idx] = VULKAN_PIPELINE_STATE_SETUP;
+
+    return SUCCESS;
 }
 
 static uint32_t __pipeline_create_layout(VkDevice *p_device)
 {
+    uint32_t res;
     VkPipelineLayoutCreateInfo layout_info;
 
     layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layout_info.pNext = NULL;
     layout_info.flags = 0;
-    layout_info.setLayoutCount = 0;
-    layout_info.pSetLayouts = NULL;
-    layout_info.pushConstantRangeCount = 0;
-    layout_info.pPushConstantRanges = NULL;
 
-    return vkCreatePipelineLayout(*p_device, &layout_info, NULL, &pipeline_ctx.layout);
+    layout_info.pSetLayouts = NULL;
+    layout_info.setLayoutCount = 0;
+
+    layout_info.pPushConstantRanges = NULL;
+    layout_info.pushConstantRangeCount = 0;
+
+    res = vkCreatePipelineLayout(*p_device, &layout_info, NULL, &pipeline_ctx.layout);
+    if (res != VK_SUCCESS) {
+        printf("pipeline layout create failed: %d\n", res);
+        return FAILURE;
+    }
+
+    return SUCCESS;
 }
 
-static uint32_t __pipeline_create_renderpass(VkDevice *p_device, VkFormat *p_format)
+static uint32_t __pipeline_create_renderpass(VkDevice *p_device)
 {
+    uint32_t res;
     renderpass_ctx_t *p_ctx;
 
     p_ctx = &pipeline_ctx.renderpass_ctx;
 
-    p_ctx->color_attachment.format = *p_format;
     p_ctx->color_attachment.flags = 0;
+    p_ctx->color_attachment.format = pipeline_ctx.swapchain_format;
     p_ctx->color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
     p_ctx->color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     p_ctx->color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     p_ctx->color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     p_ctx->color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    p_ctx->color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    p_ctx->color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    p_ctx->color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // don't care since cleared on load operation
+    p_ctx->color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // image layout for presentation through swap chain
 
-    p_ctx->color_attachment_ref.attachment = 0; // index of color_attachment in renderpass create info
+    p_ctx->color_attachment_ref.attachment = 0; // attachment index in renderpass create info
     p_ctx->color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     p_ctx->subpass.flags = 0;
+    p_ctx->subpass.pColorAttachments = &p_ctx->color_attachment_ref;
     p_ctx->subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     p_ctx->subpass.colorAttachmentCount = 1;
-    p_ctx->subpass.pColorAttachments = &p_ctx->color_attachment_ref;
+    p_ctx->subpass.inputAttachmentCount = 0;
+    p_ctx->subpass.preserveAttachmentCount = 0;
 
-    p_ctx->dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    p_ctx->dependency.dstSubpass = 0;
-    p_ctx->dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    // starting point for all subpasses
+    p_ctx->dependency.srcSubpass = VK_SUBPASS_EXTERNAL; // finish event is not from subpass
+    p_ctx->dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // wait until swapchain reads from the image
     p_ctx->dependency.srcAccessMask = 0;
-    p_ctx->dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    p_ctx->dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    // finish point on subpass[0]
+    p_ctx->dependency.dstSubpass = 0; // must be always higher than srcSubpass
+    p_ctx->dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; // finishes on color attachment output stage
+    p_ctx->dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // write color attachment
     p_ctx->dependency.dependencyFlags = 0;
 
     p_ctx->renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -149,11 +186,18 @@ static uint32_t __pipeline_create_renderpass(VkDevice *p_device, VkFormat *p_for
     p_ctx->renderpass_info.dependencyCount = 1;
     p_ctx->renderpass_info.pDependencies = &p_ctx->dependency;
 
-    return vkCreateRenderPass(*p_device, &p_ctx->renderpass_info, NULL, &p_ctx->renderpass);
+    res = vkCreateRenderPass(*p_device, &p_ctx->renderpass_info, NULL, &p_ctx->renderpass);
+    if (res != VK_SUCCESS) {
+        printf("renderpass create failed: %d\n", res);
+        return FAILURE;
+    }
+
+    return SUCCESS;
 }
 
-static uint32_t __pipeline_create_pipeline(VkDevice *p_device)
+static uint32_t __pipeline_create_pipeline(VkDevice *p_device, uint32_t pipeline_idx)
 {
+    uint32_t res;
     pipeline_stage_template_t *p_stage_info;
     VkGraphicsPipelineCreateInfo pipeline_info;
     VkPipelineShaderStageCreateInfo p_shader_stages[2];
@@ -203,53 +247,87 @@ static uint32_t __pipeline_create_pipeline(VkDevice *p_device)
 
     pipeline_info.layout = pipeline_ctx.layout;
     pipeline_info.renderPass = pipeline_ctx.renderpass_ctx.renderpass;
+
+    // subpass index where this graphics pipeline will be used
+    // if using other subpass, another pipeline should be created (renderpass should be compatible)
     pipeline_info.subpass = 0;
 
     // previous pipeline object, if exist
     pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
     pipeline_info.basePipelineIndex = -1;
 
-    return vkCreateGraphicsPipelines(*p_device, VK_NULL_HANDLE, 1, &pipeline_info,
-                                                    NULL, &pipeline_ctx.pipeline);;
-}
-
-uint32_t pipeline_create(VkDevice *p_device)
-{
-    uint32_t res;
-    uint32_t stage_idx;
-
-    stage_idx = VULKAN_PIPELINE_STAGE_VERTEX_SHADER;
-    if (pipeline_stage_get_status(stage_idx) != VULKAN_PIPELINE_STAGE_STATE_REGISTERED) {
-        printf("vertex shader is not registered\n");
-        return FAILURE;
-    }
-
-    res = __pipeline_create_renderpass(p_device, &pipeline_ctx.swapchain_format);
-    if (res != VK_SUCCESS) {
-        printf("renderpass create failed: %d\n", res);
-        return FAILURE;
-    }
-
-    res = __pipeline_create_layout(p_device);
-    if (res != VK_SUCCESS) {
-        printf("pipeline layout create failed: %d\n", res);
-        return FAILURE;
-    }
-
-    res = __pipeline_create_pipeline(p_device);
+    res = vkCreateGraphicsPipelines(*p_device, VK_NULL_HANDLE, 1, &pipeline_info,
+                                                    NULL, &pipeline_ctx.pipelines[pipeline_idx]);
     if (res != VK_SUCCESS) {
         printf("pipeline create failure: %d\n", res);
         return FAILURE;
     }
 
-    pipeline_ctx.state = VULKAN_PIPELINE_STATE_CREATED;
+    return SUCCESS;
+}
+
+static uint32_t __pipeline_get_setup_entry(void)
+{
+    uint32_t pipeline_entry_idx;
+
+    pipeline_entry_idx = MAX_NUM_VULKAN_PIPELINES;
+
+    for (uint32_t idx = 0; idx < MAX_NUM_VULKAN_PIPELINES; idx++) {
+        if (pipeline_get_state(idx) != VULKAN_PIPELINE_STATE_SETUP) {
+            continue;
+        }
+
+        pipeline_entry_idx = idx;
+    }
+
+    return pipeline_entry_idx;
+}
+
+uint32_t pipeline_create(VkDevice *p_device, uint32_t pipeline_entry_idx)
+{
+    uint32_t stage_idx;
+
+    stage_idx = VULKAN_PIPELINE_STAGE_VERTEX_SHADER;
+
+    if (pipeline_stage_get_status(stage_idx) != VULKAN_PIPELINE_STAGE_STATE_REGISTERED) {
+        printf("vertex shader is not registered\n");
+        return FAILURE;
+    }
+
+    if (__pipeline_create_renderpass(p_device) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (__pipeline_create_layout(p_device) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (__pipeline_create_pipeline(p_device, pipeline_entry_idx) == FAILURE) {
+        return FAILURE;
+    }
+
+    pipeline_ctx.states[pipeline_entry_idx] = VULKAN_PIPELINE_STATE_CREATED;
 
     return SUCCESS;
 }
 
-VkPipeline *pipeline_get_pipeline_object(void)
+uint32_t pipeline_destroy(VkDevice *p_device, uint32_t idx)
 {
-    return &pipeline_ctx.pipeline;
+    if (pipeline_ctx.states[idx] != VULKAN_PIPELINE_STATE_CREATED) {
+        printf("pipeline entry is not created\n");
+        return FAILURE;
+    }
+
+    vkDestroyPipeline(*p_device, pipeline_ctx.pipelines[idx], NULL);
+
+    pipeline_ctx.states[idx] = VULKAN_PIPELINE_STATE_DEFAULT;
+
+    return SUCCESS;
+}
+
+VkPipeline *pipeline_get_pipeline_object(uint32_t idx)
+{
+    return &pipeline_ctx.pipelines[idx];
 }
 
 VkRenderPass *pipeline_get_renderpass_object(void)
@@ -257,8 +335,7 @@ VkRenderPass *pipeline_get_renderpass_object(void)
     return &pipeline_ctx.renderpass_ctx.renderpass;
 }
 
-uint32_t pipeline_show_pipeline_info(uint32_t stage)
+uint32_t pipeline_show_pipeline_info(uint32_t idx)
 {
 
 }
-

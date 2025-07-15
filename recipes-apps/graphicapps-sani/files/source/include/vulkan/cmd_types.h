@@ -37,7 +37,7 @@ typedef struct vulkan_cmd_param {
         struct {
             VkRect2D scissor;
             VkViewport viewport;
-            VkPipeline *p_pipeline;
+            VkPipeline* p_pipeline;
         } draw;
     };
 

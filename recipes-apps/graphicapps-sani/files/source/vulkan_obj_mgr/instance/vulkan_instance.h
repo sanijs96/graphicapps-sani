@@ -10,12 +10,16 @@ enum instance_creation_state {
 };
 
 void instance_init(void);
+
 uint32_t instance_check_creation_state(void);
 
 void instance_add_layer_info(uint32_t layers_count, char **pp_layers_name);
 void instance_add_extension_info(uint32_t extension_count, char **pp_extensions_name);
-VkResult instance_create(void);
+
+uint32_t instance_create(void);
+
 VkInstance *instance_get_instance_object(void);
+
 void instance_destroy(void);
 
 #endif

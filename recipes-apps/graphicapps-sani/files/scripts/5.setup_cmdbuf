@@ -1,0 +1,9 @@
+buf_idx = cmdbuf alloc
+
+# create pipeline & subpass
+pipeline_idx = pipeline create
+
+cmdbuf add -c renderpass -i $buf_idx
+cmdbuf add -c draw -i $buf_idx -p $pipeline_idx
+
+cmdbuf run -i $buf_idx

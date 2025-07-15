@@ -3,13 +3,13 @@
 
 #include <vulkan/vulkan_core.h>
 
+#define MAX_NUM_CMD_BUFFERS       (4)
+
 enum pool_creation_state {
     VULKAN_CMD_POOL_STATE_DEFAULT,
     VULKAN_CMD_POOL_STATE_CREATED,
     NUM_VULKAN_CMD_POOL_STATES,
 };
-
-#define MAX_NUM_CMD_BUFFERS       (4)
 
 enum buffer_creation_state {
     VULKAN_CMD_POOL_CMDBUF_STATE_UNALLOCATED,
@@ -18,11 +18,11 @@ enum buffer_creation_state {
     NUM_VULKAN_CMD_POOL_CMDBUF_STATES,
 };
 
-uint32_t cmd_pool_create(VkDevice *p_device, uint32_t device_queue_idx);
+uint32_t cmd_pool_create(VkDevice *p_device, uint32_t queue_family_idx);
 uint32_t cmd_pool_get_state(void);
 
-uint32_t cmd_pool_allocate_buffer(VkDevice *p_device);
-uint32_t cmd_pool_finish_buffer_recording(uint32_t buf_idx, VkPipeline *p_pipeline);
+uint32_t cmd_pool_allocate_buffer(VkDevice *p_device, uint32_t *p_buf_idx);
+uint32_t cmd_pool_finish_buffer_recording(uint32_t buf_idx);
 uint32_t cmd_pool_get_cmd_buffer_state(uint32_t buf_idx);
 VkCommandBuffer *cmd_pool_get_cmd_buffer_object(uint32_t buf_idx);
 

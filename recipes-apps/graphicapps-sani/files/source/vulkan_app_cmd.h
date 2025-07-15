@@ -17,10 +17,10 @@ uint32_t vulkan_app_cmd_delete_instance(command_t *p_cmd);
 uint32_t vulkan_app_cmd_create_device(command_t *p_cmd);
 uint32_t vulkan_app_cmd_show_devices_list(command_t *p_cmd);
 
+uint32_t vulkan_app_cmd_init_pipeline_ctx(command_t *p_cmd);
 uint32_t vulkan_app_cmd_add_pipeline_stage(command_t *p_cmd);
 uint32_t vulkan_app_cmd_create_pipeline(command_t *p_cmd);
-uint32_t vulkan_app_cmd_setup_pipeline(command_t *p_cmd);
-uint32_t vulkan_app_cmd_run_pipeline(command_t *p_cmd);
+uint32_t vulkan_app_cmd_run_commands(command_t *p_cmd);
 uint32_t vulkan_app_cmd_show_pipeline_info(command_t *p_cmd);
 
 uint32_t vulkan_app_cmd_allocate_command_buffer(command_t *p_cmd);

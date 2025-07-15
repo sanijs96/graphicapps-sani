@@ -1,0 +1,5 @@
+# attachment fields
+#   {flags, format, samples, loadOp, storeOp, stencilLoadOp, stencilStoreOp, initialLayout, finalLayout}
+
+# 1.no flag, VK_FORMAT_B8G8R8A8_SRGB, 1sample, CLEAR, DC, CC, STORE, UNDEF, SRC_KHR
+{   0,       50,                      1,       1,     0,  0,  0,     0,     1000001002, }

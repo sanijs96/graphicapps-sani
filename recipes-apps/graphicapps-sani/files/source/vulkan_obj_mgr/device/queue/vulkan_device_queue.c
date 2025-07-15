@@ -87,7 +87,7 @@ uint32_t device_queue_get_total_queue_family_count(void)
         queue_info_count++;
     }
 
-    queue_type = VULKAN_DEVICE_QUEUE_TYPE_COMPUTE;
+    queue_type = VULKAN_DEVICE_QUEUE_TYPE_TRANSFER;
     if ((families_idx[queue_type] != families_idx[VULKAN_DEVICE_QUEUE_TYPE_GRAPHICS]) &&
             (families_idx[queue_type] != families_idx[VULKAN_DEVICE_QUEUE_TYPE_COMPUTE])) {
         queue_info_count++;

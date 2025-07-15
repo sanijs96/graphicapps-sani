@@ -1,0 +1,4 @@
+# create attachment using resource descriptor list
+resource create -t 0 -f /home/root/graphicapps-source/scripts/buffer_list
+
+resource create -t 1 -f /home/root/graphicapps-source/scripts/image_list

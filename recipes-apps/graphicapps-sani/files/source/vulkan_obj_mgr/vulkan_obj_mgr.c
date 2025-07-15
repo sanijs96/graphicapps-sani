@@ -14,7 +14,7 @@
 // vulkan instance
 void vulkan_obj_mgr_init(void)
 {
-    instance_init("Sani Vulkan Application");
+    instance_init();
 
     function_init_layers_ctx();
 }

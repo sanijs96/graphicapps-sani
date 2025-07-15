@@ -8,6 +8,7 @@
 typedef struct cmd_buf_ctx {
     uint32_t state;
     uint32_t cmd_bitmap;
+    uint32_t pipeline_idx; // TODO: bind pipeline idx with buffer
     VkCommandBuffer buffer;
 } cmd_buf_ctx_t;
 
@@ -17,7 +18,7 @@ static struct {
     cmd_buf_ctx_t buffer_ctx[MAX_NUM_CMD_BUFFERS];
 } cmd_pool_ctx;
 
-uint32_t cmd_pool_create(VkDevice *p_device, uint32_t device_queue_idx)
+uint32_t cmd_pool_create(VkDevice *p_device, uint32_t queue_family_idx)
 {
     uint32_t res;
     VkCommandPoolCreateInfo cmd_pool_info;
@@ -26,7 +27,7 @@ uint32_t cmd_pool_create(VkDevice *p_device, uint32_t device_queue_idx)
     cmd_pool_info.pNext = NULL;
     cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-    cmd_pool_info.queueFamilyIndex = device_queue_idx;
+    cmd_pool_info.queueFamilyIndex = queue_family_idx;
 
     res = vkCreateCommandPool(*p_device, &cmd_pool_info, NULL, &cmd_pool_ctx.pool);
     if (res != VK_SUCCESS) {
@@ -80,7 +81,7 @@ static uint32_t __cmd_pool_cmdbuf_start_recording(uint32_t buf_idx)
     return SUCCESS;
 }
 
-uint32_t cmd_pool_allocate_buffer(VkDevice *p_device)
+uint32_t cmd_pool_allocate_buffer(VkDevice *p_device, uint32_t *p_buf_idx)
 {
     uint32_t res;
     uint32_t buf_idx;
@@ -125,10 +126,12 @@ uint32_t cmd_pool_allocate_buffer(VkDevice *p_device)
 
     printf("command buffer [%u] allocated\n", buf_idx);
 
+    *p_buf_idx = buf_idx;
+
     return SUCCESS;
 }
 
-uint32_t cmd_pool_finish_buffer_recording(uint32_t buf_idx, VkPipeline *p_pipeline)
+uint32_t cmd_pool_finish_buffer_recording(uint32_t buf_idx)
 {
     uint32_t res;
     VkCommandBuffer *p_cmd_buf;
@@ -163,15 +166,17 @@ void cmd_pool_add_renderpass_command(vulkan_cmd_template_t *p_template,
                                                     vulkan_cmd_param_t *p_param)
 {
     uint32_t cmdbuf_idx;
+    VkCommandBuffer *p_cmd_buf;
     uint32_t framebuf_image_idx;
 
     cmdbuf_idx = p_param->cmdbuf_idx;
     framebuf_image_idx = p_param->renderpass.framebuffer_image_idx;
 
+    p_cmd_buf = &cmd_pool_ctx.buffer_ctx[cmdbuf_idx].buffer;
+
     p_template->renderpass.framebuffer = p_param->renderpass.p_framebuffers[framebuf_image_idx];
 
-    vkCmdBeginRenderPass(cmd_pool_ctx.buffer_ctx[cmdbuf_idx].buffer, &p_template->renderpass,
-                                                                    VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(*p_cmd_buf, &p_template->renderpass, VK_SUBPASS_CONTENTS_INLINE);
 
     cmd_pool_ctx.buffer_ctx[cmdbuf_idx].cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS);
 }
@@ -199,7 +204,7 @@ void cmd_pool_add_draw_command(vulkan_cmd_template_t *p_template,
 
     vkCmdDraw(*p_cmd_buf, vertex_count, instance_count, first_vertex, first_instance);
 
-    cmd_pool_ctx.buffer_ctx[cmdbuf_idx].cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS);
+    cmd_pool_ctx.buffer_ctx[cmdbuf_idx].cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_DRAW);
 }
 
 uint32_t cmd_pool_check_buffer_allocated(uint32_t buf_idx)

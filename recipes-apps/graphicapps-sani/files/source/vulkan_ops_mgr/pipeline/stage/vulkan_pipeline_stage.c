@@ -8,6 +8,7 @@
 
 typedef struct stage_ctx {
     uint32_t state;
+    const char * const name;
     pipeline_stage_template_t setting;
 } stage_ctx_t;
 
@@ -33,20 +34,25 @@ const VkPipelineColorBlendAttachmentState default_attachment_state = {
 
 stage_ctx_t stages[NUM_VULKAN_PIPELINE_STAGES] = {
 [VULKAN_PIPELINE_STAGE_VERTEX_SHADER] = {
+    .name = "shader_vertex",
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
     .setting.vertex_shader = { .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                                     .pNext = NULL, .flags = 0,
                                     .stage = VK_SHADER_STAGE_VERTEX_BIT,
-                                    .pName = NULL, .pSpecializationInfo = NULL }
+                                    .pName = NULL,
+                                    .pSpecializationInfo = NULL }
 },
 [VULKAN_PIPELINE_STAGE_FRAGMENT_SHADER] = {
+    .name = "shader_fragment",
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
     .setting.fragment_shader = { .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                                     .pNext = NULL, .flags = 0,
                                     .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-                                    .pName = NULL, .pSpecializationInfo = NULL }
+                                    .pName = NULL,
+                                    .pSpecializationInfo = NULL }
 },
 [VULKAN_PIPELINE_STAGE_VERTEX_INPUT] = {
+    .name = "input_vertex",
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
     .setting.vertex_input = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
                                     .pNext = NULL, .flags = 0, 
@@ -56,6 +62,7 @@ stage_ctx_t stages[NUM_VULKAN_PIPELINE_STAGES] = {
                                     .pVertexAttributeDescriptions = NULL }
 },
 [VULKAN_PIPELINE_STAGE_INPUT_ASSEMBLY] = {
+    .name = "input_assembly",
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
     .setting.input_assembly = { .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
                                     .pNext = NULL, .flags = 0,
@@ -63,14 +70,18 @@ stage_ctx_t stages[NUM_VULKAN_PIPELINE_STAGES] = {
                                     .primitiveRestartEnable = VK_FALSE }
 },
 [VULKAN_PIPELINE_STAGE_VIEWPORT] = {
+    .name = "viewport",
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
     .setting.viewport = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
                                     .pNext = NULL, .flags = 0,
-                                    .viewportCount = 0, .pViewports = NULL,
-                                    .scissorCount = 0, .pScissors = NULL }
+                                    .viewportCount = 0,
+                                    .pViewports = NULL,
+                                    .scissorCount = 0,
+                                    .pScissors = NULL }
 
 },
 [VULKAN_PIPELINE_STAGE_DYNAMIC] = {
+    .name = "dynamic",
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
     .setting.dynamic = { .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
                                     .pNext = NULL, .flags = 0,
@@ -78,6 +89,7 @@ stage_ctx_t stages[NUM_VULKAN_PIPELINE_STAGES] = {
                                     .pDynamicStates = dynamic_state}
 },
 [VULKAN_PIPELINE_STAGE_RASTERIZER] = {
+    .name = "rasterizer",
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
     .setting.rasterizer = { .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
                                     .pNext = NULL, .depthClampEnable = VK_FALSE,
@@ -86,22 +98,29 @@ stage_ctx_t stages[NUM_VULKAN_PIPELINE_STAGES] = {
                                     .cullMode = VK_CULL_MODE_BACK_BIT,
                                     .frontFace = VK_FRONT_FACE_CLOCKWISE,
                                     .depthBiasEnable = VK_FALSE,
-                                    .depthBiasConstantFactor = 0.0f, .depthBiasClamp = 0.0f,
-                                    .depthBiasSlopeFactor = 0.0f, .lineWidth = 1.0f }
+                                    .depthBiasConstantFactor = 0.0f,
+                                    .depthBiasClamp = 0.0f,
+                                    .depthBiasSlopeFactor = 0.0f,
+                                    .lineWidth = 1.0f }
 },
 [VULKAN_PIPELINE_STAGE_MULTISAMPLING] = {
+    .name = "multisampling",
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
     .setting.multisampling = { .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
                                     .pNext = NULL, .flags = 0,
                                     .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
-                                    .sampleShadingEnable = VK_FALSE, .minSampleShading = 1.0f,
-                                    .pSampleMask = NULL, .alphaToCoverageEnable = VK_FALSE,
+                                    .sampleShadingEnable = VK_FALSE,
+                                    .minSampleShading = 1.0f,
+                                    .pSampleMask = NULL,
+                                    .alphaToCoverageEnable = VK_FALSE,
                                     .alphaToOneEnable = VK_FALSE }
 },
 [VULKAN_PIPELINE_STAGE_DEPTH_STENCIL] = {
+    .name = "depth_stencil",
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
 },
 [VULKAN_PIPELINE_STAGE_COLOR_BLENDING] = {
+    .name = "color_blending",
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
     .setting.color_blend = { .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
                                     .pNext = NULL, .flags = 0, 
@@ -116,6 +135,11 @@ stage_ctx_t stages[NUM_VULKAN_PIPELINE_STAGES] = {
 uint32_t pipeline_stage_get_status(uint32_t stage_idx)
 {
     return stages[stage_idx].state;
+}
+
+char *pipeline_stage_get_stage_name(uint32_t stage_idx)
+{
+    return (char *)stages[stage_idx].name;
 }
 
 pipeline_stage_template_t *pipeline_stage_get_creation_info(uint32_t stage_idx)

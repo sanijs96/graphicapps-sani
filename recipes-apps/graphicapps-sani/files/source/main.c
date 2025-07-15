@@ -99,11 +99,6 @@ static void __cleanup_args_list(command_t *p_cmd)
 
     free(p_cmd->cmd_name);
     free(p_cmd->subcmd_name);
-
-    for (uint32_t idx = 0; idx < p_cmd->num_args; idx++ ) {
-        free(p_cmd->p_args[idx].value);
-    }
-
     free(p_cmd->p_args);
 }
 
@@ -115,7 +110,7 @@ static uint32_t __get_next_arg_length(char **cursor)
     char *delim;
 
     input_length = 0;
-    while (delim = strstr(*cursor, " ")) {
+    while (delim = strchr(*cursor, ' ')) {
         input_length = (uint32_t)(delim - *cursor);
 
         // duplicated space
@@ -127,12 +122,12 @@ static uint32_t __get_next_arg_length(char **cursor)
         return input_length;
     }
 
-    delim = strstr(*cursor, "\n");
+    delim = strchr(*cursor, '\n');
     if (delim) {
         input_length = (uint32_t)(delim - *cursor);
     }
     else {
-        delim = strstr(*cursor, "\0");
+        delim = strchr(*cursor, '\0');
         if (delim) {
             input_length = strlen(*cursor);
         }
@@ -141,14 +136,52 @@ static uint32_t __get_next_arg_length(char **cursor)
     return input_length;
 }
 
+static void __setup_argval(char *p_argval_buf, char **input_cursor)
+{
+    uint32_t input_length;
+
+    input_length = __get_next_arg_length(input_cursor);
+    if (input_length == 0) {
+        p_argval_buf = NULL;
+        return;
+    }
+
+    memset(p_argval_buf, 0, MAX_LENGTH_APP_CMD);
+    strncpy(p_argval_buf, *input_cursor, input_length);
+
+    if (app_cmd_handler_check_argname_registered(p_argval_buf) == TRUE) {
+        app_cmd_handler_convert_argname_to_argval(p_argval_buf);
+    }
+
+    __shift_cursor(input_cursor, input_length);
+
+    return;
+}
+
 static uint32_t __setup_args_list(command_t *p_cmd, char* input)
 {
     uint32_t res;
+    uint32_t arg_idx;
     uint32_t max_num_args;
     uint32_t input_length;
     char **input_cursor;
 
     input_cursor = &input;
+
+    if (strchr(*input_cursor, '=') != NULL) {
+        input_length = __get_next_arg_length(input_cursor);
+        if (input_length == 0) {
+            res = FAILURE;
+        }
+
+        p_cmd->saved_argname = strndup(*input_cursor, input_length);
+
+        *input_cursor = strchr(*input_cursor, '=');
+        __shift_cursor(input_cursor, 1); // skip assignment character '='
+    }
+    else {
+        p_cmd->saved_argname = NULL;
+    }
 
     input_length = __get_next_arg_length(input_cursor);
     if (input_length == 0) {
@@ -173,33 +206,26 @@ static uint32_t __setup_args_list(command_t *p_cmd, char* input)
 
     p_cmd->p_args = (command_arg_t *)malloc(sizeof(command_arg_t) * max_num_args);
 
-    p_cmd->num_args = 0;
-    while (max_num_args > p_cmd->num_args) {
+    arg_idx = 0;
+    while (max_num_args > arg_idx) {
         *input_cursor = strstr(*input_cursor, "-");
         if (*input_cursor == NULL) {
             break;
         }
         __shift_cursor(input_cursor, 1); // skip dellimiter '-'
-        p_cmd->p_args[p_cmd->num_args].type = **input_cursor;
+        p_cmd->p_args[arg_idx].type = **input_cursor;
 
         __shift_cursor(input_cursor, 1);
 
-        input_length = __get_next_arg_length(input_cursor);
-        if (input_length == 0) {
+        __setup_argval(p_cmd->p_args[arg_idx].value, input_cursor);
+        if (p_cmd->p_args[arg_idx].value == NULL) {
             break;
         }
 
-        p_cmd->p_args[p_cmd->num_args].value = strndup(*input_cursor, input_length);
-
-        __shift_cursor(input_cursor, input_length);
-
-        p_cmd->num_args++;
+        arg_idx++;
     }
 
-    printf("args: <");
-    for (uint32_t idx = 0; idx < p_cmd->num_args; idx++ ) {
-        printf(" %s", p_cmd->p_args[idx].value);
-    } printf(" >\n");
+    p_cmd->num_args = arg_idx;
 
     res = SUCCESS;
 
@@ -231,6 +257,10 @@ input:
     if (app_cmd_handler_process(&cmd) == FAILURE) {
         printf("cmd failed\n");
         app_cmd_handler_show_usage(&cmd);
+    }
+
+    if (cmd.saved_argname != NULL) {
+        app_cmd_handler_save_result(cmd.saved_argname, cmd.retval);
     }
 
     if (!app_cmd_handler_check_exited(&cmd)) {

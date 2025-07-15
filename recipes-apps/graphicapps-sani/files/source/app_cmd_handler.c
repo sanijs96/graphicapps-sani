@@ -19,10 +19,8 @@ typedef const struct __command_handler_entry {
 } const command_handler_entry_t;
 
 command_handler_entry_t vulkan_app_cmd_handler_instance[] = {
-    {"create", NULL,
-        NULL, vulkan_app_cmd_create_instance, NULL},
-    {"delete", NULL,
-        NULL, vulkan_app_cmd_delete_instance, NULL},
+    {"create", NULL, NULL, vulkan_app_cmd_create_instance, NULL},
+    {"delete", NULL, NULL, vulkan_app_cmd_delete_instance, NULL},
 
     {NULL, }
 };
@@ -51,10 +49,9 @@ command_handler_entry_t vulkan_app_cmd_handler_device[] = {
 };
 
 command_handler_entry_t vulkan_app_cmd_handler_pipeline[] = {
-    {"add", "if", NULL, vulkan_app_cmd_add_pipeline_stage, NULL},
-    {"create", "t", NULL, vulkan_app_cmd_create_pipeline, NULL},
-    {"setup", "b", NULL, vulkan_app_cmd_setup_pipeline, NULL},
-    {"run", "t", NULL, vulkan_app_cmd_run_pipeline, NULL},
+    {"init", NULL, NULL, vulkan_app_cmd_init_pipeline_ctx, NULL},
+    {"setup", "fis", NULL, vulkan_app_cmd_add_pipeline_stage, NULL},
+    {"create", NULL, NULL, vulkan_app_cmd_create_pipeline, NULL},
     {"info", NULL, NULL, vulkan_app_cmd_show_pipeline_info, NULL},
 
     {NULL, }
@@ -62,7 +59,8 @@ command_handler_entry_t vulkan_app_cmd_handler_pipeline[] = {
 
 command_handler_entry_t vulkan_app_cmd_handler_command_buf[] = {
     {"alloc", NULL, NULL, vulkan_app_cmd_allocate_command_buffer, NULL},
-    {"add", "cis", NULL, vulkan_app_cmd_add_vulkan_command, NULL},
+    {"add", "cip", NULL, vulkan_app_cmd_add_vulkan_command, NULL},
+    {"run", "i", NULL, vulkan_app_cmd_run_commands, NULL},
     {"info", "i", NULL, vulkan_app_cmd_show_command_buffer_info, NULL},
 
     {NULL, }
@@ -104,12 +102,12 @@ command_handler_entry_list_t app_cmd_handler_list[] = {
     {NULL, }
 };
 
-uint32_t app_cmd_handler_get_command_input(char *p_cmd_string)
+uint32_t app_cmd_handler_get_command_input(char *cmd_string)
 {
     if (app_cmd_get_runscript_state() == APP_CMD_RUNSCRIPT_REGISTERED) {
-        return app_cmd_get_cmdstring_from_runscript(p_cmd_string);
+        return app_cmd_get_cmdstring_from_runscript(cmd_string);
     }
-    else if (!fgets(p_cmd_string, MAX_LENGTH_APP_CMD, stdin)) {
+    else if (!fgets(cmd_string, MAX_LENGTH_APP_CMD, stdin)) {
         return FAILURE;
     }
 }
@@ -205,6 +203,31 @@ uint32_t app_cmd_handler_check_exited(command_t *p_cmd)
     else {
         return FALSE;
     }
+}
+
+uint32_t app_cmd_handler_check_argname_registered(char *arg_name_str)
+{
+    if (arg_name_str == NULL) {
+        return FALSE;
+    }
+
+    return app_cmd_check_argname_registered(arg_name_str);
+}
+
+void app_cmd_handler_convert_argname_to_argval(char *arg_name_str)
+{
+    char *p_argname_str;
+
+    p_argname_str = app_cmd_load_argval_from_argname(arg_name_str);
+
+    strcpy(arg_name_str, p_argname_str);
+
+    return;
+}
+
+uint32_t app_cmd_handler_save_result(char *arg_name_str, uint32_t retval)
+{
+    return app_cmd_save_result(arg_name_str, retval);
 }
 
 void app_cmd_handler_show_usage(command_t *p_cmd)

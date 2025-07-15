@@ -30,13 +30,13 @@ void instance_init(void)
 void instance_add_layer_info(uint32_t layers_count, char **pp_layers_name)
 {
     instance_ctx.layer_count = layers_count;
-    instance_ctx.p_layers_name = (const char *const *)pp_layers_name;
+    instance_ctx.p_layers_name = pp_layers_name;
 }
 
 void instance_add_extension_info(uint32_t extension_count, char **pp_extensions_name)
 {
     instance_ctx.extension_count = extension_count;
-    instance_ctx.p_extensions_name = (const char *const *)pp_extensions_name;
+    instance_ctx.p_extensions_name = pp_extensions_name;
 }
 
 static void __init_apps_info(VkApplicationInfo *p_apps_info)
@@ -61,8 +61,8 @@ static void __init_creation_info(VkInstanceCreateInfo *p_creation_info)
     p_creation_info->enabledLayerCount = instance_ctx.layer_count;
     p_creation_info->enabledExtensionCount = instance_ctx.extension_count;
 
-    p_creation_info->ppEnabledLayerNames = instance_ctx.p_layers_name;
-    p_creation_info->ppEnabledExtensionNames = instance_ctx.p_extensions_name;
+    p_creation_info->ppEnabledLayerNames = (const char *const *)instance_ctx.p_layers_name;
+    p_creation_info->ppEnabledExtensionNames = (const char *const *)instance_ctx.p_extensions_name;
 }
 
 uint32_t instance_create(void)

@@ -110,7 +110,6 @@ static uint32_t etc_app_cmd_setup_argument_list(command_t *p_cmd, etc_cmd_args_l
 uint32_t etc_app_cmd_window_add_instance_obj(command_t *p_cmd)
 {
     p_cmd->p_args[p_cmd->num_args].type = PARAM_ETC(WINDOW_INSTANCE);
-    p_cmd->p_args[p_cmd->num_args].value = (char *)malloc(sizeof(uint32_t)); // unused
 
     p_cmd->num_args++;
 
@@ -120,8 +119,6 @@ uint32_t etc_app_cmd_window_add_instance_obj(command_t *p_cmd)
 uint32_t etc_app_cmd_window_display(command_t *p_cmd)
 {
     etc_cmd_args_list_t args_list;
-    VkExtent2D *p_extent;
-    VkFormat *p_format;
 
     if (etc_app_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
@@ -135,11 +132,6 @@ uint32_t etc_app_cmd_window_display(command_t *p_cmd)
     if (window_obj_mgr_setup_display(args_list.window_display.p_instance) == FAILURE) {
         return FAILURE;
     }
-
-    p_extent = window_obj_mgr_get_current_swapchain_extent();
-    p_format = window_obj_mgr_get_current_swapchain_format();
-
-    vulkan_ops_mgr_add_viewport_ctx(p_extent, p_format);
 
     return SUCCESS;
 }

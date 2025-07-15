@@ -18,6 +18,7 @@ enum dynamic_shader_state {
 };
 
 uint32_t pipeline_stage_get_status(uint32_t stage_idx);
+char *pipeline_stage_get_stage_name(uint32_t stage_idx);
 pipeline_stage_template_t *pipeline_stage_get_creation_info(uint32_t stage_idx);
 
 uint32_t pipeline_stage_setup_vertex_shader_ctx(char *filename, VkDevice* p_device);

@@ -1,0 +1,11 @@
+# create subpass & pipeline
+pipeline init
+
+# setup vertex shader stage
+pipeline setup -s shader_vertex -f /home/root/graphicapps-source/shaders/shader_vert.spv
+
+# setup fragment shader stage
+pipeline setup -s shader_fragment -f /home/root/graphicapps-source/shaders/shader_frag.spv
+
+# setup viewport stage
+pipeline setup -s viewport
