@@ -1,21 +1,14 @@
 #version 450
 
+// vertex attributes from vertex buffers, retrieved at vertex input stage
+layout(location = 0) in vec2 input_position;
+layout(location = 1) in vec3 input_color;
+
+// output data which will be fed into fragment shader
 layout(location = 0) out vec3 frag_color;
-
-vec2 positions[3] = vec2[] (
-    vec2(0.0, -0.5),
-    vec2(0.5, 0.5),
-    vec2(-0.5, 0.5)
-);
-
-vec3 colors[3] = vec3[] (
-    vec3(1.0, 0.0, 0.0),
-    vec3(0.0, 1.0, 0.0),
-    vec3(0.0, 0.0, 1.0)
-);
 
 void main()
 {
-    gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);
-    frag_color = colors[gl_VertexID];
+    gl_Position = vec4(input_position, 0.0, 1.0);
+    frag_color = input_color;
 }

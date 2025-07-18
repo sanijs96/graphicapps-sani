@@ -9,15 +9,11 @@
 
 #include "vulkan_app_cmd.h"
 
-// TODO: remove mgr prepend from folder name
-#include "vulkan_obj_mgr/vulkan_obj_mgr.h"
-#include "vulkan_obj_mgr/device/vulkan_device.h"
-#include "vulkan_obj_mgr/instance/vulkan_instance.h"
+#include "vulkan_object/vulkan_obj_mgr.h"
+#include "vulkan_operation/vulkan_ops_mgr.h"
+#include "vulkan_resource/vulkan_resource_mgr.h"
 
-#include "vulkan_ops_mgr/vulkan_ops_mgr.h"
-#include "vulkan_ops_mgr/pipeline/vulkan_pipeline.h"
-
-#include "window_obj_mgr/window_obj_mgr.h"
+#include "window_object/window_obj_mgr.h"
 
 typedef union vulkan_cmd_args_list {
     struct {
@@ -48,6 +44,12 @@ typedef union vulkan_cmd_args_list {
         uint32_t cmd_type;
         uint32_t pipeline_idx;
     } cmdbuf;
+
+    struct {
+        uint32_t format_type;
+        uint32_t pipeline_idx;
+        char filename[FILENAME_MAX];
+    } resource;
 
 } vulkan_cmd_args_list_t;
 
@@ -136,7 +138,6 @@ static uint32_t __setup_pipeline_argument(command_arg_t arg, vulkan_cmd_args_lis
 
 static uint32_t __setup_cmdbuf_argument(command_arg_t arg, vulkan_cmd_args_list_t *p_arglist)
 {
-    uint32_t intval;
     switch (arg.type) {
         case PARAM_VK(CMDBUF_COMMAND_TYPE):
             p_arglist->cmdbuf.cmd_type = vulkan_ops_mgr_get_vulkan_cmd_type_from_name(arg.value);
@@ -147,6 +148,28 @@ static uint32_t __setup_cmdbuf_argument(command_arg_t arg, vulkan_cmd_args_list_
             break;
 
         case PARAM_VK(CMDBUF_BUFFER_IDX):
+            p_arglist->cmdbuf.buf_idx = (uint32_t)(*(char *)arg.value - '0');
+            break;
+
+        default:
+            return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
+static uint32_t __setup_resource_argument(command_arg_t arg, vulkan_cmd_args_list_t *p_arglist)
+{
+    switch (arg.type) {
+        case PARAM_VK(RESOURCE_FILENAME):
+            strcpy(p_arglist->resource.filename, arg.value);
+            break;
+
+        case PARAM_VK(RESOURCE_PIPELINE_IDX):
+            p_arglist->cmdbuf.pipeline_idx = (uint32_t)(*(char *)arg.value - '0');
+            break;
+
+        case PARAM_VK(RESOURCE_FORMAT_TYPE):
             p_arglist->cmdbuf.buf_idx = (uint32_t)(*(char *)arg.value - '0');
             break;
 
@@ -195,6 +218,9 @@ static uint32_t vulkan_app_cmd_setup_argument_list(command_t *p_cmd,
     }
     else if (!strcmp(p_cmd->cmd_name, "cmdbuf")) {
         __arg_setup_func = __setup_cmdbuf_argument;
+    }
+    else if (!strcmp(p_cmd->cmd_name, "resource")) {
+        __arg_setup_func = __setup_resource_argument;
     }
     else {
         return FAILURE;
@@ -342,9 +368,9 @@ static void __check_presentation_support(uint32_t phydev_idx, VkSurfaceKHR *p_su
     uint32_t present_support;
     VkPhysicalDevice *p_phydev;
 
-    p_phydev = device_get_phydev_object(phydev_idx);
+    p_phydev = vulkan_obj_mgr_get_phydev_object(phydev_idx);
 
-    queue_count = device_get_device_queue_property_count(phydev_idx);
+    queue_count = vulkan_obj_mgr_get_device_queue_family_count(phydev_idx);
 
     printf("Presentation Queue Index: ");
     for (uint32_t queue_idx = 0; queue_idx < queue_count; queue_idx++)  {
@@ -375,12 +401,12 @@ uint32_t vulkan_app_cmd_show_devices_list(command_t *p_cmd)
     uint32_t phydev_count;
     vulkan_cmd_args_list_t args_list;
 
-    if (instance_check_creation_state() != VULKAN_INSTANCE_CREATION_STATE_CREATED) {
+    if (vulkan_obj_mgr_get_instance_object() == NULL) {
         printf("instance not created yet\n");
         return FAILURE;
     }
 
-    phydev_count = device_get_phydevs_count();
+    phydev_count = vulkan_obj_mgr_get_phydev_count();
 
     if (vulkan_app_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
@@ -670,24 +696,6 @@ static uint32_t __vulkan_app_cmd_run_cmd_buffer(vulkan_cmd_args_list_t *p_args_l
     return SUCCESS;
 }
 
-uint32_t vulkan_app_cmd_run_commands(command_t *p_cmd)
-{
-    vulkan_cmd_args_list_t args_list;
-
-    if (vulkan_app_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
-        return FAILURE;
-    }
-
-    if (vulkan_ops_mgr_activate_cmd_buffer(args_list.cmdbuf.buf_idx) == FAILURE) {
-        printf("command buffer not activated\n");
-        return FAILURE;
-    }
-
-    __vulkan_app_cmd_run_cmd_buffer(&args_list);
-
-    return SUCCESS;
-}
-
 uint32_t vulkan_app_cmd_show_pipeline_info(command_t *p_cmd)
 {
 
@@ -837,6 +845,42 @@ uint32_t vulkan_app_cmd_add_vulkan_command(command_t *p_cmd)
 }
 
 uint32_t vulkan_app_cmd_show_command_buffer_info(command_t *p_cmd)
+{
+
+}
+
+uint32_t vulkan_app_cmd_run_commands(command_t *p_cmd)
+{
+    vulkan_cmd_args_list_t args_list;
+
+    if (vulkan_app_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (vulkan_ops_mgr_activate_cmd_buffer(args_list.cmdbuf.buf_idx) == FAILURE) {
+        printf("command buffer not activated\n");
+        return FAILURE;
+    }
+
+    __vulkan_app_cmd_run_cmd_buffer(&args_list);
+
+    return SUCCESS;
+}
+
+uint32_t vulkan_app_cmd_create_resource_object(command_t *p_cmd)
+{
+    resource_data_t resource;
+    vulkan_cmd_args_list_t args_list;
+
+    if (vulkan_app_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
+        return FAILURE;
+    }
+
+
+
+}
+
+uint32_t vulkan_app_cmd_bind_resource_to_pipeline(command_t *p_cmd)
 {
 
 }

@@ -397,6 +397,11 @@ static void __vulkan_obj_mgr_print_queue_flags(uint32_t queue_flag)
     if (queue_flag & VK_QUEUE_OPTICAL_FLOW_BIT_NV)  printf("%s", ", OPTFLOW");
 }
 
+uint32_t vulkan_obj_mgr_get_device_queue_family_count(uint32_t phydev_idx)
+{
+    return device_get_device_queue_property_count(phydev_idx);
+}
+
 void vulkan_obj_mgr_show_device_info(uint32_t phydev_idx)
 {
     char *device_type_str;

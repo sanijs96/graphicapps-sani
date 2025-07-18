@@ -66,6 +66,13 @@ command_handler_entry_t vulkan_app_cmd_handler_command_buf[] = {
     {NULL, }
 };
 
+command_handler_entry_t vulkan_app_cmd_handler_resource[] = {
+    {"create", "ft", NULL, vulkan_app_cmd_create_resource_object, NULL},
+    {"bind", "p", NULL, vulkan_app_cmd_bind_resource_to_pipeline, NULL},
+
+    {NULL, }
+};
+
 command_handler_entry_t etc_app_cmd_handler_window[] = {
     {"display", "i", etc_app_cmd_window_add_instance_obj, etc_app_cmd_window_display, NULL},
     {"resize", "hw", NULL, etc_app_cmd_window_resize, NULL},
@@ -101,16 +108,6 @@ command_handler_entry_list_t app_cmd_handler_list[] = {
 
     {NULL, }
 };
-
-uint32_t app_cmd_handler_get_command_input(char *cmd_string)
-{
-    if (app_cmd_get_runscript_state() == APP_CMD_RUNSCRIPT_REGISTERED) {
-        return app_cmd_get_cmdstring_from_runscript(cmd_string);
-    }
-    else if (!fgets(cmd_string, MAX_LENGTH_APP_CMD, stdin)) {
-        return FAILURE;
-    }
-}
 
 static command_handler_entry_t *__find_matching_cmd_entry_list(command_handler_entry_list_t *p_list, char *cmd_name)
 {
@@ -203,31 +200,6 @@ uint32_t app_cmd_handler_check_exited(command_t *p_cmd)
     else {
         return FALSE;
     }
-}
-
-uint32_t app_cmd_handler_check_argname_registered(char *arg_name_str)
-{
-    if (arg_name_str == NULL) {
-        return FALSE;
-    }
-
-    return app_cmd_check_argname_registered(arg_name_str);
-}
-
-void app_cmd_handler_convert_argname_to_argval(char *arg_name_str)
-{
-    char *p_argname_str;
-
-    p_argname_str = app_cmd_load_argval_from_argname(arg_name_str);
-
-    strcpy(arg_name_str, p_argname_str);
-
-    return;
-}
-
-uint32_t app_cmd_handler_save_result(char *arg_name_str, uint32_t retval)
-{
-    return app_cmd_save_result(arg_name_str, retval);
 }
 
 void app_cmd_handler_show_usage(command_t *p_cmd)

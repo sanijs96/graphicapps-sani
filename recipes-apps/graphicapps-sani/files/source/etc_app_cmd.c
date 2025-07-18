@@ -7,9 +7,9 @@
 
 #include "etc_app_cmd.h"
 
-#include "window_obj_mgr/window_obj_mgr.h"
-#include "vulkan_obj_mgr/vulkan_obj_mgr.h"
-#include "vulkan_ops_mgr/vulkan_ops_mgr.h"
+#include "window_object/window_obj_mgr.h"
+#include "vulkan_object/vulkan_obj_mgr.h"
+#include "vulkan_operation/vulkan_ops_mgr.h"
 
 typedef union etc_cmd_args_list {
     struct {

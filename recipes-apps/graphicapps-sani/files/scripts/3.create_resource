@@ -1,4 +1,5 @@
 # create attachment using resource descriptor list
-resource create -t 0 -f /home/root/graphicapps-source/scripts/buffer_list
+resource create -t vertex -f /home/root/graphicapps-source/data/vertex_attribute.dat
 
-resource create -t 1 -f /home/root/graphicapps-source/scripts/image_list
+# create image list (TODO)
+#resource create -t image -f /home/root/graphicapps-source/data/image_list.dat

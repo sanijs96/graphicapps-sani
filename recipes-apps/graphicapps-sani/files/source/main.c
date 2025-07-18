@@ -5,9 +5,8 @@
 
 #include "common/common_def.h"
 
-#if defined (DEBUG_EN)
 #include "vulkan/debug.h"
-#endif
+#include "vulkan/cmd_types.h"
 
 #if defined(GLFW_INCLUDE_VULKAN)
 #include <GLFW/glfw3.h>
@@ -15,8 +14,13 @@
 
 #include "app_cmd_handler.h"
 
-#include "window_obj_mgr/window_obj_mgr.h"
-#include "vulkan_obj_mgr/vulkan_obj_mgr.h"
+#include "app_utilities/datascript_parser.h"
+
+#include "vulkan_object/vulkan_obj_mgr.h"
+#include "vulkan_operation/vulkan_ops_mgr.h"
+#include "vulkan_resource/vulkan_resource_mgr.h"
+
+#include "window_object/window_obj_mgr.h"
 
 uint32_t __select_window_obj_type(void)
 {
@@ -40,6 +44,8 @@ uint32_t init_components(void)
 
         goto exit;
     }
+
+    vulkan_resource_mgr_init();
 
     vulkan_obj_mgr_init();
 
@@ -97,9 +103,9 @@ static void __cleanup_args_list(command_t *p_cmd)
         return;
     }
 
-    free(p_cmd->cmd_name);
-    free(p_cmd->subcmd_name);
     free(p_cmd->p_args);
+
+    memset(p_cmd, 0, sizeof(command_t));
 }
 
 #define __shift_cursor(str, len)        (*str = ((char *)*str) + len)
@@ -110,7 +116,7 @@ static uint32_t __get_next_arg_length(char **cursor)
     char *delim;
 
     input_length = 0;
-    while (delim = strchr(*cursor, ' ')) {
+    while (delim = strstr(*cursor, " " "\t")) {
         input_length = (uint32_t)(delim - *cursor);
 
         // duplicated space
@@ -136,26 +142,23 @@ static uint32_t __get_next_arg_length(char **cursor)
     return input_length;
 }
 
-static void __setup_argval(char *p_argval_buf, char **input_cursor)
+static uint32_t __setup_argval(char *p_argval_buf, char **input_cursor)
 {
     uint32_t input_length;
 
     input_length = __get_next_arg_length(input_cursor);
     if (input_length == 0) {
         p_argval_buf = NULL;
-        return;
+        return FAILURE;
     }
 
-    memset(p_argval_buf, 0, MAX_LENGTH_APP_CMD);
+    memset(p_argval_buf, *input_cursor, strlen(p_argval_buf));
+
     strncpy(p_argval_buf, *input_cursor, input_length);
-
-    if (app_cmd_handler_check_argname_registered(p_argval_buf) == TRUE) {
-        app_cmd_handler_convert_argname_to_argval(p_argval_buf);
-    }
 
     __shift_cursor(input_cursor, input_length);
 
-    return;
+    return SUCCESS;
 }
 
 static uint32_t __setup_args_list(command_t *p_cmd, char* input)
@@ -169,35 +172,25 @@ static uint32_t __setup_args_list(command_t *p_cmd, char* input)
     input_cursor = &input;
 
     if (strchr(*input_cursor, '=') != NULL) {
-        input_length = __get_next_arg_length(input_cursor);
-        if (input_length == 0) {
-            res = FAILURE;
+        if (__setup_argval(p_cmd->saved_argname, input_cursor) == FAILURE) {
+            return FAILURE;
         }
 
-        p_cmd->saved_argname = strndup(*input_cursor, input_length);
-
         *input_cursor = strchr(*input_cursor, '=');
+
         __shift_cursor(input_cursor, 1); // skip assignment character '='
     }
     else {
-        p_cmd->saved_argname = NULL;
+        p_cmd->saved_argname[0] = '\0';
     }
 
-    input_length = __get_next_arg_length(input_cursor);
-    if (input_length == 0) {
-        res = FAILURE;
+    if (__setup_argval(p_cmd->cmd_name, input_cursor) == FAILURE) {
+        return FAILURE;
     }
 
-    p_cmd->cmd_name = strndup(*input_cursor, input_length);
-    __shift_cursor(input_cursor, input_length);
-
-    input_length = __get_next_arg_length(input_cursor);
-    if (input_length == 0) {
-        res = FAILURE;
+    if (__setup_argval(p_cmd->subcmd_name, input_cursor) == FAILURE) {
+        return FAILURE;
     }
-
-    p_cmd->subcmd_name = strndup(*input_cursor, input_length);
-    __shift_cursor(input_cursor, input_length);
 
     max_num_args = app_cmd_handler_check_max_num_cmd_args(p_cmd);
     if (max_num_args == 0) {
@@ -208,18 +201,19 @@ static uint32_t __setup_args_list(command_t *p_cmd, char* input)
 
     arg_idx = 0;
     while (max_num_args > arg_idx) {
-        *input_cursor = strstr(*input_cursor, "-");
+        memset(p_cmd->p_args[arg_idx].value, 0, MAX_LENGTH_APP_CMD);
+
+        *input_cursor = strchr(*input_cursor, '-');
         if (*input_cursor == NULL) {
             break;
         }
-        __shift_cursor(input_cursor, 1); // skip dellimiter '-'
-        p_cmd->p_args[arg_idx].type = **input_cursor;
+        __shift_cursor(input_cursor, 1); // skip delimiter '-'
 
+        p_cmd->p_args[arg_idx].type = **input_cursor;
         __shift_cursor(input_cursor, 1);
 
-        __setup_argval(p_cmd->p_args[arg_idx].value, input_cursor);
-        if (p_cmd->p_args[arg_idx].value == NULL) {
-            break;
+        if (__setup_argval(p_cmd->p_args[arg_idx].value, input_cursor) == FAILURE) {
+            return FAILURE;
         }
 
         arg_idx++;
@@ -241,16 +235,16 @@ void run(void)
 input:
     __cleanup_args_list(&cmd);
 
-    printf("[CMD]: ");
-
-    memset(p_input_str, 0, MAX_LENGTH_APP_CMD);
-    if (app_cmd_handler_get_command_input(p_input_str) == FAILURE) {
-        return;
+    if (datascript_check_scriptfile_registered() == FALSE) {
+        printf("[CMD]: ");
+        fgets(p_input_str, MAX_LENGTH_APP_CMD, stdin);
+    }
+    else if (datascript_get_command(p_input_str) == FAILURE) {
+        goto input;
     }
 
     if (__setup_args_list(&cmd, p_input_str) == FAILURE) {
         printf("arguments not valid\n");
-        app_cmd_handler_show_usage(&cmd);
         goto input;
     }
 
@@ -259,8 +253,8 @@ input:
         app_cmd_handler_show_usage(&cmd);
     }
 
-    if (cmd.saved_argname != NULL) {
-        app_cmd_handler_save_result(cmd.saved_argname, cmd.retval);
+    if (cmd.saved_argname[0] != '\0') {
+        datascript_save_command_result(cmd.saved_argname, cmd.retval);
     }
 
     if (!app_cmd_handler_check_exited(&cmd)) {

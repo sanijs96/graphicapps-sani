@@ -43,6 +43,7 @@ VkPipelineStageFlags *vulkan_obj_mgr_get_wait_semaphore_stages(void);
 uint32_t vulkan_obj_mgr_get_graphics_queue_family_idx(VkDevice *p_device);
 uint32_t vulkan_obj_mgr_get_compute_queue_family_idx(VkDevice *p_device);
 uint32_t vulkan_obj_mgr_get_transfer_queue_family_idx(VkDevice *p_device);
+uint32_t vulkan_obj_mgr_get_device_queue_family_count(uint32_t phydev_idx);
 
 uint32_t vulkan_obj_mgr_select_available_queue_idx(uint32_t type);
 VkQueue *vulkan_obj_mgr_get_queue_object(uint32_t type, uint32_t idx);

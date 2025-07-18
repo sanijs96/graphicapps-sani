@@ -26,6 +26,10 @@ enum apps_param_type_vulkan {
     APPS_PARAM_TYPE_VULKAN_CMDBUF_COMMAND_TYPE = 'c',
     APPS_PARAM_TYPE_VULKAN_CMDBUF_BUFFER_IDX = 'i',
     APPS_PARAM_TYPE_VULKAN_CMDBUF_PIPELINE_IDX = 'p',
+
+    APPS_PARAM_TYPE_VULKAN_RESOURCE_FILENAME = 'f',
+    APPS_PARAM_TYPE_VULKAN_RESOURCE_PIPELINE_IDX = 'p',
+    APPS_PARAM_TYPE_VULKAN_RESOURCE_FORMAT_TYPE = 't',
 };
 
 enum apps_param_type_etc {
@@ -50,10 +54,10 @@ typedef struct __command_arg {
 
 typedef struct __command {
     uint32_t retval;
-    char *saved_argname;
 
-    char *cmd_name;
-    char *subcmd_name;
+    char cmd_name[30];
+    char subcmd_name[30];
+    char saved_argname[30];
 
     uint32_t num_args;
     command_arg_t *p_args;

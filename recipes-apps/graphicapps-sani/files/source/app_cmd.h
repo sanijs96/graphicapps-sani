@@ -10,12 +10,6 @@ enum app_cmd_runscript_state {
 };
 
 uint32_t app_cmd_add_runscript_file(command_t *p_cmd);
-uint32_t app_cmd_get_runscript_state(void);
-uint32_t app_cmd_get_cmdstring_from_runscript(char **p_input_str);
-
-uint32_t app_cmd_check_argname_registered(char *input_str);
-char *app_cmd_load_argval_from_argname(char *arg_name);
-uint32_t app_cmd_save_result(char *arg_name, uint32_t retval);
 
 uint32_t app_cmd_console_exit(command_t *p_cmd);
 
