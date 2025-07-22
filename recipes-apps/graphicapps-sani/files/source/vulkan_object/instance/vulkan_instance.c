@@ -65,11 +65,14 @@ static void __init_creation_info(VkInstanceCreateInfo *p_creation_info)
     p_creation_info->ppEnabledExtensionNames = (const char *const *)instance_ctx.p_extensions_name;
 }
 
-uint32_t instance_create(void)
+uint32_t instance_create(char **layer_names, char **extension_names)
 {
     uint32_t res;
     VkApplicationInfo apps_info;
     VkInstanceCreateInfo instance_info;
+
+    instance_add_layer_info(instance_ctx.layer_count, layer_names);
+    instance_add_extension_info(instance_ctx.extension_count, extension_names);
 
     __init_creation_info(&instance_info);
 

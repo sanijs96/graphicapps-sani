@@ -9,6 +9,8 @@
 
 #include "vulkan_app_cmd.h"
 
+#include "app_utilities/datascript_parser.h"
+
 #include "vulkan_object/vulkan_obj_mgr.h"
 #include "vulkan_operation/vulkan_ops_mgr.h"
 #include "vulkan_resource/vulkan_resource_mgr.h"
@@ -46,9 +48,8 @@ typedef union vulkan_cmd_args_list {
     } cmdbuf;
 
     struct {
-        uint32_t format_type;
         uint32_t pipeline_idx;
-        char filename[FILENAME_MAX];
+        char name[FILENAME_MAX];
     } resource;
 
 } vulkan_cmd_args_list_t;
@@ -58,6 +59,10 @@ static uint32_t __setup_layer_argument(command_arg_t arg, vulkan_cmd_args_list_t
     switch (arg.type) {
         case PARAM_VK(LAYER_NAME):
             strcpy(p_arglist->layer.name, arg.value);
+            break;
+
+        case PARAM_VK(LAYER_SCOPE):
+            p_arglist->layer.scope = (uint32_t)(*(char *)arg.value - '0');
             break;
 
         default:
@@ -161,8 +166,8 @@ static uint32_t __setup_cmdbuf_argument(command_arg_t arg, vulkan_cmd_args_list_
 static uint32_t __setup_resource_argument(command_arg_t arg, vulkan_cmd_args_list_t *p_arglist)
 {
     switch (arg.type) {
-        case PARAM_VK(RESOURCE_FILENAME):
-            strcpy(p_arglist->resource.filename, arg.value);
+        case PARAM_VK(RESOURCE_OBJECT_NAME):
+            strcpy(p_arglist->resource.name, arg.value);
             break;
 
         case PARAM_VK(RESOURCE_PIPELINE_IDX):
@@ -867,17 +872,22 @@ uint32_t vulkan_app_cmd_run_commands(command_t *p_cmd)
     return SUCCESS;
 }
 
-uint32_t vulkan_app_cmd_create_resource_object(command_t *p_cmd)
+uint32_t vulkan_app_cmd_create_resource(command_t *p_cmd)
 {
-    resource_data_t resource;
     vulkan_cmd_args_list_t args_list;
 
     if (vulkan_app_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
 
+    if (datascript_check_resource_registered(args_list.resource.name) == FALSE) {
+        printf("resource name %s is not registered\n", args_list.resource.name);
+        return FAILURE;
+    }
 
+    // TODO: create resource object
 
+    return SUCCESS;
 }
 
 uint32_t vulkan_app_cmd_bind_resource_to_pipeline(command_t *p_cmd)

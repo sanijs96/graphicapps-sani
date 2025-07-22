@@ -11,6 +11,8 @@ enum app_cmd_runscript_state {
 
 uint32_t app_cmd_add_runscript_file(command_t *p_cmd);
 
+uint32_t app_cmd_add_resource_data_file(command_t *p_cmd);
+
 uint32_t app_cmd_console_exit(command_t *p_cmd);
 
 #endif

@@ -147,28 +147,42 @@ uint32_t vulkan_obj_mgr_create_instance(void)
     uint32_t exts_cnt;
 
     layers_cnt = function_get_instance_layers_count(VULKAN_FUNCTION_STATE_ENABLED);
-    exts_cnt = function_get_instance_extensions_count(VULKAN_FUNCTION_STATE_ENABLED);
-
-    char p_layers_list[layers_cnt][VK_MAX_EXTENSION_NAME_SIZE];
-    char p_exts_list[exts_cnt][VK_MAX_EXTENSION_NAME_SIZE];
-
-    function_get_instance_layers_name_list(VULKAN_FUNCTION_STATE_ENABLED, (char **)p_layers_list);
-    function_get_instance_extensions_name_list(VULKAN_FUNCTION_STATE_ENABLED, (char **)p_exts_list);
 
     char *layers_list_ptr[layers_cnt];
+    char p_layers_list[layers_cnt][VK_MAX_EXTENSION_NAME_SIZE];
+    if (layers_cnt > 0) {
+        function_get_instance_layers_name_list(VULKAN_FUNCTION_STATE_ENABLED,
+                                                        (char **)p_layers_list);
+
+        for (uint32_t idx = 0; idx < layers_cnt; idx++) {
+            layers_list_ptr[idx] = p_layers_list[idx];
+        }
+
+        instance_add_layer_info(layers_cnt, layers_list_ptr);
+    }
+    else {
+        layers_list_ptr[0] = NULL;
+    }
+
+    exts_cnt = function_get_instance_extensions_count(VULKAN_FUNCTION_STATE_ENABLED);
+
     char *exts_list_ptr[exts_cnt];
+    char p_exts_list[exts_cnt][VK_MAX_EXTENSION_NAME_SIZE];
+    if (exts_cnt > 0) {
+        function_get_instance_extensions_name_list(VULKAN_FUNCTION_STATE_ENABLED,
+                                                            (char **)p_exts_list);
 
-    for (uint32_t idx = 0; idx < layers_cnt; idx++) {
-        layers_list_ptr[idx] = p_layers_list[idx];
+        for (uint32_t idx = 0; idx < exts_cnt; idx++) {
+            exts_list_ptr[idx] = p_exts_list[idx];
+        }
+
+        instance_add_extension_info(exts_cnt, exts_list_ptr);
     }
-    instance_add_layer_info(layers_cnt, layers_list_ptr);
-
-    for (uint32_t idx = 0; idx < exts_cnt; idx++) {
-        exts_list_ptr[idx] = p_exts_list[idx];
+    else {
+        exts_list_ptr[0] = NULL;
     }
-    instance_add_extension_info(exts_cnt, exts_list_ptr);
 
-    if (instance_create() == FAILURE) {
+    if (instance_create(layers_list_ptr, exts_list_ptr) == FAILURE) {
         return FAILURE;
     }
 
@@ -241,7 +255,7 @@ uint32_t vulkan_obj_mgr_create_device(uint32_t phydev_idx)
     char layers_list[layers_cnt][VK_MAX_EXTENSION_NAME_SIZE];
     char exts_list[exts_cnt][VK_MAX_EXTENSION_NAME_SIZE];
 
-    function_get_phydev_extensions_name_list(VULKAN_FUNCTION_STATE_ENABLED,
+    function_get_phydev_layers_name_list(VULKAN_FUNCTION_STATE_ENABLED,
                                         (char **)layers_list, phydev_idx, p_phydev);
     function_get_phydev_extensions_name_list(VULKAN_FUNCTION_STATE_ENABLED,
                                         (char **)exts_list, phydev_idx, p_phydev);

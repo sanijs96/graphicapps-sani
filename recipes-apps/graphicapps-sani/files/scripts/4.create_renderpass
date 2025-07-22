@@ -1,4 +1,3 @@
-#create renderpass with subpasses & attachments
-# renderpass all subpasses & attachments created already
-renderpass create
+# (TODO) create renderpass includeing all subpasses & attachments created already
+#renderpass create
 

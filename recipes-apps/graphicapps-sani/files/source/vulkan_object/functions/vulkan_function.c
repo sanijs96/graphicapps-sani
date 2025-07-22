@@ -6,19 +6,16 @@
 
 #include "vulkan_function.h"
 
-typedef struct extension_ctx {
-    uint32_t state;
-} extension_ctx_t;
-
-typedef struct layer_ctx {
-    uint32_t state;
-} layer_ctx_t;
+typedef struct function_ctx {
+    uint32_t *states;
+    uint32_t enabled_count;
+} function_ctx_t;
 
 typedef struct function_setup_ctx {
     uint32_t num_layers;
     uint32_t num_extensions;
-    layer_ctx_t *p_layers;
-    extension_ctx_t *p_extensions;
+    function_ctx_t layer_ctx;
+    function_ctx_t extension_ctx;
 } function_setup_ctx_t;
 
 static struct {
@@ -27,10 +24,6 @@ static struct {
     function_setup_ctx_t *p_phydevs_ctx;
     function_setup_ctx_t instance_ctx;
 } function_ctx;
-
-typedef struct {
-    char str[VK_MAX_EXTENSION_NAME_SIZE];
-} __function_name_entry;
 
 static inline void __function_init_instance_ctx(void)
 {
@@ -41,22 +34,19 @@ static inline void __function_init_instance_ctx(void)
     p_ctx->num_layers = 0;
     p_ctx->num_extensions = 0;
 
-    p_ctx->p_layers = NULL;
-    p_ctx->p_extensions = NULL;
-
     vkEnumerateInstanceLayerProperties(&p_ctx->num_layers, NULL);
 
-    p_ctx->p_layers = (layer_ctx_t *)malloc(sizeof(layer_ctx_t) * p_ctx->num_layers);
+    p_ctx->layer_ctx.states = (uint32_t *)malloc(sizeof(uint32_t) * p_ctx->num_layers);
 
     for (uint32_t idx = 0; idx < p_ctx->num_layers; idx++) {
-        p_ctx->p_layers[idx].state = VULKAN_FUNCTION_STATE_DISABLED;
+        p_ctx->layer_ctx.states[idx] = VULKAN_FUNCTION_STATE_DISABLED;
     }
 
     vkEnumerateInstanceExtensionProperties(NULL, &p_ctx->num_extensions, NULL);
-    p_ctx->p_extensions = (extension_ctx_t *)malloc(sizeof(extension_ctx_t) * p_ctx->num_extensions);
+    p_ctx->extension_ctx.states = (uint32_t *)malloc(sizeof(uint32_t) * p_ctx->num_extensions);
 
     for (uint32_t idx = 0; idx < p_ctx->num_extensions; idx++) {
-        p_ctx->p_extensions[idx].state = VULKAN_FUNCTION_STATE_DISABLED;
+        p_ctx->extension_ctx.states[idx] = VULKAN_FUNCTION_STATE_DISABLED;
     }
 }
 
@@ -81,20 +71,20 @@ static void __function_init_phydevs_ctx(uint32_t phydev_count, VkPhysicalDevice 
 
     for (uint32_t idx = 0; idx < phydev_count; idx++) {
         vkEnumerateDeviceLayerProperties(p_phydevs[idx], &p_phydevs_ctx[idx].num_layers, NULL);
-        p_phydevs_ctx[idx].p_layers = (layer_ctx_t *)malloc(sizeof(layer_ctx_t)
-                                                            * p_phydevs_ctx[idx].num_layers);
+        p_phydevs_ctx[idx].layer_ctx.states = (uint32_t *)malloc(sizeof(uint32_t) *
+                                                                    p_phydevs_ctx[idx].num_layers);
 
         for (uint32_t layer_idx = 0; layer_idx < p_phydevs_ctx->num_layers; layer_idx++) {
-            p_phydevs_ctx->p_layers[layer_idx].state = VULKAN_FUNCTION_STATE_DISABLED;
+            p_phydevs_ctx->layer_ctx.states[layer_idx] = VULKAN_FUNCTION_STATE_DISABLED;
         }
 
         vkEnumerateDeviceExtensionProperties(p_phydevs[idx], NULL,
                                                 &p_phydevs_ctx[idx].num_extensions, NULL);
-        p_phydevs_ctx[idx].p_extensions = (extension_ctx_t *)malloc(sizeof(extension_ctx_t)
-                                                            * p_phydevs_ctx[idx].num_extensions);
+        p_phydevs_ctx[idx].extension_ctx.states = (uint32_t *)malloc(sizeof(uint32_t) *
+                                                            p_phydevs_ctx[idx].num_extensions);
 
         for (uint32_t ext_idx = 0; ext_idx < p_phydevs_ctx->num_extensions; ext_idx++) {
-            p_phydevs_ctx[idx].p_extensions[ext_idx].state = VULKAN_FUNCTION_STATE_DISABLED;
+            p_phydevs_ctx[idx].extension_ctx.states[ext_idx] = VULKAN_FUNCTION_STATE_DISABLED;
         }
     }
 }
@@ -134,7 +124,7 @@ static uint32_t __function_find_instance_layer_idx(const char *layer_name)
 static inline void __function_set_layer_state(function_setup_ctx_t *p_ctx,
                                                 uint32_t layer_idx, uint32_t state)
 {
-    p_ctx->p_layers[layer_idx].state = state;
+    p_ctx->layer_ctx.states[layer_idx] = state;
 }
 
 uint32_t function_enable_instance_layer(char *layer_name)
@@ -183,7 +173,7 @@ uint32_t function_check_instance_layer_state(char *layer_name)
         return VULKAN_FUNCTION_STATE_INVALID;
     }
 
-    return p_ctx->p_layers[layer_idx].state;
+    return p_ctx->layer_ctx.states[layer_idx];
 }
 
 static uint32_t __function_get_matching_layer_info_count(function_setup_ctx_t *p_ctx,
@@ -197,7 +187,7 @@ static uint32_t __function_get_matching_layer_info_count(function_setup_ctx_t *p
 
     matching_entry_cnt = 0;
     for (uint32_t idx = 0; idx < p_ctx->num_layers; idx++) {
-        if (p_ctx->p_layers[idx].state != state) {
+        if (p_ctx->layer_ctx.states[idx] != state) {
             continue;
         }
 
@@ -217,27 +207,34 @@ uint32_t function_get_phydev_layers_count(uint32_t state, uint32_t phydev_idx)
     return __function_get_matching_layer_info_count(&function_ctx.p_phydevs_ctx[phydev_idx], state);
 }
 
-void function_get_instance_layers_name_list(uint32_t state, char **names_list)
+void function_get_instance_layers_name_list(uint32_t state, char **p_names_list)
 {
+    uint32_t list_idx;
+    uint32_t list_cnt;
     function_setup_ctx_t *p_ctx;
-    __function_name_entry *p_list_entry;
 
     p_ctx = &function_ctx.instance_ctx;
 
-    p_list_entry = (__function_name_entry *)names_list;
+    list_cnt = function_get_instance_layers_count(state);
+
+    char names_list[list_cnt][VK_MAX_EXTENSION_NAME_SIZE];
 
     VkLayerProperties p_properties[p_ctx->num_layers];
 
     vkEnumerateInstanceLayerProperties(&p_ctx->num_layers, p_properties);
 
+    list_idx = 0;
     for (uint32_t idx = 0; idx < p_ctx->num_layers; idx++) {
-        if ((state == p_ctx->p_layers[idx].state) ||
+        if ((state == p_ctx->layer_ctx.states[idx]) ||
             (state == VULKAN_FUNCTION_STATE_DEFAULT)) {
-            memcpy(p_list_entry, p_properties[idx].layerName,
-                            strlen(p_properties[idx].layerName) + 1);
-            p_list_entry++;
+            strcpy(names_list[list_idx], p_properties[idx].layerName);
+            list_idx++;
         }
     }
+
+    memcpy(p_names_list, names_list, list_cnt * VK_MAX_EXTENSION_NAME_SIZE);
+
+    return;
 }
 
 static uint32_t __function_find_extension_idx(VkExtensionProperties *p_list, uint32_t list_size,
@@ -274,7 +271,7 @@ static uint32_t __function_set_instance_extension_state(char *extension_name, ui
         return FAILURE;
     }
 
-    function_ctx.instance_ctx.p_extensions[ext_idx].state = state;
+    function_ctx.instance_ctx.extension_ctx.states[ext_idx] = state;
 
     return SUCCESS;
 }
@@ -291,7 +288,7 @@ static uint32_t __function_get_matching_extension_info_count(uint32_t state)
 
     matching_entry_cnt = 0;
     for (uint32_t idx = 0; idx < p_ctx->num_extensions; idx++) {
-        if (p_ctx->p_extensions[idx].state != state) {
+        if (p_ctx->extension_ctx.states[idx] != state) {
             continue;
         }
 
@@ -325,7 +322,7 @@ uint32_t function_check_instance_extension_state(char *extension_name)
         return VULKAN_FUNCTION_STATE_INVALID;
     }
 
-    return function_ctx.instance_ctx.p_extensions[extension_idx].state;
+    return function_ctx.instance_ctx.extension_ctx.states[extension_idx];
 }
 
 uint32_t function_get_instance_extensions_count(uint32_t state)
@@ -333,26 +330,35 @@ uint32_t function_get_instance_extensions_count(uint32_t state)
     return __function_get_matching_extension_info_count(state);
 }
 
-void function_get_instance_extensions_name_list(uint32_t state, char **names_list)
+void function_get_instance_extensions_name_list(uint32_t state, char **p_names_list)
 {
+    uint32_t list_idx;
+    uint32_t list_cnt;
     function_setup_ctx_t *p_ctx;
-    __function_name_entry *p_list_entry;
 
     p_ctx = &function_ctx.instance_ctx;
-    p_list_entry = (__function_name_entry *)names_list;
+
+    list_cnt = function_get_instance_extensions_count(state);
+
+    char names_list[list_cnt][VK_MAX_EXTENSION_NAME_SIZE];
 
     VkExtensionProperties p_properties[p_ctx->num_extensions];
 
     vkEnumerateInstanceExtensionProperties(NULL, &p_ctx->num_extensions, p_properties);
 
+    list_idx = 0;
     for (uint32_t idx = 0; idx < p_ctx->num_extensions; idx++) {
-        if ((state == p_ctx->p_extensions[idx].state) ||
+        if ((state == p_ctx->extension_ctx.states[idx]) ||
                 (state == VULKAN_FUNCTION_STATE_DEFAULT)) {
-            memcpy(p_list_entry, p_properties[idx].extensionName,
-                            strlen(p_properties[idx].extensionName) + 1);
-            p_list_entry++;
+            strcpy(names_list[list_idx], p_properties[idx].extensionName);
+
+            list_idx++;
         }
     }
+
+    memcpy(p_names_list, names_list, list_cnt * VK_MAX_EXTENSION_NAME_SIZE);
+
+    return;
 }
 
 static uint32_t __function_find_phydev_layer_idx(char *layer_name, uint32_t phydev_idx,
@@ -399,27 +405,35 @@ uint32_t function_disable_phydev_layer(char *layer_name, uint32_t phydev_idx,
     return SUCCESS;
 }
 
-void function_get_phydev_layers_name_list(uint32_t state, char **names_list,
+void function_get_phydev_layers_name_list(uint32_t state, char **p_names_list,
                                             uint32_t phydev_idx, VkPhysicalDevice *p_phydev)
 {
+    uint32_t list_idx;
+    uint32_t list_cnt;
     function_setup_ctx_t *p_ctx;
-    __function_name_entry *p_list_entry;
 
     p_ctx = &function_ctx.p_phydevs_ctx[phydev_idx];
-    p_list_entry = (__function_name_entry *)names_list;
+
+    list_cnt = function_get_phydev_layers_count(state, phydev_idx);
+
+    char names_list[list_cnt][VK_MAX_EXTENSION_NAME_SIZE];
 
     VkLayerProperties p_properties[p_ctx->num_layers];
 
     vkEnumerateDeviceLayerProperties(*p_phydev, &p_ctx->num_layers, p_properties);
 
+    list_idx = 0;
     for (uint32_t idx = 0; idx < p_ctx->num_extensions; idx++) {
-        if ((state == p_ctx->p_layers[idx].state) ||
+        if ((state == p_ctx->layer_ctx.states[idx]) ||
             (state == VULKAN_FUNCTION_STATE_DEFAULT)) {
-            memcpy(p_list_entry, p_properties[idx].layerName,
-                            strlen(p_properties[idx].layerName) + 1);
-            p_list_entry++;
+            strcpy(names_list[list_idx], p_properties[idx].layerName);
+            list_idx++;
         }
     }
+
+    memcpy(p_names_list, names_list, list_idx * VK_MAX_EXTENSION_NAME_SIZE);
+
+    return;
 }
 
 static uint32_t __function_find_phydev_ext_idx(char *extension_name, uint32_t phydev_idx,
@@ -450,7 +464,7 @@ static uint32_t __function_set_phydev_extension_state(char *extension_name, uint
         return FAILURE;
     }
 
-    p_phydev_ctx->p_extensions[ext_idx].state = state;
+    p_phydev_ctx->extension_ctx.states[ext_idx] = state;
 
     return SUCCESS;
 }
@@ -469,27 +483,35 @@ uint32_t function_disable_phydev_extension(char *extension_name, uint32_t phydev
                                                     p_phydev, VULKAN_FUNCTION_STATE_DISABLED);
 }
 
-void function_get_phydev_extensions_name_list(uint32_t state, char **names_list,
+void function_get_phydev_extensions_name_list(uint32_t state, char **p_names_list,
                                                 uint32_t phydev_idx, VkPhysicalDevice *p_phydev)
 {
+    uint32_t list_cnt;
+    uint32_t list_idx;
     function_setup_ctx_t *p_ctx;
-    __function_name_entry *p_list_entry;
 
     p_ctx = &function_ctx.p_phydevs_ctx[phydev_idx];
-    p_list_entry = (__function_name_entry *)names_list;
+
+    list_cnt = function_get_phydev_extensions_count(state, phydev_idx);
+
+    char names_list[list_cnt][VK_MAX_EXTENSION_NAME_SIZE];
 
     VkExtensionProperties p_properties[p_ctx->num_extensions];
 
     vkEnumerateDeviceExtensionProperties(*p_phydev, NULL, &p_ctx->num_extensions, p_properties);
 
+    list_idx = 0;
     for (uint32_t idx = 0; idx < p_ctx->num_extensions; idx++) {
-        if ((state == p_ctx->p_extensions[idx].state) ||
+        if ((state == p_ctx->extension_ctx.states[idx]) ||
                 (state == VULKAN_FUNCTION_STATE_DEFAULT)) {
-            memcpy(p_list_entry, p_properties[idx].extensionName,
-                            strlen(p_properties[idx].extensionName) + 1);
-            p_list_entry++;
+            strcpy(names_list[list_idx], p_properties[idx].extensionName);
+            list_idx++;
         }
     }
+
+    memcpy(p_names_list, names_list, list_cnt * VK_MAX_EXTENSION_NAME_SIZE);
+
+    return;
 }
 
 uint32_t function_get_num_phydev_layers(void)
@@ -511,7 +533,7 @@ static uint32_t __function_get_matching_phydev_extension_info_count(uint32_t sta
 
     matching_entry_cnt = 0;
     for (uint32_t idx = 0; idx < p_ctx->num_extensions; idx++) {
-        if (function_ctx.p_phydevs_ctx[phydev_idx].p_extensions[idx].state != state) {
+        if (function_ctx.p_phydevs_ctx[phydev_idx].extension_ctx.states[idx] != state) {
             continue;
         }
 

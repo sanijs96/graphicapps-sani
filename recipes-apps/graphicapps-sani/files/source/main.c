@@ -45,8 +45,6 @@ uint32_t init_components(void)
         goto exit;
     }
 
-    vulkan_resource_mgr_init();
-
     vulkan_obj_mgr_init();
 
 #if defined(DEBUG_EN)
@@ -116,7 +114,7 @@ static uint32_t __get_next_arg_length(char **cursor)
     char *delim;
 
     input_length = 0;
-    while (delim = strstr(*cursor, " " "\t")) {
+    while (delim = strchr(*cursor, ' ')) {
         input_length = (uint32_t)(delim - *cursor);
 
         // duplicated space
@@ -152,9 +150,10 @@ static uint32_t __setup_argval(char *p_argval_buf, char **input_cursor)
         return FAILURE;
     }
 
-    memset(p_argval_buf, *input_cursor, strlen(p_argval_buf));
+    memset(p_argval_buf, 0, strlen(p_argval_buf));
 
     strncpy(p_argval_buf, *input_cursor, input_length);
+    p_argval_buf[input_length] = '\0';
 
     __shift_cursor(input_cursor, input_length);
 
@@ -201,7 +200,7 @@ static uint32_t __setup_args_list(command_t *p_cmd, char* input)
 
     arg_idx = 0;
     while (max_num_args > arg_idx) {
-        memset(p_cmd->p_args[arg_idx].value, 0, MAX_LENGTH_APP_CMD);
+        memset(p_cmd->p_args[arg_idx].value, 0, MAX_LENGTH_ARGUMENT_NAME);
 
         *input_cursor = strchr(*input_cursor, '-');
         if (*input_cursor == NULL) {

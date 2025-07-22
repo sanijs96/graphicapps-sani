@@ -67,8 +67,8 @@ command_handler_entry_t vulkan_app_cmd_handler_command_buf[] = {
 };
 
 command_handler_entry_t vulkan_app_cmd_handler_resource[] = {
-    {"create", "ft", NULL, vulkan_app_cmd_create_resource_object, NULL},
-    {"bind", "p", NULL, vulkan_app_cmd_bind_resource_to_pipeline, NULL},
+    {"create", "n", NULL, vulkan_app_cmd_create_resource, NULL},
+    {"bind", "np", NULL, vulkan_app_cmd_bind_resource_to_pipeline, NULL},
 
     {NULL, }
 };
@@ -83,6 +83,7 @@ command_handler_entry_t etc_app_cmd_handler_window[] = {
 
 command_handler_entry_t app_cmd_handler_app[] = {
     {"runscript", "f", NULL, app_cmd_add_runscript_file, NULL},
+    {"loaddata", "f", NULL, app_cmd_add_resource_data_file, NULL},
     {"exit", NULL, NULL, app_cmd_console_exit, NULL},
 
     {NULL, }

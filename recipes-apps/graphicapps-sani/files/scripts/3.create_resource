@@ -1,4 +1,6 @@
 # create attachment using resource descriptor list
+app loaddata -f /home/root/graphicapps-source/data/vertex_attribute.dat
+
 resource create -t vertex -f /home/root/graphicapps-source/data/vertex_attribute.dat
 
 # create image list (TODO)

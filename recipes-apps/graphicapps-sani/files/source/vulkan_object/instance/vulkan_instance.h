@@ -16,7 +16,7 @@ uint32_t instance_check_creation_state(void);
 void instance_add_layer_info(uint32_t layers_count, char **pp_layers_name);
 void instance_add_extension_info(uint32_t extension_count, char **pp_extensions_name);
 
-uint32_t instance_create(void);
+uint32_t instance_create(char **layer_names, char **exts_names);
 
 VkInstance *instance_get_instance_object(void);
 
