@@ -1,7 +1,7 @@
 # vertex attributes
 # {position(2D/3D) & color(3D/4D)}
 
-format_2d_rgb triangle[3] =
-    {0.0f, -0.5f, 1.0, 0.0, 0.0},
-    {0.5f, 0.5f, 0.0, 1.0, 0.0},
-    {-0.5f, 0.5f, 0.0, 0.0, 1.0};
+vertex_2d_rgb triangle[3] =
+    {0.0f, -0.5f, 1.0f, 0.0f, 0.0f},
+    {0.5f, 0.5f, 0.0f, 1.0f, 0.0f},
+    {-0.5f, 0.5f, 0.0f, 0.0f, 1.0f};

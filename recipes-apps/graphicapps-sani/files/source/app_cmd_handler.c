@@ -104,6 +104,7 @@ command_handler_entry_list_t app_cmd_handler_list[] = {
     {"device", vulkan_app_cmd_handler_device},
     {"pipeline", vulkan_app_cmd_handler_pipeline},
     {"cmdbuf", vulkan_app_cmd_handler_command_buf},
+    {"resource", vulkan_app_cmd_handler_resource},
 
     {"window", etc_app_cmd_handler_window},
 

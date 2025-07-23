@@ -239,7 +239,7 @@ uint32_t vulkan_obj_mgr_create_device(uint32_t phydev_idx)
         return FAILURE;
     }
 
-    if (vulkan_obj_mgr_check_device_created() == SUCCESS) {
+    if (vulkan_obj_mgr_check_device_created() == TRUE) {
         printf("device already created\n");
         return FAILURE;
     }
@@ -276,10 +276,10 @@ uint32_t vulkan_obj_mgr_create_device(uint32_t phydev_idx)
 uint32_t vulkan_obj_mgr_check_device_created(void)
 {
     if (device_get_current_status() == VULKAN_DEVICE_CREATION_STATE_CREATED) {
-        return SUCCESS;
+        return TRUE;
     }
     else {
-        return FAILURE;
+        return FALSE;
     }
 }
 

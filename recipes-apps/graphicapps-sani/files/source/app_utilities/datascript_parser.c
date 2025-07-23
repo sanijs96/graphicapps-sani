@@ -461,6 +461,11 @@ static uint32_t __datascript_setup_resource_info_ctx(resource_info_t *p_info, ch
         return FAILURE;
     }
 
+    p_info->usage_flags = datafile_get_resource_usage_flags_from_typename(argstr);
+    if (p_info->usage_flags == 0) {
+        return FAILURE;
+    }
+
     // get object name
     p_cursor = strchr(p_cursor, DIRECTIVE_CHAR_DELIMITER);
     if (p_cursor == NULL) {
@@ -587,12 +592,12 @@ get_new_datastr:
 
 resource_info_t *datascript_get_resource_info(char *argname_str)
 {
-
+    return datafile_get_resource_info(argname_str);
 }
 
-uint32_t datascript_get_resource_object(resource_t *p_resource_buf, char *argname_str)
+uint32_t datascript_copy_resource_data(resource_t *p_resource_buf, resource_info_t *p_info)
 {
-
+    return datafile_get_resource_data(p_resource_buf, p_info);
 }
 
 void datascript_release_all_files(void)

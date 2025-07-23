@@ -124,7 +124,7 @@ uint32_t etc_app_cmd_window_display(command_t *p_cmd)
         return FAILURE;
     }
 
-    if (vulkan_obj_mgr_check_device_created() == FAILURE) {
+    if (vulkan_obj_mgr_check_device_created() == FALSE) {
         printf("device is not created\n");
         return FAILURE;
     }

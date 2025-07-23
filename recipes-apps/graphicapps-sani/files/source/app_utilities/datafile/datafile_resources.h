@@ -3,12 +3,15 @@
 
 #include <stdio.h>
 #include <stdint.h>
+
 #include "vulkan/resource_formats.h"
 
 #define MAX_RESOURCE_VALUE_LENGTH           (20)
 #define MAX_NUM_DATAFILE_RESOURCE_ENTRIES   (100)
 
 uint32_t datafile_get_resource_type_from_typename(char *p_typename_str);
+
+uint32_t datafile_get_resource_usage_flags_from_typename(char *p_typename_str);
 
 uint32_t datafile_allocate_resource_entry(resource_info_t *p_info);
 
@@ -20,7 +23,7 @@ uint32_t datafile_save_resource_values(resource_info_t *p_info,
 
 resource_info_t *datafile_get_resource_info(char *p_argname_str);
 
-uint32_t datafile_get_resource_object(resource_t *p_resource_buf);
+uint32_t datafile_get_resource_data(resource_t *p_resource_buf, resource_info_t *p_info);
 
 void datafile_release_entries(FILE *p_fstream);
 

@@ -13,8 +13,10 @@ uint32_t datascript_save_command_result(char *argname_str, uint32_t retval);
 uint32_t datascript_register_datafile(char *filename_str);
 uint32_t datascript_check_resource_registered(char *argname_str);
 uint32_t datascript_load_resources_from_datafile(char *filename_str);
+
 resource_info_t *datascript_get_resource_info(char *argname_str);
-uint32_t datascript_get_resource_object(resource_t *resource_buf, char *argname_str);
+
+uint32_t datascript_copy_resource_data(resource_t *p_resource_buf, resource_info_t *p_info);
 
 void datascript_release_all_files(void);
 

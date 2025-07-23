@@ -6,6 +6,7 @@
 #include "vulkan/queue_types.h"
 #include "vulkan/function_scope.h"
 #include "vulkan/pipeline_stages.h"
+#include "vulkan/resource_formats.h"
 
 #include "vulkan_app_cmd.h"
 
@@ -364,6 +365,8 @@ uint32_t vulkan_app_cmd_create_device(command_t *p_cmd)
     p_device = vulkan_obj_mgr_get_current_device_object();
     p_phydev = vulkan_obj_mgr_get_phydev_object(args_list.device.phydev_idx);
 
+    vulkan_resource_mgr_add_memory_property(p_phydev);
+
     window_obj_mgr_setup_device_ctx(p_phydev, p_device);
 }
 
@@ -437,6 +440,12 @@ uint32_t vulkan_app_cmd_show_devices_list(command_t *p_cmd)
 
         if (args_list.device.show_extension == TRUE) {
             vulkan_obj_mgr_show_device_extensions_list(phydev_idx);
+        }
+
+        if (phydev_idx == vulkan_obj_mgr_get_current_phydev_idx()) {
+            if (vulkan_obj_mgr_check_device_created() == TRUE) {
+                vulkan_resource_mgr_show_device_memory_properties();
+            }
         }
 
         if (window_obj_mgr_check_display_status() == WINDOW_OBJ_DISPLAY_STATE_CREATED) {
@@ -874,18 +883,45 @@ uint32_t vulkan_app_cmd_run_commands(command_t *p_cmd)
 
 uint32_t vulkan_app_cmd_create_resource(command_t *p_cmd)
 {
+    uint32_t res;
+    VkDevice *p_device;
+    resource_t resource;
+    resource_info_t *p_info;
     vulkan_cmd_args_list_t args_list;
 
     if (vulkan_app_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
     }
 
-    if (datascript_check_resource_registered(args_list.resource.name) == FALSE) {
-        printf("resource name %s is not registered\n", args_list.resource.name);
+    if (vulkan_obj_mgr_check_device_created() == FALSE) {
+        printf("create device first\n");
         return FAILURE;
     }
 
-    // TODO: create resource object
+    p_device = vulkan_obj_mgr_get_current_device_object();
+
+    p_info = datascript_get_resource_info(args_list.resource.name);
+    if (p_info == NULL) {
+        return FAILURE;
+    }
+
+    if (datascript_copy_resource_data(&resource, p_info) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (p_info->type < MAX_RESOURCE_FORMAT_TYPE_BUFFERS) {
+        res = vulkan_resource_mgr_create_vertex_buffer(p_device, &resource, p_info);
+    }
+    else if (p_info->type < MAX_RESOURCE_FORMAT_TYPE_BUFFERS) { // TODO
+        res = vulkan_resource_mgr_create_buffer(p_device, &resource, p_info);
+    }
+    else {
+        res = vulkan_resource_mgr_create_image(p_device, &resource, p_info);
+    }
+
+    if (res == FAILURE) {
+        return FAILURE;
+    }
 
     return SUCCESS;
 }
