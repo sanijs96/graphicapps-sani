@@ -181,6 +181,49 @@ void cmd_pool_add_renderpass_command(vulkan_cmd_template_t *p_template,
     cmd_pool_ctx.buffer_ctx[cmdbuf_idx].cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS);
 }
 
+void cmd_pool_add_bind_pipeline_command(vulkan_cmd_template_t *p_template,
+                                                vulkan_cmd_param_t *p_param)
+{
+    uint32_t cmdbuf_idx;
+    cmd_buf_ctx_t *p_buf_ctx;
+
+    cmdbuf_idx = p_param->cmdbuf_idx;
+
+    p_buf_ctx = &cmd_pool_ctx.buffer_ctx[cmdbuf_idx];
+
+    vkCmdBindPipeline(p_buf_ctx->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                        *p_param->bind_pipeline.p_pipeline);
+
+    p_buf_ctx->cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_BIND_PIPELINE);
+}
+
+void cmd_pool_add_bind_resource_command(vulkan_cmd_template_t *p_template,
+                                                vulkan_cmd_param_t *p_param)
+{
+    uint32_t cmdbuf_idx;
+    uint32_t resource_type;
+    cmd_buf_ctx_t *p_buf_ctx;
+
+    cmdbuf_idx = p_param->cmdbuf_idx;
+
+    resource_type = p_param->bind_resource.p_resource_info->type;
+
+    p_buf_ctx = &cmd_pool_ctx.buffer_ctx[cmdbuf_idx];
+
+    if (resource_type < MAX_RESOURCE_FORMAT_TYPE_VERTEX_BUFFERS) {
+        vkCmdBindVertexBuffers(p_buf_ctx->buffer, 0, 1,
+                                p_param->bind_resource.p_resource, 0);
+    }
+    else if (resource_type < MAX_RESOURCE_FORMAT_TYPE_BUFFERS){
+        // TODO
+    }
+    else {
+        // TODO
+    }
+
+    p_buf_ctx->cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_BIND_RESOURCE);
+}
+
 void cmd_pool_add_draw_command(vulkan_cmd_template_t *p_template,
                                             vulkan_cmd_param_t *p_param)
 {
@@ -189,8 +232,6 @@ void cmd_pool_add_draw_command(vulkan_cmd_template_t *p_template,
 
     cmdbuf_idx = p_param->cmdbuf_idx;
     p_cmd_buf = &cmd_pool_ctx.buffer_ctx[cmdbuf_idx].buffer;
-
-    vkCmdBindPipeline(*p_cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, *p_param->draw.p_pipeline);
 
     vkCmdSetViewport(*p_cmd_buf, 0, 1, &p_param->draw.viewport);
 

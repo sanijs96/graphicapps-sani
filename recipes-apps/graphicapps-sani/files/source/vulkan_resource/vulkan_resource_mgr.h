@@ -12,8 +12,9 @@ uint32_t vulkan_resource_mgr_create_buffer(VkDevice *p_device, resource_t *p_res
 uint32_t vulkan_resource_mgr_create_image(VkDevice *p_device, resource_t *p_resources,
                                                                         resource_info_t *p_info);
 
-uint32_t vulkan_resource_mgr_bind_vertex_buffer_to_pipeline(char *resource_name,
-                                                                VkPipeline *p_pipeline);
+resource_info_t *vulkan_resource_mgr_get_resource_info(char *resource_name);
+
+void *vulkan_resource_mgr_get_resource_object(char *resource_name);
 
 void vulkan_resource_mgr_add_memory_property(VkPhysicalDevice *p_phydev);
 

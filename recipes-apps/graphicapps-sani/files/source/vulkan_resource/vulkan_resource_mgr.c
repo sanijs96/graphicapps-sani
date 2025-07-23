@@ -27,7 +27,7 @@ typedef struct resource_entry {
     union {
         VkImage image;
         VkBuffer buffer;
-    };
+    } resource;
 
     VkDeviceMemory device_memory;
 
@@ -179,7 +179,7 @@ static uint32_t __vulkan_resource_mgr_create_buffer_object(VkDevice *p_device,
                     __vulkan_resource_mgr_get_resource_data_unit_size(p_entry->info.type);
     info.usage = p_entry->info.usage_flags;
 
-    res = vkCreateBuffer(*p_device, &info, NULL, &p_entry->buffer);
+    res = vkCreateBuffer(*p_device, &info, NULL, &p_entry->resource.buffer);
     if (res != VK_SUCCESS) {
         printf("create buffer failure: %d\n", res);
 
@@ -199,10 +199,9 @@ static resource_entry_t *__vulkan_resource_mgr_get_matching_resource_entry(char 
         if (strcmp(p_entry->info.name, resource_name)) {
             p_entry = p_list->p_next;
         }
+
         break;
     }
-
-    printf("no matching resouce entry with %s\n", resource_name);
 
     return p_entry;
 }
@@ -214,13 +213,15 @@ static uint32_t __vulkan_resource_mgr_get_resource_memory_requirement(VkDevice *
 
     requirement_flag = 0;
     if (p_entry->info.type < MAX_RESOURCE_FORMAT_TYPE_BUFFERS) {
-        vkGetBufferMemoryRequirements(*p_device, p_entry->buffer, &p_entry->memory_requirement);
+        vkGetBufferMemoryRequirements(*p_device, p_entry->resource.buffer,
+                                                &p_entry->memory_requirement);
 
         requirement_flag = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     }
     else {
-        vkGetImageMemoryRequirements(*p_device, p_entry->image, &p_entry->memory_requirement);
+        vkGetImageMemoryRequirements(*p_device, p_entry->resource.image,
+                                            &p_entry->memory_requirement);
 
         requirement_flag = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -288,7 +289,7 @@ static uint32_t __vulkan_resource_bind_buffer_memory(VkDevice *p_device, resourc
         return FAILURE;
     }
 
-    vkBindBufferMemory(*p_device, p_entry->buffer, p_entry->device_memory, 0);
+    vkBindBufferMemory(*p_device, p_entry->resource.buffer, p_entry->device_memory, 0);
 
     p_entry->p_data_buf = malloc(p_entry->memory_requirement.size);
 
@@ -360,10 +361,61 @@ uint32_t vulkan_resource_mgr_create_image(VkDevice *p_device, resource_t *p_reso
 
 }
 
-uint32_t vulkan_resource_mgr_bind_vertex_buffer_to_pipeline(char *resource_name, VkPipeline *p_pipeline)
+resource_info_t *vulkan_resource_mgr_get_resource_info(char *resource_name)
 {
+    resource_entry_t *p_entry;
 
+    p_entry = __vulkan_resource_mgr_get_matching_resource_entry(resource_name,
+                                                                resource_ctx.vertex_list);
+    if (p_entry != NULL) {
+        return &p_entry->info;
+    }
+
+    p_entry = __vulkan_resource_mgr_get_matching_resource_entry(resource_name,
+                                                                resource_ctx.buffer_list);
+    if (p_entry != NULL) {
+        return &p_entry->info;
+    }
+
+    p_entry = __vulkan_resource_mgr_get_matching_resource_entry(resource_name,
+                                                                resource_ctx.image_list);
+    if (p_entry != NULL) {
+        return &p_entry->info;
+    }
+
+    printf("no matching entry with %s\n", resource_name);
+
+    return NULL;
 }
+
+void *vulkan_resource_mgr_get_resource_object(char *resource_name)
+{
+    resource_entry_t *p_entry;
+
+    p_entry = __vulkan_resource_mgr_get_matching_resource_entry(resource_name,
+                                                                resource_ctx.vertex_list);
+    if (p_entry != NULL) {
+        return &p_entry->resource;
+    }
+
+    p_entry = __vulkan_resource_mgr_get_matching_resource_entry(resource_name,
+                                                                resource_ctx.buffer_list);
+    if (p_entry != NULL) {
+        return &p_entry->resource;
+    }
+
+    p_entry = __vulkan_resource_mgr_get_matching_resource_entry(resource_name,
+                                                                resource_ctx.image_list);
+    if (p_entry != NULL) {
+        return &p_entry->resource;
+    }
+
+    printf("no matching entry with %s\n", resource_name);
+
+    return NULL;
+}
+
+
 
 void vulkan_resource_mgr_add_memory_property(VkPhysicalDevice *p_phydev)
 {

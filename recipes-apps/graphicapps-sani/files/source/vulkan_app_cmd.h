@@ -28,6 +28,5 @@ uint32_t vulkan_app_cmd_show_command_buffer_info(command_t *p_cmd);
 uint32_t vulkan_app_cmd_run_commands(command_t *p_cmd);
 
 uint32_t vulkan_app_cmd_create_resource(command_t *p_cmd);
-uint32_t vulkan_app_cmd_bind_resource_to_pipeline(command_t *p_cmd);
 
 #endif

@@ -46,6 +46,7 @@ typedef union vulkan_cmd_args_list {
         uint32_t buf_idx;
         uint32_t cmd_type;
         uint32_t pipeline_idx;
+        char resource_name[MAX_LENGTH_ARGUMENT_NAME];
     } cmdbuf;
 
     struct {
@@ -155,6 +156,10 @@ static uint32_t __setup_cmdbuf_argument(command_arg_t arg, vulkan_cmd_args_list_
 
         case PARAM_VK(CMDBUF_BUFFER_IDX):
             p_arglist->cmdbuf.buf_idx = (uint32_t)(*(char *)arg.value - '0');
+            break;
+
+        case PARAM_VK(CMDBUF_RESOURCE_NAME):
+            strcpy(p_arglist->cmdbuf.resource_name, arg.value);
             break;
 
         default:
@@ -766,8 +771,34 @@ static uint32_t __vulkan_app_cmd_setup_renderpass_command_param(vulkan_cmd_param
     return SUCCESS;
 }
 
-static uint32_t __vulkan_app_cmd_setup_draw_command_param(vulkan_cmd_param_t *p_param,
-                                                                    uint32_t pipeline_idx)
+static uint32_t __vulkan_app_cmd_setup_bind_pipeline_command_param(vulkan_cmd_param_t *p_param)
+{
+    if (vulkan_ops_mgr_get_pipeline_idx_setup_in_progress() != p_param->pipeline_idx) {
+        return FAILURE;
+    }
+
+    p_param->bind_pipeline.p_pipeline = vulkan_ops_mgr_get_pipeline_object(p_param->pipeline_idx);
+
+    return SUCCESS;
+}
+
+static uint32_t __vulkan_app_cmd_setup_bind_resource_command_param(vulkan_cmd_param_t *p_param,
+                                                                            char *resource_name)
+{
+    p_param->bind_resource.p_resource_info = vulkan_resource_mgr_get_resource_info(resource_name);
+    if (p_param->bind_resource.p_resource_info == NULL) {
+        return FAILURE;
+    }
+
+    p_param->bind_resource.p_resource = vulkan_resource_mgr_get_resource_object(resource_name);
+    if (p_param->bind_resource.p_resource == NULL) {
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
+static uint32_t __vulkan_app_cmd_setup_draw_command_param(vulkan_cmd_param_t *p_param)
 {
     VkRect2D scissor;
     VkViewport viewport;
@@ -790,7 +821,6 @@ static uint32_t __vulkan_app_cmd_setup_draw_command_param(vulkan_cmd_param_t *p_
     scissor.extent = *p_swapchain_extent;
     scissor.offset = (VkOffset2D){0, 0};
 
-    p_param->draw.p_pipeline = vulkan_ops_mgr_get_pipeline_object(pipeline_idx);
     p_param->draw.scissor = scissor;
     p_param->draw.viewport = viewport;
 
@@ -808,8 +838,17 @@ static uint32_t __vulkan_app_cmd_setup_command_param(uint32_t cmd_type,
             res = __vulkan_app_cmd_setup_renderpass_command_param(p_param);
             break;
 
+        case VULKAN_SUPPORTED_CMD_TYPE_BIND_PIPELINE:
+            res = __vulkan_app_cmd_setup_bind_pipeline_command_param(p_param);
+            break;
+
+        case VULKAN_SUPPORTED_CMD_TYPE_BIND_RESOURCE:
+            res = __vulkan_app_cmd_setup_bind_resource_command_param(p_param,
+                                                                     p_args->cmdbuf.resource_name);
+            break;
+
         case VULKAN_SUPPORTED_CMD_TYPE_DRAW:
-            res = __vulkan_app_cmd_setup_draw_command_param(p_param, p_args->cmdbuf.pipeline_idx);
+            res = __vulkan_app_cmd_setup_draw_command_param(p_param);
             break;
 
         default:
@@ -924,9 +963,4 @@ uint32_t vulkan_app_cmd_create_resource(command_t *p_cmd)
     }
 
     return SUCCESS;
-}
-
-uint32_t vulkan_app_cmd_bind_resource_to_pipeline(command_t *p_cmd)
-{
-
 }

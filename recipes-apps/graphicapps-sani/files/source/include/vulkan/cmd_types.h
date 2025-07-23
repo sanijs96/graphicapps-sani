@@ -3,9 +3,13 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include "vulkan/resource_formats.h"
+
 #define MAX_VULKAN_SUPPORTED_CMD_TYPES      (31)
 enum vulkan_supported_cmd_types {
     VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS = 0,
+    VULKAN_SUPPORTED_CMD_TYPE_BIND_PIPELINE,
+    VULKAN_SUPPORTED_CMD_TYPE_BIND_RESOURCE,
     VULKAN_SUPPORTED_CMD_TYPE_DRAW,
     NUM_VULKAN_SUPPORTED_CMD_TYPES,
 };
@@ -20,6 +24,7 @@ typedef union vulkan_cmd_template {
 
 typedef struct vulkan_cmd_param {
     uint32_t cmdbuf_idx;
+    uint32_t pipeline_idx;
     uint32_t enable_semaphore;
     union {
         struct {
@@ -35,9 +40,17 @@ typedef struct vulkan_cmd_param {
         } renderpass;
 
         struct {
+            VkPipeline* p_pipeline;
+        } bind_pipeline;
+
+        struct {
+            resource_info_t *p_resource_info;
+            void *p_resource;
+        } bind_resource;
+
+        struct {
             VkRect2D scissor;
             VkViewport viewport;
-            VkPipeline* p_pipeline;
         } draw;
     };
 

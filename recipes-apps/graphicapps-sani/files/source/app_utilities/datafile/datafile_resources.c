@@ -211,7 +211,6 @@ resource_info_t *datafile_get_resource_info(char *p_argname_str)
 
 static resource_handler_t *__datafile_get_resource_handler(uint32_t type)
 {
-    uint32_t type;
     uint32_t list_size;
 
     list_size = sizeof(resource_handlers) / sizeof(resource_handler_t);
@@ -232,7 +231,7 @@ uint32_t datafile_get_resource_data(resource_t *p_resource_buf, resource_info_t 
     entry_idx = datafile_get_resource_entry_idx(p_info->name);
     if (entry_idx == MAX_NUM_DATAFILE_RESOURCE_ENTRIES) {
         printf("resource not registered\n");
-        return NULL;
+        return FAILURE;
     }
 
     p_entry = &datafile_ctx.resources[entry_idx];

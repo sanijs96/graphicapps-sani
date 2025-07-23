@@ -19,12 +19,22 @@ typedef struct vulkan_cmd_proc_ctx{
     void (*add)(vulkan_cmd_template_t *p_template, vulkan_cmd_param_t *p_param);
 } vulkan_cmd_proc_ctx_t;
 
-static vulkan_cmd_proc_ctx_t cmd_proc_ctx[NUM_VULKAN_SUPPORTED_CMD_TYPES] =
+const vulkan_cmd_proc_ctx_t cmd_proc_ctx[NUM_VULKAN_SUPPORTED_CMD_TYPES] =
 {
     [VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS] = {
         .cmdname = "renderpass",
         .setup = cmd_template_setup_renderpass_command,
         .add = cmd_pool_add_renderpass_command,
+    },
+    [VULKAN_SUPPORTED_CMD_TYPE_BIND_PIPELINE] = {
+        .cmdname = "bind-pipeline",
+        .setup = NULL,
+        .add = cmd_pool_add_bind_pipeline_command,
+    },
+    [VULKAN_SUPPORTED_CMD_TYPE_BIND_RESOURCE] = {
+        .cmdname = "bind-resource",
+        .setup = NULL,
+        .add = cmd_pool_add_bind_resource_command,
     },
     [VULKAN_SUPPORTED_CMD_TYPE_DRAW] = {
         .cmdname = "draw",
