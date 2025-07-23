@@ -58,40 +58,29 @@ static uint32_t __datafile_setup_resource_type_vertex_2d_rgb(resource_t *p_buf,
     for (uint32_t idx = 0; idx < p_entry->info.count; idx++) {
         member_idx = 0;
 
-        p_buf->vertex_2d_rgb.pos.x = atof(p_entry->member_list[idx][member_idx++].value);
-        p_buf->vertex_2d_rgb.pos.y = atof(p_entry->member_list[idx][member_idx++].value);
+        p_buf[idx].vertex_2d_rgb.pos.x = atof(p_entry->member_list[idx][member_idx++].value);
+        p_buf[idx].vertex_2d_rgb.pos.y = atof(p_entry->member_list[idx][member_idx++].value);
 
-        p_buf->vertex_2d_rgb.color.r = atof(p_entry->member_list[idx][member_idx++].value);
-        p_buf->vertex_2d_rgb.color.g = atof(p_entry->member_list[idx][member_idx++].value);
-        p_buf->vertex_2d_rgb.color.g = atof(p_entry->member_list[idx][member_idx++].value);
+        p_buf[idx].vertex_2d_rgb.color.r = atof(p_entry->member_list[idx][member_idx++].value);
+        p_buf[idx].vertex_2d_rgb.color.g = atof(p_entry->member_list[idx][member_idx++].value);
+        p_buf[idx].vertex_2d_rgb.color.b = atof(p_entry->member_list[idx][member_idx++].value);
     }
 
     return SUCCESS;
 }
 
-uint32_t datafile_get_resource_usage_flags_from_typename(char *p_typename_str)
+uint32_t datafile_get_resource_usage_flags_from_typename(uint32_t type)
 {
     uint32_t list_size;
     uint32_t name_strlen;
 
     list_size = sizeof(resource_handlers) / sizeof(resource_handler_t);
 
-    for (uint32_t idx = 0; idx < list_size; idx++) {
-        if (resource_handlers[idx].name == NULL) {
-            continue;
-        }
-
-        name_strlen = strlen(resource_handlers[idx].name);
-        if (strncmp(p_typename_str, resource_handlers[idx].name, name_strlen)) {
-            continue;
-        }
-
-        return resource_handlers[idx].usage_flags;
+    if (list_size < type) {
+        return 0;
     }
 
-    printf("typename %s not recognized\n", p_typename_str);
-
-    return 0;
+    return resource_handlers[type].usage_flags;
 }
 
 uint32_t datafile_get_resource_type_from_typename(char *p_typename_str)
@@ -116,7 +105,7 @@ uint32_t datafile_get_resource_type_from_typename(char *p_typename_str)
 
     printf("typename %s not recognized\n", p_typename_str);
 
-    return NUM_RESOURCE_FORMAT_TYPES;
+    return RESOURCE_FORMAT_TYPE_INVALID;
 }
 
 uint32_t __datafile_get_available_regval_entry(void)
@@ -187,7 +176,7 @@ uint32_t datafile_save_resource_values(resource_info_t *p_info,
     p_entry->member_list[member_idx] = (member_value_list_t)malloc(value_count *
                                                                     sizeof(member_value_entry_t));
 
-    p_member_list = &p_entry->member_list[member_idx];
+    p_member_list = p_entry->member_list[member_idx];
 
     for (uint32_t idx = 0; idx < value_count; idx++) {
         strcpy(p_member_list[idx].value, p_value_str[idx]);

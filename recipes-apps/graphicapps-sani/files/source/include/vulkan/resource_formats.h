@@ -18,7 +18,7 @@ enum resource_format_types {
     /* image here */
     MAX_RESOURCE_FORMAT_TYPE_IMAGES,
 
-    NUM_RESOURCE_FORMAT_TYPES = MAX_RESOURCE_FORMAT_TYPE_IMAGES - 3
+    RESOURCE_FORMAT_TYPE_INVALID
 };
 
 #define MAX_NUM_RESOURCE_MEMBERS        (100)

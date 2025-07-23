@@ -457,11 +457,11 @@ static uint32_t __datascript_setup_resource_info_ctx(resource_info_t *p_info, ch
     argstr[copy_str_len] = '\0';
 
     p_info->type = datafile_get_resource_type_from_typename(argstr);
-    if (p_info->type == NUM_RESOURCE_FORMAT_TYPES) {
+    if (p_info->type == RESOURCE_FORMAT_TYPE_INVALID) {
         return FAILURE;
     }
 
-    p_info->usage_flags = datafile_get_resource_usage_flags_from_typename(argstr);
+    p_info->usage_flags = datafile_get_resource_usage_flags_from_typename(p_info->type);
     if (p_info->usage_flags == 0) {
         return FAILURE;
     }

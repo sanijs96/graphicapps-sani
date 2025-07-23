@@ -924,7 +924,6 @@ uint32_t vulkan_app_cmd_create_resource(command_t *p_cmd)
 {
     uint32_t res;
     VkDevice *p_device;
-    resource_t resource;
     resource_info_t *p_info;
     vulkan_cmd_args_list_t args_list;
 
@@ -944,18 +943,20 @@ uint32_t vulkan_app_cmd_create_resource(command_t *p_cmd)
         return FAILURE;
     }
 
-    if (datascript_copy_resource_data(&resource, p_info) == FAILURE) {
+    resource_t p_resources[p_info->count];
+
+    if (datascript_copy_resource_data(&p_resources, p_info) == FAILURE) {
         return FAILURE;
     }
 
     if (p_info->type < MAX_RESOURCE_FORMAT_TYPE_BUFFERS) {
-        res = vulkan_resource_mgr_create_vertex_buffer(p_device, &resource, p_info);
+        res = vulkan_resource_mgr_create_vertex_buffer(p_device, &p_resources, p_info);
     }
     else if (p_info->type < MAX_RESOURCE_FORMAT_TYPE_BUFFERS) { // TODO
-        res = vulkan_resource_mgr_create_buffer(p_device, &resource, p_info);
+        res = vulkan_resource_mgr_create_buffer(p_device, &p_resources, p_info);
     }
     else {
-        res = vulkan_resource_mgr_create_image(p_device, &resource, p_info);
+        res = vulkan_resource_mgr_create_image(p_device, &p_resources, p_info);
     }
 
     if (res == FAILURE) {
