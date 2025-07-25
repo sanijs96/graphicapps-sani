@@ -27,12 +27,12 @@ const vulkan_cmd_proc_ctx_t cmd_proc_ctx[NUM_VULKAN_SUPPORTED_CMD_TYPES] =
         .add = cmd_pool_add_renderpass_command,
     },
     [VULKAN_SUPPORTED_CMD_TYPE_BIND_PIPELINE] = {
-        .cmdname = "bind-pipeline",
+        .cmdname = "bind_pipeline",
         .setup = NULL,
         .add = cmd_pool_add_bind_pipeline_command,
     },
     [VULKAN_SUPPORTED_CMD_TYPE_BIND_RESOURCE] = {
-        .cmdname = "bind-resource",
+        .cmdname = "bind_resource",
         .setup = NULL,
         .add = cmd_pool_add_bind_resource_command,
     },
@@ -80,6 +80,11 @@ uint32_t vulkan_ops_mgr_add_shader_file(uint32_t stage, char *filename, VkDevice
 uint32_t vulkan_ops_mgr_add_viewport_ctx(VkExtent2D *p_extent, VkFormat *p_format)
 {
     return pipeline_add_viewport_ctx(p_extent, p_format);
+}
+
+uint32_t vulkan_ops_mgr_add_vertex_input_ctx(resource_description_t *p_description)
+{
+    return pipeline_add_vertex_input_ctx(p_description);
 }
 
 uint32_t vulkan_ops_mgr_get_pipeline_idx_setup_in_progress(void)

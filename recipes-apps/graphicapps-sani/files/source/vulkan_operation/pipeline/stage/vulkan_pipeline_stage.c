@@ -3,6 +3,7 @@
 
 #include "common/common_def.h"
 #include "vulkan/pipeline_stages.h"
+#include "vulkan/resource_formats.h"
 
 #include "vulkan_pipeline_stage.h"
 
@@ -32,6 +33,15 @@ const VkPipelineColorBlendAttachmentState default_attachment_state = {
     .alphaBlendOp = VK_BLEND_OP_ADD
 };
 
+static struct {
+    uint32_t binding_count;
+    uint32_t attribute_count;
+
+    // (TODO) might be exceeded
+    VkVertexInputBindingDescription bindings[MAX_NUM_RESOURCE_OBJECTS];
+    VkVertexInputAttributeDescription attributes[MAX_NUM_RESOURCE_OBJECTS];
+} vertex_input_ctx = { .binding_count = 0, .attribute_count = 0 };
+
 stage_ctx_t stages[NUM_VULKAN_PIPELINE_STAGES] = {
 [VULKAN_PIPELINE_STAGE_VERTEX_SHADER] = {
     .name = "shader_vertex",
@@ -52,14 +62,14 @@ stage_ctx_t stages[NUM_VULKAN_PIPELINE_STAGES] = {
                                     .pSpecializationInfo = NULL }
 },
 [VULKAN_PIPELINE_STAGE_VERTEX_INPUT] = {
-    .name = "input_vertex",
+    .name = "vertex_input",
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
     .setting.vertex_input = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
                                     .pNext = NULL, .flags = 0, 
                                     .vertexBindingDescriptionCount = 0,
-                                    .pVertexBindingDescriptions = NULL,
+                                    .pVertexBindingDescriptions = vertex_input_ctx.bindings,
                                     .vertexAttributeDescriptionCount = 0,
-                                    .pVertexAttributeDescriptions = NULL }
+                                    .pVertexAttributeDescriptions = vertex_input_ctx.attributes }
 },
 [VULKAN_PIPELINE_STAGE_INPUT_ASSEMBLY] = {
     .name = "input_assembly",
@@ -273,11 +283,50 @@ uint32_t pipeline_stage_setup_fragment_shader_ctx(char *filename, VkDevice* p_de
     return SUCCESS;
 }
 
-//uint32_t pipeline_stage_setup_vertex_input_ctx(void)
-//{
-//
-//}
-//
+uint32_t pipeline_stage_setup_vertex_input_ctx(resource_description_t *p_description)
+{
+    uint32_t binding_idx;
+    uint32_t attribute_idx;
+    pipeline_stage_template_t *p_vertex_input_template;
+
+    binding_idx = vertex_input_ctx.binding_count;
+    attribute_idx = vertex_input_ctx.attribute_count;
+
+    p_vertex_input_template = &stages[VULKAN_PIPELINE_STAGE_VERTEX_INPUT].setting.vertex_input;
+
+    if (binding_idx == MAX_NUM_RESOURCE_OBJECTS) {
+        printf("binding count exceeded, return\n");
+        return FAILURE;
+    }
+
+    if (attribute_idx == MAX_NUM_RESOURCE_OBJECTS) {
+        printf("attribute count exceeded, return\n");
+        return FAILURE;
+    }
+
+    for (uint32_t idx = 0; idx < p_description->vertex_buffer.attribute_count; idx++) {
+        memcpy(&vertex_input_ctx.attributes[attribute_idx],
+                            &p_description->vertex_buffer.p_attributes[idx],
+                                    sizeof(VkVertexInputAttributeDescription));
+        attribute_idx++;
+    }
+
+    memcpy(&vertex_input_ctx.bindings[binding_idx],
+                        &p_description->vertex_buffer.binding,
+                                sizeof(VkVertexInputAttributeDescription));
+    binding_idx++;
+
+    vertex_input_ctx.binding_count = binding_idx;
+    vertex_input_ctx.attribute_count = attribute_idx;
+
+    p_vertex_input_template->vertex_input.vertexBindingDescriptionCount =
+                                                vertex_input_ctx.binding_count;
+    p_vertex_input_template->vertex_input.vertexAttributeDescriptionCount =
+                                                vertex_input_ctx.attribute_count;
+
+    return SUCCESS;
+}
+
 //uint32_t pipeline_stage_setup_input_assembly_ctx(void)
 //{
 //

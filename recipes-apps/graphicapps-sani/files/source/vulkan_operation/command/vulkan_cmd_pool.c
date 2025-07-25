@@ -203,6 +203,7 @@ void cmd_pool_add_bind_resource_command(vulkan_cmd_template_t *p_template,
     uint32_t cmdbuf_idx;
     uint32_t resource_type;
     cmd_buf_ctx_t *p_buf_ctx;
+    const VkDeviceSize offset[] = {0};
 
     cmdbuf_idx = p_param->cmdbuf_idx;
 
@@ -211,8 +212,9 @@ void cmd_pool_add_bind_resource_command(vulkan_cmd_template_t *p_template,
     p_buf_ctx = &cmd_pool_ctx.buffer_ctx[cmdbuf_idx];
 
     if (resource_type < MAX_RESOURCE_FORMAT_TYPE_VERTEX_BUFFERS) {
-        vkCmdBindVertexBuffers(p_buf_ctx->buffer, 0, 1,
-                                p_param->bind_resource.p_resource, 0);
+        vkCmdBindVertexBuffers(p_buf_ctx->buffer,
+                                p_param->bind_resource.p_resource_info->binding, 1, // binding idx & count, associated with vertex input stage
+                                                p_param->bind_resource.p_resource, offset);
     }
     else if (resource_type < MAX_RESOURCE_FORMAT_TYPE_BUFFERS){
         // TODO

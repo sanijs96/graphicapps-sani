@@ -423,7 +423,7 @@ void function_get_phydev_layers_name_list(uint32_t state, char **p_names_list,
     vkEnumerateDeviceLayerProperties(*p_phydev, &p_ctx->num_layers, p_properties);
 
     list_idx = 0;
-    for (uint32_t idx = 0; idx < p_ctx->num_extensions; idx++) {
+    for (uint32_t idx = 0; idx < p_ctx->num_layers; idx++) {
         if ((state == p_ctx->layer_ctx.states[idx]) ||
             (state == VULKAN_FUNCTION_STATE_DEFAULT)) {
             strcpy(names_list[list_idx], p_properties[idx].layerName);

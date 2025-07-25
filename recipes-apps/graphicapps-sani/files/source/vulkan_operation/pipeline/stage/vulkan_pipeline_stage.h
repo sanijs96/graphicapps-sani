@@ -21,6 +21,8 @@ uint32_t pipeline_stage_get_status(uint32_t stage_idx);
 char *pipeline_stage_get_stage_name(uint32_t stage_idx);
 pipeline_stage_template_t *pipeline_stage_get_creation_info(uint32_t stage_idx);
 
+uint32_t pipeline_stage_setup_vertex_input_ctx(resource_description_t *p_description);
+
 uint32_t pipeline_stage_setup_vertex_shader_ctx(char *filename, VkDevice* p_device);
 uint32_t pipeline_stage_setup_fragment_shader_ctx(char *filename, VkDevice* p_device);
 uint32_t pipeline_stage_setup_viewport_ctx(VkViewport *p_viewport, VkRect2D *p_scissor);

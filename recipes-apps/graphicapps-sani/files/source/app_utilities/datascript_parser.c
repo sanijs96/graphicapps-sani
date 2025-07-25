@@ -17,6 +17,10 @@ enum directive_types {
     DIRECTIVE_CHAR_COMMAND_REFERENCE                = '$',
     DIRECTIVE_CHAR_COMMAND_ASSIGNMENT               = '=',
 
+    /*----------------------------------------------*\
+    |* format_3d object[2] = {1.0f, 0.0f, 0,0f},    *|
+    |*                       {0.0f, 1.0f, 1.0f};    *|
+    \*----------------------------------------------*/
     DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_START        = '[',
     DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_CLOSE        = ']',
     DIRECTIVE_CHAR_RESOURCE_MEMBER_ENTRY_DELIM      = ',',
@@ -349,7 +353,7 @@ uint32_t datascript_register_datafile(char *filename_str)
 
 uint32_t datascript_check_resource_registered(char *argname_str)
 {
-    if (datafile_get_resource_entry_idx(argname_str) == MAX_NUM_DATAFILE_RESOURCE_ENTRIES) {
+    if (datafile_get_resource_entry_idx(argname_str) == MAX_NUM_RESOURCE_OBJECT_MEMBERS) {
         return FALSE;
     }
 
@@ -461,7 +465,7 @@ static uint32_t __datascript_setup_resource_info_ctx(resource_info_t *p_info, ch
         return FAILURE;
     }
 
-    p_info->usage_flags = datafile_get_resource_usage_flags_from_typename(p_info->type);
+    p_info->usage_flags = datafile_get_usage_flags_from_resource_type(p_info->type);
     if (p_info->usage_flags == 0) {
         return FAILURE;
     }
@@ -499,13 +503,9 @@ static uint32_t __datascript_register_resource_entries(resource_info_t *p_info, 
 
     char *p_cursor;
     char *p_cursor_limit;
-    char member_value_strbuf[MAX_NUM_RESOURCE_MEMBERS][MAX_RESOURCE_VALUE_LENGTH];
+    resource_member_entry_t member_value_strbuf[MAX_NUM_RESOURCE_OBJECT_MEMBERS];
 
     p_cursor = data_buf_str;
-
-    if (datafile_allocate_resource_entry(p_info) == FAILURE) {
-        return FAILURE;
-    }
 
     value_member_idx = 0;
 
@@ -532,17 +532,17 @@ register_member_values:
             value_strlen = p_cursor_limit - p_cursor;
         }
 
-        memset(member_value_strbuf[value_entry_idx], 0, MAX_RESOURCE_VALUE_LENGTH);
-        strncpy(member_value_strbuf[value_entry_idx], p_cursor, value_strlen);
-        member_value_strbuf[value_entry_idx][value_strlen] = '\0';
+        memset(member_value_strbuf[value_entry_idx].value, 0, MAX_RESOURCE_VALUE_LENGTH_STR);
+        strncpy(member_value_strbuf[value_entry_idx].value, p_cursor, value_strlen);
+        member_value_strbuf[value_entry_idx].value[value_strlen] = '\0';
 
         p_cursor += value_strlen;
 
         value_entry_idx++;
     }
 
-    if (datafile_save_resource_values(p_info, member_value_strbuf,
-                                        value_entry_idx, value_member_idx) == FAILURE) {
+    if (datafile_save_resource_data(p_info, member_value_strbuf,
+                                    value_entry_idx, value_member_idx) == FAILURE) {
         return FAILURE;
     }
 
@@ -562,23 +562,54 @@ static uint32_t __datascript_release_current_datafile_entry(void)
     return SUCCESS;
 }
 
-uint32_t datascript_load_resources_from_datafile(char *filename_str)
+uint32_t datascript_get_resource_count(void)
 {
+    char *p_cursor;
+    uint32_t resource_count;
+
+    resource_count = 0;
+
+    p_cursor = strchr(datafile_list->ctx.p_filedata_str, DIRECTIVE_CHAR_RESOURCE_OBJECT_DEFINE_CLOSE);
+    while (p_cursor != NULL) {
+        resource_count++;
+        p_cursor = strchr(++p_cursor, DIRECTIVE_CHAR_RESOURCE_OBJECT_DEFINE_CLOSE);
+    }
+
+    return resource_count;
+}
+
+uint32_t datascript_load_resource_info_from_datafile(resource_info_t *info_list)
+{
+    uint32_t list_idx;
     char data_buf_str[300];
-    resource_info_t resource_info;
+
+    list_idx = 0;
 
 get_new_datastr:
     memset(data_buf_str, 0, 300);
-    memset(&resource_info, 0, sizeof(resource_info_t));
 
     if (__datascript_get_next_objstr_from_datafile(data_buf_str) == SUCCESS) {
-        if (__datascript_setup_resource_info_ctx(&resource_info, data_buf_str) == FAILURE) {
+        memset(&info_list[list_idx], 0, sizeof(resource_info_t));
+
+        if (__datascript_setup_resource_info_ctx(&info_list[list_idx], data_buf_str) == FAILURE) {
             return FAILURE;
         }
 
-        if (__datascript_register_resource_entries(&resource_info, data_buf_str) == FAILURE) {
+        if (datafile_allocate_resource_data_entry(&info_list[list_idx]) == FAILURE) {
             return FAILURE;
         }
+
+        info_list[list_idx].binding = datafile_get_resource_entry_idx(info_list[list_idx].name);
+        if (info_list[list_idx].binding == MAX_NUM_RESOURCE_OBJECTS) {
+            printf("resource entry fully occupied\n");
+            return FAILURE;
+        }
+
+        if (__datascript_register_resource_entries(&info_list[list_idx], data_buf_str) == FAILURE) {
+            return FAILURE;
+        }
+
+        list_idx++;
 
         goto get_new_datastr;
     }
@@ -590,14 +621,9 @@ get_new_datastr:
     return SUCCESS;
 }
 
-resource_info_t *datascript_get_resource_info(char *argname_str)
+resource_member_list_t *datascript_get_resource_data(char *resource_name)
 {
-    return datafile_get_resource_info(argname_str);
-}
-
-uint32_t datascript_copy_resource_data(resource_t *p_resource_buf, resource_info_t *p_info)
-{
-    return datafile_get_resource_data(p_resource_buf, p_info);
+    return datafile_get_resource_data(resource_name);
 }
 
 void datascript_release_all_files(void)

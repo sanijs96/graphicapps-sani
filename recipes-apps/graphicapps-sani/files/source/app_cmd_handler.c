@@ -50,7 +50,7 @@ command_handler_entry_t vulkan_app_cmd_handler_device[] = {
 
 command_handler_entry_t vulkan_app_cmd_handler_pipeline[] = {
     {"init", NULL, NULL, vulkan_app_cmd_init_pipeline_ctx, NULL},
-    {"setup", "fis", NULL, vulkan_app_cmd_add_pipeline_stage, NULL},
+    {"setup", "fns", NULL, vulkan_app_cmd_add_pipeline_stage, NULL},
     {"create", NULL, NULL, vulkan_app_cmd_create_pipeline, NULL},
     {"info", NULL, NULL, vulkan_app_cmd_show_pipeline_info, NULL},
 
@@ -82,7 +82,7 @@ command_handler_entry_t etc_app_cmd_handler_window[] = {
 
 command_handler_entry_t app_cmd_handler_app[] = {
     {"runscript", "f", NULL, app_cmd_add_runscript_file, NULL},
-    {"loaddata", "f", NULL, app_cmd_add_resource_data_file, NULL},
+    {"loaddata", "f", NULL, app_cmd_load_resource_data, NULL},
     {"exit", NULL, NULL, app_cmd_console_exit, NULL},
 
     {NULL, }

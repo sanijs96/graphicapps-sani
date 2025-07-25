@@ -38,7 +38,7 @@ typedef union vulkan_cmd_args_list {
 
     struct {
         uint32_t stage_idx;
-        uint32_t cmdbuf_idx;
+        char resource_name[MAX_LENGTH_ARGUMENT_NAME];
         char filename[FILENAME_MAX];
     } pipeline;
 
@@ -132,8 +132,8 @@ static uint32_t __setup_pipeline_argument(command_arg_t arg, vulkan_cmd_args_lis
             strcpy(p_arglist->pipeline.filename, arg.value);
             break;
 
-        case PARAM_VK(PIPELINE_BINDING_CMDBUF_IDX):
-            p_arglist->pipeline.cmdbuf_idx = (uint32_t)(*(char *)arg.value - '0');
+        case PARAM_VK(PIPELINE_RESOURCE_NAME):
+            strcpy(p_arglist->pipeline.resource_name, arg.value);
             break;
 
         default:
@@ -497,6 +497,22 @@ static uint32_t __vulkan_app_cmd_add_viewport_ctx(void)
     return SUCCESS;
 }
 
+static uint32_t __vulkan_app_cmd_add_vertex_input_ctx(char *resource_name)
+{
+    resource_description_t *p_description;
+
+    p_description = vulkan_resource_mgr_get_resource_description(resource_name);
+    if (p_description == NULL) {
+        return FAILURE;
+    }
+
+    if (vulkan_ops_mgr_add_vertex_input_ctx(p_description) == FAILURE) {
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
 uint32_t vulkan_app_cmd_add_pipeline_stage(command_t *p_cmd)
 {
     uint32_t res;
@@ -511,6 +527,10 @@ uint32_t vulkan_app_cmd_add_pipeline_stage(command_t *p_cmd)
     stage_idx = args_list.pipeline.stage_idx;
 
     switch (stage_idx) {
+        case VULKAN_PIPELINE_STAGE_VERTEX_INPUT:
+            res = __vulkan_app_cmd_add_vertex_input_ctx(args_list.pipeline.resource_name);
+            break;
+
         case VULKAN_PIPELINE_STAGE_VERTEX_SHADER:
         case VULKAN_PIPELINE_STAGE_FRAGMENT_SHADER:
             res = __vulkan_app_cmd_add_shader_ctx(stage_idx, args_list.pipeline.filename);
@@ -771,13 +791,12 @@ static uint32_t __vulkan_app_cmd_setup_renderpass_command_param(vulkan_cmd_param
     return SUCCESS;
 }
 
-static uint32_t __vulkan_app_cmd_setup_bind_pipeline_command_param(vulkan_cmd_param_t *p_param)
+static uint32_t __vulkan_app_cmd_setup_bind_pipeline_command_param(vulkan_cmd_param_t *p_param,
+                                                                            uint32_t pipeline_idx)
 {
-    if (vulkan_ops_mgr_get_pipeline_idx_setup_in_progress() != p_param->pipeline_idx) {
-        return FAILURE;
-    }
+    // TODO: check pipeline created
 
-    p_param->bind_pipeline.p_pipeline = vulkan_ops_mgr_get_pipeline_object(p_param->pipeline_idx);
+    p_param->bind_pipeline.p_pipeline = vulkan_ops_mgr_get_pipeline_object(pipeline_idx);
 
     return SUCCESS;
 }
@@ -839,7 +858,8 @@ static uint32_t __vulkan_app_cmd_setup_command_param(uint32_t cmd_type,
             break;
 
         case VULKAN_SUPPORTED_CMD_TYPE_BIND_PIPELINE:
-            res = __vulkan_app_cmd_setup_bind_pipeline_command_param(p_param);
+            res = __vulkan_app_cmd_setup_bind_pipeline_command_param(p_param,
+                                                                     p_args->cmdbuf.pipeline_idx);
             break;
 
         case VULKAN_SUPPORTED_CMD_TYPE_BIND_RESOURCE:
@@ -926,6 +946,7 @@ uint32_t vulkan_app_cmd_create_resource(command_t *p_cmd)
     VkDevice *p_device;
     resource_info_t *p_info;
     vulkan_cmd_args_list_t args_list;
+    resource_member_list_t *p_resource_buf;
 
     if (vulkan_app_cmd_setup_argument_list(p_cmd, &args_list) == FAILURE) {
         return FAILURE;
@@ -938,25 +959,27 @@ uint32_t vulkan_app_cmd_create_resource(command_t *p_cmd)
 
     p_device = vulkan_obj_mgr_get_current_device_object();
 
-    p_info = datascript_get_resource_info(args_list.resource.name);
+    p_info = vulkan_resource_mgr_get_resource_info(args_list.resource.name);
     if (p_info == NULL) {
         return FAILURE;
     }
 
-    resource_t p_resources[p_info->count];
-
-    if (datascript_copy_resource_data(&p_resources, p_info) == FAILURE) {
+    p_resource_buf = datascript_get_resource_data(args_list.resource.name);
+    if (p_resource_buf == NULL) {
         return FAILURE;
     }
 
     if (p_info->type < MAX_RESOURCE_FORMAT_TYPE_BUFFERS) {
-        res = vulkan_resource_mgr_create_vertex_buffer(p_device, &p_resources, p_info);
+        res = vulkan_resource_mgr_create_vertex_buffer(p_device, args_list.resource.name,
+                                                                             p_resource_buf);
     }
     else if (p_info->type < MAX_RESOURCE_FORMAT_TYPE_BUFFERS) { // TODO
-        res = vulkan_resource_mgr_create_buffer(p_device, &p_resources, p_info);
+        res = vulkan_resource_mgr_create_buffer(p_device, args_list.resource.name,
+                                                                    p_resource_buf);
     }
     else {
-        res = vulkan_resource_mgr_create_image(p_device, &p_resources, p_info);
+        res = vulkan_resource_mgr_create_image(p_device, args_list.resource.name,
+                                                                    p_resource_buf);
     }
 
     if (res == FAILURE) {

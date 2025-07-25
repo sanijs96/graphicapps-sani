@@ -4,6 +4,8 @@
 
 #include "common/common_def.h"
 
+#include "handler/vulkan_resource_handlers.h"
+
 #include "vulkan_resource_mgr.h"
 
 enum resource_entry_state {
@@ -20,7 +22,7 @@ enum memory_property_state {
 typedef struct resource_entry {
     uint32_t state;
 
-    void *p_data_buf;
+    void *p_host_resource_buf;
 
     resource_info_t info;
 
@@ -50,22 +52,35 @@ static struct {
     device_memory_ctx_t device_memory_ctx;
 } resource_ctx = { NULL, NULL, NULL, 0 };
 
-static resource_entry_t *__vulkan_resource_mgr_add_new_entry(resource_list_t *p_list,
-                                                                resource_info_t *p_info)
+uint32_t vulkan_resource_mgr_get_resource_data_unit_size(uint32_t type)
+{
+    uint32_t data_unit_size;
+
+    switch (type) {
+        case RESOURCE_FORMAT_TYPE_BUFFER_VERTEX_2D_RGB:
+            data_unit_size = sizeof(vertex_2d_rgb_t);
+            break;
+
+        default:
+            printf("no matching resource type %u\n", type);
+            data_unit_size = 0;
+    }
+
+    return data_unit_size;
+}
+
+static resource_entry_t *__vulkan_resource_mgr_add_new_entry(resource_list_t *p_resource_list,
+                                                                    resource_info_t *p_info)
 {
     resource_entry_t *p_entry;
-
-    p_entry = *p_list;
-
-    while (p_entry != NULL) {
-        p_entry = p_entry->p_next;
-    }
 
     p_entry = (resource_entry_t *)malloc(sizeof(resource_entry_t));
 
     p_entry->state = RESOURCE_ENTRY_STATE_DEFAULT;
 
-    p_entry->p_next = *p_list;
+    p_entry->p_next = p_resource_list;
+
+    *p_resource_list = p_entry;
 
     memcpy(&p_entry->info, p_info, sizeof(resource_info_t));
 
@@ -93,68 +108,22 @@ static void __vulkan_resource_mgr_delete_entry(resource_list_t p_list, resource_
     return;
 }
 
-static uint32_t __vulkan_resource_mgr_get_resource_data_unit_size(uint32_t type)
+uint32_t vulkan_resource_mgr_add_resource_info(resource_info_t *p_info)
 {
-    uint32_t data_unit_size;
-
-    switch (type) {
-        case RESOURCE_FORMAT_TYPE_BUFFER_VERTEX_2D_RGB:
-            data_unit_size = sizeof(vertex_2d_rgb_t);
-            break;
-
-        default:
-            printf("no matching resource type %u\n", type);
-            data_unit_size = 0;
-    }
-
-    return data_unit_size;
-}
-
-static uint32_t __vulkan_resource_mgr_add_resource_info(resource_list_t p_list,
-                                                            resource_info_t *p_info)
-{
-    uint32_t data_unit_size;
     resource_entry_t *p_entry;
 
-    p_entry = p_list->p_next;
-
-    while (p_entry->p_next != NULL) {
-        if (p_entry->state == RESOURCE_ENTRY_STATE_DEFAULT) {
-            continue;
-        }
-
-        if (!strcmp(p_entry->info.name, p_info->name)) {
-            printf("resource name %s already used\n", p_entry->info.name);
-
-            return FAILURE;
-        }
-
-        p_entry = p_entry->p_next;
+    if (p_info->type < MAX_RESOURCE_FORMAT_TYPE_VERTEX_BUFFERS) {
+        p_entry = __vulkan_resource_mgr_add_new_entry(&resource_ctx.vertex_list, p_info);
+    }
+    else if (p_info->type < MAX_RESOURCE_FORMAT_TYPE_BUFFERS) {
+        p_entry = __vulkan_resource_mgr_add_new_entry(&resource_ctx.buffer_list, p_info);
+    }
+    else {
+        p_entry = __vulkan_resource_mgr_add_new_entry(&resource_ctx.image_list, p_info);
     }
 
-    data_unit_size = __vulkan_resource_mgr_get_resource_data_unit_size(p_entry->info.type);
-    if (data_unit_size == 0) {
+    if (p_entry == NULL) {
         return FAILURE;
-    }
-
-    return SUCCESS;
-}
-
-static uint32_t __vulkan_resource_mgr_add_resource_data(resource_entry_t *p_entry,
-                                                            resource_t *p_resources)
-{
-    uint32_t data_unit_size;
-    uint8_t *p_resource_buf;
-
-    data_unit_size = __vulkan_resource_mgr_get_resource_data_unit_size(p_entry->info.type);
-    if (data_unit_size == 0) {
-        return FAILURE;
-    }
-
-    p_resource_buf = (uint8_t *)p_entry->p_data_buf;
-
-    for (uint32_t idx = 0; idx < p_entry->info.count; idx++) {
-        memcpy(&p_resource_buf[idx + data_unit_size], &p_resources[idx], data_unit_size);
     }
 
     return SUCCESS;
@@ -175,8 +144,9 @@ static uint32_t __vulkan_resource_mgr_create_buffer_object(VkDevice *p_device,
     info.pQueueFamilyIndices = NULL;
     info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
+    // size may differ from device memory requirement size
     info.size = p_entry->info.count *
-                    __vulkan_resource_mgr_get_resource_data_unit_size(p_entry->info.type);
+                    vulkan_resource_mgr_get_resource_data_unit_size(p_entry->info.type);
     info.usage = p_entry->info.usage_flags;
 
     res = vkCreateBuffer(*p_device, &info, NULL, &p_entry->resource.buffer);
@@ -282,8 +252,7 @@ static uint32_t __vulkan_resource_mgr_allocate_device_memory(VkDevice *p_device,
     return SUCCESS;
 }
 
-static uint32_t __vulkan_resource_bind_buffer_memory(VkDevice *p_device, resource_t *p_resources,
-                                                                        resource_entry_t *p_entry)
+static uint32_t __vulkan_resource_bind_buffer_memory(VkDevice *p_device, resource_entry_t *p_entry)
 {
     if (__vulkan_resource_mgr_allocate_device_memory(p_device, p_entry) == FAILURE) {
         return FAILURE;
@@ -291,12 +260,51 @@ static uint32_t __vulkan_resource_bind_buffer_memory(VkDevice *p_device, resourc
 
     vkBindBufferMemory(*p_device, p_entry->resource.buffer, p_entry->device_memory, 0);
 
-    p_entry->p_data_buf = malloc(p_entry->memory_requirement.size);
-
     vkMapMemory(*p_device, p_entry->device_memory, 0,
-                p_entry->memory_requirement.size, 0, p_entry->p_data_buf);
+                p_entry->memory_requirement.size, 0, p_entry->p_host_resource_buf);
 
-    if (__vulkan_resource_mgr_add_resource_data(p_entry, p_resources) == FAILURE) {
+    return SUCCESS;
+}
+
+static uint32_t __vulkan_resource_mgr_allocate_host_buf(VkDevice *p_device,
+                                                        resource_entry_t *p_entry,
+                                                        resource_member_list_t *p_members_list)
+{
+    __vulkan_resource_mgr_get_resource_memory_requirement(p_device, p_entry);
+
+    p_entry->p_host_resource_buf = malloc(p_entry->memory_requirement.size);
+
+    return SUCCESS;
+}
+
+uint32_t vulkan_resource_mgr_create_vertex_buffer(VkDevice *p_device, char *resource_name,
+                                                    resource_member_list_t *p_members_list)
+{
+    resource_entry_t *p_entry;
+    resource_list_t resource_list;
+
+    resource_list = resource_ctx.vertex_list;
+
+    p_entry = __vulkan_resource_mgr_get_matching_resource_entry(resource_name, resource_list);
+    if (p_entry == NULL) {
+        return FAILURE;
+    }
+
+    if (__vulkan_resource_mgr_create_buffer_object(p_device, p_entry) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (__vulkan_resource_mgr_allocate_host_buf(p_device, p_entry, p_members_list) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (__vulkan_resource_bind_buffer_memory(p_device, p_entry) == FAILURE) {
+        __vulkan_resource_mgr_delete_entry(resource_ctx.vertex_list, p_entry);
+        return FAILURE;
+    }
+
+    if (resource_handler_setup_resource_buf(&p_entry->info, p_entry->p_host_resource_buf,
+                                                                    p_members_list) == FAILURE) {
         __vulkan_resource_mgr_delete_entry(resource_ctx.vertex_list, p_entry);
         return FAILURE;
     }
@@ -304,59 +312,38 @@ static uint32_t __vulkan_resource_bind_buffer_memory(VkDevice *p_device, resourc
     return SUCCESS;
 }
 
-uint32_t vulkan_resource_mgr_create_vertex_buffer(VkDevice *p_device, resource_t *p_resources,
-                                                                        resource_info_t *p_info)
-{
-    resource_entry_t *p_entry;
-    resource_list_t resource_list;
-
-    resource_list = resource_ctx.vertex_list;
-
-    p_entry = __vulkan_resource_mgr_add_new_entry(&resource_list, p_info);
-
-    if (__vulkan_resource_mgr_create_buffer_object(p_device, p_entry) == FAILURE) {
-        __vulkan_resource_mgr_delete_entry(resource_list, p_entry);
-        return FAILURE;
-    }
-
-    if (__vulkan_resource_bind_buffer_memory(p_device, p_resources, p_entry) == FAILURE) {
-        __vulkan_resource_mgr_delete_entry(resource_list, p_entry);
-        return FAILURE;
-    }
-
-    return SUCCESS;
-}
-
-uint32_t vulkan_resource_mgr_create_buffer(VkDevice *p_device, resource_t *p_resources,
-                                                                resource_info_t *p_info)
+uint32_t vulkan_resource_mgr_create_buffer(VkDevice *p_device, char *resource_name,
+                                                    resource_member_list_t *p_members_list)
 {
     resource_entry_t *p_entry;
     resource_list_t resource_list;
 
     resource_list = resource_ctx.buffer_list;
 
-    p_entry = __vulkan_resource_mgr_add_new_entry(&resource_list, p_info);
-
-    if (__vulkan_resource_mgr_add_resource_info(resource_list, &p_entry->info) == FAILURE) {
-        __vulkan_resource_mgr_delete_entry(resource_list, p_entry);
+    if (__vulkan_resource_mgr_allocate_host_buf(p_device, p_entry, p_members_list) == FAILURE) {
         return FAILURE;
     }
 
     if (__vulkan_resource_mgr_create_buffer_object(p_device, p_entry) == FAILURE) {
-        __vulkan_resource_mgr_delete_entry(resource_list, p_entry);
         return FAILURE;
     }
 
-    if (__vulkan_resource_bind_buffer_memory(p_device, p_resources, p_entry) == FAILURE) {
-        __vulkan_resource_mgr_delete_entry(resource_list, p_entry);
+    if (__vulkan_resource_bind_buffer_memory(p_device, p_entry) == FAILURE) {
+        __vulkan_resource_mgr_delete_entry(resource_ctx.vertex_list, p_entry);
+        return FAILURE;
+    }
+
+    if (resource_handler_setup_resource_buf(&p_entry->info, p_entry->p_host_resource_buf,
+                                                                    p_members_list) == FAILURE) {
+        __vulkan_resource_mgr_delete_entry(resource_ctx.vertex_list, p_entry);
         return FAILURE;
     }
 
     return SUCCESS;
 }
 
-uint32_t vulkan_resource_mgr_create_image(VkDevice *p_device, resource_t *p_resources,
-                                                                resource_info_t *p_info)
+uint32_t vulkan_resource_mgr_create_image(VkDevice *p_device, char *resource_name,
+                                                    resource_member_list_t *p_members_list)
 {
 
 }
@@ -388,6 +375,18 @@ resource_info_t *vulkan_resource_mgr_get_resource_info(char *resource_name)
     return NULL;
 }
 
+resource_description_t *vulkan_resource_mgr_get_resource_description(char *resource_name)
+{
+    resource_info_t *p_info;
+
+    p_info = vulkan_resource_mgr_get_resource_info(resource_name);
+    if (p_info == NULL) {
+        return FAILURE;
+    }
+
+    return resource_handler_get_resource_description(p_info);
+}
+
 void *vulkan_resource_mgr_get_resource_object(char *resource_name)
 {
     resource_entry_t *p_entry;
@@ -414,8 +413,6 @@ void *vulkan_resource_mgr_get_resource_object(char *resource_name)
 
     return NULL;
 }
-
-
 
 void vulkan_resource_mgr_add_memory_property(VkPhysicalDevice *p_phydev)
 {

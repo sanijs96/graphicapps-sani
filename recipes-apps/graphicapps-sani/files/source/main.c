@@ -236,7 +236,10 @@ input:
 
     if (datascript_check_scriptfile_registered() == FALSE) {
         printf("[CMD]: ");
-        fgets(p_input_str, MAX_LENGTH_APP_CMD, stdin);
+
+        if (fgets(p_input_str, MAX_LENGTH_APP_CMD, stdin) == NULL) {
+            return;
+        }
     }
     else if (datascript_get_command(p_input_str) == FAILURE) {
         goto input;

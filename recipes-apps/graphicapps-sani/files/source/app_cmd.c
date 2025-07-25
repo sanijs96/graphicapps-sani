@@ -4,9 +4,11 @@
 
 #include "common/common_def.h"
 
-#include "app_cmd.h"
-
 #include "app_utilities/datascript_parser.h"
+
+#include "vulkan_resource/vulkan_resource_mgr.h"
+
+#include "app_cmd.h"
 
 typedef union app_cmd_args_list {
     struct {
@@ -45,8 +47,9 @@ uint32_t app_cmd_add_runscript_file(command_t *p_cmd)
     return SUCCESS;
 }
 
-uint32_t app_cmd_add_resource_data_file(command_t *p_cmd)
+uint32_t app_cmd_load_resource_data(command_t *p_cmd)
 {
+    uint32_t num_resources;
     app_cmd_args_list_t args_list;
 
     for (uint32_t idx = 0; idx < p_cmd->num_args; idx++) {
@@ -59,8 +62,23 @@ uint32_t app_cmd_add_resource_data_file(command_t *p_cmd)
         return FAILURE;
     }
 
-    if (datascript_load_resources_from_datafile(args_list.datascript.name) == FAILURE) {
+    num_resources = datascript_get_resource_count();
+    if (num_resources == 0) {
+        printf("no resource dectected\n");
         return FAILURE;
+    }
+
+    resource_info_t info_list[num_resources];
+    memset(info_list, 0, sizeof(resource_info_t) * num_resources);
+
+    if (datascript_load_resource_info_from_datafile(info_list) == FAILURE) {
+        return FAILURE;
+    }
+
+    for (uint32_t idx = 0; idx < num_resources; idx++) {
+        if (vulkan_resource_mgr_add_resource_info(&info_list[idx]) == FAILURE) {
+            return FAILURE;
+        }
     }
 
     return SUCCESS;

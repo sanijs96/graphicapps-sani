@@ -26,6 +26,8 @@ uint32_t pipeline_add_shader_file(uint32_t stage, char *filename, VkDevice *p_de
 
 uint32_t pipeline_add_viewport_ctx(VkExtent2D *p_extent, VkFormat *p_format);
 
+uint32_t pipeline_add_vertex_input_ctx(resource_description_t *p_description);
+
 uint32_t pipeline_start_setup(void);
 
 uint32_t pipeline_create(VkDevice *p_device, uint32_t pipeline_idx); // TODO: add renderpass index

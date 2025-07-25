@@ -25,12 +25,12 @@ do_install[depends] += " glslang:do_populate_sysroot"
 do_install:append() {
     VERTEX_TRGT=$(find ${SHADER_DIR} -name *.vert)
     if [ -n ${VERTEX_TRGT} ]; then
-        ${GLSLC} -G ${VERTEX_TRGT} -o $(echo "${VERTEX_TRGT}" | sed 's/.vert/_vert.spv/')
+        ${GLSLC} -V ${VERTEX_TRGT} --target-env spirv1.0 -o $(echo "${VERTEX_TRGT}" | sed 's/.vert/_vert.spv/')
     fi
 
     FRAGMENT_TRGT=$(find ${SHADER_DIR} -name *.frag)
     if [ -n ${FRAGMENT_TRGT} ]; then
-        ${GLSLC} -G ${FRAGMENT_TRGT} -o $(echo "${FRAGMENT_TRGT}" | sed 's/\.frag/_frag\.spv/')
+        ${GLSLC} -V ${FRAGMENT_TRGT} --target-env spirv1.0 -o $(echo "${FRAGMENT_TRGT}" | sed 's/\.frag/_frag\.spv/')
     fi
 
     install -d ${D}/home/root/graphicapps-source

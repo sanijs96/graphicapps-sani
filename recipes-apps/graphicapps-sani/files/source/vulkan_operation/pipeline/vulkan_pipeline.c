@@ -3,9 +3,11 @@
 
 #include "common/common_def.h"
 
-#include "vulkan_pipeline.h"
 #include "vulkan/pipeline_stages.h"
+#include "vulkan/resource_formats.h"
 #include "stage/vulkan_pipeline_stage.h"
+
+#include "vulkan_pipeline.h"
 
 typedef struct renderpass_ctx {
     VkAttachmentDescription color_attachment;
@@ -26,6 +28,14 @@ static struct {
     VkExtent2D swapchain_extent;
 
     renderpass_ctx_t renderpass_ctx;
+    struct {
+        uint32_t binding_count;
+        uint32_t attribute_count;
+
+        // (TODO) might be exceeded
+        VkVertexInputBindingDescription bindings[MAX_NUM_RESOURCE_OBJECTS];
+        VkVertexInputAttributeDescription attributes[MAX_NUM_RESOURCE_OBJECTS];
+    } vertex_input;
 } pipeline_ctx;
 
 uint32_t pipeline_add_shader_file(uint32_t stage, char *filename, VkDevice *p_device)
@@ -75,6 +85,11 @@ uint32_t pipeline_add_viewport_ctx(VkExtent2D *p_extent, VkFormat *p_format)
     }
 
     return SUCCESS;
+}
+
+uint32_t pipeline_add_vertex_input_ctx(resource_description_t *p_description)
+{
+    return pipeline_stage_setup_vertex_input_ctx(p_description);
 }
 
 uint32_t pipeline_get_state(uint32_t idx)
@@ -294,6 +309,7 @@ uint32_t pipeline_create(VkDevice *p_device, uint32_t pipeline_entry_idx)
         return FAILURE;
     }
 
+    // TODO: add dedicated handler
     if (__pipeline_create_renderpass(p_device) == FAILURE) {
         return FAILURE;
     }

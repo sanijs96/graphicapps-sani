@@ -8,6 +8,7 @@ uint32_t vulkan_ops_mgr_get_pipeline_stage_idx_from_name(const char *p_stage_nam
 
 uint32_t vulkan_ops_mgr_add_shader_file(uint32_t stage, char *filename, VkDevice *p_device);
 uint32_t vulkan_ops_mgr_add_viewport_ctx(VkExtent2D *p_extent, VkFormat *p_format);
+uint32_t vulkan_ops_mgr_add_vertex_input_ctx(resource_description_t *p_description);
 
 uint32_t vulkan_ops_mgr_get_pipeline_idx_setup_in_progress(void);
 uint32_t vulkan_ops_mgr_init_pipeline_setup(void);
