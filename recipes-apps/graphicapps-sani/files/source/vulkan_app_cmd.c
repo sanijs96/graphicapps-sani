@@ -584,10 +584,6 @@ uint32_t vulkan_app_cmd_create_pipeline(command_t *p_cmd)
         window_obj_mgr_create_framebuffers(p_renderpass);
     }
 
-    if (window_obj_mgr_start_display(p_device) == FAILURE) {
-        return FAILURE;
-    }
-
     p_cmd->retval = pipeline_entry_idx;
 
     return SUCCESS;
@@ -771,10 +767,17 @@ uint32_t vulkan_app_cmd_allocate_command_buffer(command_t *p_cmd)
 
 static uint32_t __vulkan_app_cmd_setup_renderpass_command_param(vulkan_cmd_param_t *p_param)
 {
+    VkDevice *p_device;
     const VkClearValue clear_color = {{{ 0.0f, 0.0f, 0.0f, 1.0f }}};
 
-    if (window_obj_mgr_check_display_status() != WINDOW_OBJ_DISPLAY_STATE_CREATED) {
-        printf("display not started yet\n");
+    p_device = vulkan_obj_mgr_get_current_device_object();
+
+    if (p_device == NULL) {
+        printf("device not created yet\n");
+        return FAILURE;
+    }
+
+    if (window_obj_mgr_start_display(p_device) == FAILURE) {
         return FAILURE;
     }
 

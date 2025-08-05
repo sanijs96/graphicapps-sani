@@ -65,7 +65,7 @@ stage_ctx_t stages[NUM_VULKAN_PIPELINE_STAGES] = {
     .name = "vertex_input",
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
     .setting.vertex_input = { .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-                                    .pNext = NULL, .flags = 0, 
+                                    .pNext = NULL, .flags = 0,
                                     .vertexBindingDescriptionCount = 0,
                                     .pVertexBindingDescriptions = vertex_input_ctx.bindings,
                                     .vertexAttributeDescriptionCount = 0,
@@ -133,7 +133,7 @@ stage_ctx_t stages[NUM_VULKAN_PIPELINE_STAGES] = {
     .name = "color_blending",
     .state = VULKAN_PIPELINE_STAGE_STATE_DEFAULT,
     .setting.color_blend = { .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-                                    .pNext = NULL, .flags = 0, 
+                                    .pNext = NULL, .flags = 0,
                                     .logicOpEnable = VK_FALSE,
                                     .logicOp = VK_LOGIC_OP_COPY,
                                     .attachmentCount = 1,
@@ -217,14 +217,26 @@ static uint32_t __pipeline_stage_create_shader_module(pipeline_stage_template_t 
     create_info.codeSize = file_len;
     create_info.pCode = (uint32_t *)buf;
 
-    res = vkCreateShaderModule(*p_device, &create_info, NULL, &p_setting->vertex_shader.module);
+    if (strstr(filename, "vert")) {
+        res = vkCreateShaderModule(*p_device, &create_info, NULL, &p_setting->vertex_shader.module);
+    }
+    else if (strstr(filename, "frag")) {
+        res = vkCreateShaderModule(*p_device, &create_info, NULL,
+                                    &p_setting->fragment_shader.module);
+    }
+    else {
+        printf("invalid shader type\n");
+        return FAILURE;
+    }
+
     if (res != VK_SUCCESS) {
         printf("shader module create failure: %d\n", res);
+        return FAILURE;
     }
 
     fclose(p_fstream);
 
-    return res;
+    return SUCCESS;
 }
 
 uint32_t pipeline_stage_setup_vertex_shader_ctx(char *filename, VkDevice* p_device)
@@ -313,7 +325,7 @@ uint32_t pipeline_stage_setup_vertex_input_ctx(resource_description_t *p_descrip
 
     memcpy(&vertex_input_ctx.bindings[binding_idx],
                         &p_description->vertex_buffer.binding,
-                                sizeof(VkVertexInputAttributeDescription));
+                                sizeof(VkVertexInputBindingDescription));
     binding_idx++;
 
     vertex_input_ctx.binding_count = binding_idx;

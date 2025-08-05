@@ -207,6 +207,7 @@ uint32_t vulkan_ops_mgr_allocate_cmd_buffer(VkDevice *p_device, uint32_t family_
     uint32_t res;
 
     if (cmd_pool_get_state() != VULKAN_CMD_POOL_STATE_CREATED) {
+        // TODO: add cmd handler for this
         res = cmd_pool_create(p_device, family_idx);
         if (res == FAILURE) {
             return res;

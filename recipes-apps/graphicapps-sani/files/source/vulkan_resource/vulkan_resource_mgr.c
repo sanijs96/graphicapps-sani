@@ -261,18 +261,7 @@ static uint32_t __vulkan_resource_bind_buffer_memory(VkDevice *p_device, resourc
     vkBindBufferMemory(*p_device, p_entry->resource.buffer, p_entry->device_memory, 0);
 
     vkMapMemory(*p_device, p_entry->device_memory, 0,
-                p_entry->memory_requirement.size, 0, p_entry->p_host_resource_buf);
-
-    return SUCCESS;
-}
-
-static uint32_t __vulkan_resource_mgr_allocate_host_buf(VkDevice *p_device,
-                                                        resource_entry_t *p_entry,
-                                                        resource_member_list_t *p_members_list)
-{
-    __vulkan_resource_mgr_get_resource_memory_requirement(p_device, p_entry);
-
-    p_entry->p_host_resource_buf = malloc(p_entry->memory_requirement.size);
+                p_entry->memory_requirement.size, 0, &p_entry->p_host_resource_buf);
 
     return SUCCESS;
 }
@@ -294,17 +283,15 @@ uint32_t vulkan_resource_mgr_create_vertex_buffer(VkDevice *p_device, char *reso
         return FAILURE;
     }
 
-    if (__vulkan_resource_mgr_allocate_host_buf(p_device, p_entry, p_members_list) == FAILURE) {
-        return FAILURE;
-    }
+    __vulkan_resource_mgr_get_resource_memory_requirement(p_device, p_entry);
 
     if (__vulkan_resource_bind_buffer_memory(p_device, p_entry) == FAILURE) {
         __vulkan_resource_mgr_delete_entry(resource_ctx.vertex_list, p_entry);
         return FAILURE;
     }
 
-    if (resource_handler_setup_resource_buf(&p_entry->info, p_entry->p_host_resource_buf,
-                                                                    p_members_list) == FAILURE) {
+    if (resource_handler_setup_resource_buf(p_entry->p_host_resource_buf,
+                                            &p_entry->info, p_members_list) == FAILURE) {
         __vulkan_resource_mgr_delete_entry(resource_ctx.vertex_list, p_entry);
         return FAILURE;
     }
@@ -320,9 +307,7 @@ uint32_t vulkan_resource_mgr_create_buffer(VkDevice *p_device, char *resource_na
 
     resource_list = resource_ctx.buffer_list;
 
-    if (__vulkan_resource_mgr_allocate_host_buf(p_device, p_entry, p_members_list) == FAILURE) {
-        return FAILURE;
-    }
+    __vulkan_resource_mgr_get_resource_memory_requirement(p_device, p_entry);
 
     if (__vulkan_resource_mgr_create_buffer_object(p_device, p_entry) == FAILURE) {
         return FAILURE;
