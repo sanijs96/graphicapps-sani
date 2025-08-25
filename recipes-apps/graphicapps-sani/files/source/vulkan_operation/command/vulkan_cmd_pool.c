@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "common/common_def.h"
+#include "vulkan/common_def.h"
 #include "vulkan/cmd_types.h"
 
 #include "vulkan_cmd_pool.h"
@@ -56,7 +57,29 @@ static uint32_t __cmd_pool_get_available_buffer_idx(void)
     return MAX_NUM_CMD_BUFFERS;
 }
 
-static uint32_t __cmd_pool_cmdbuf_start_recording(uint32_t buf_idx)
+static uint32_t __cmd_pool_setup_cmd_buffer_type_flag(uint32_t buf_type)
+{
+    uint32_t buf_type_flag;
+
+    switch (buf_type) {
+        case VULKAN_CMD_POOL_CMDBUF_TYPE_COMMON:
+            buf_type_flag = 0;
+            break;
+
+        case VULKAN_CMD_POOL_CMDBUF_TYPE_ONETIME:
+            buf_type_flag = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+            break;
+
+        default:
+            printf("invalid buffer type\n");
+            buf_type_flag = UINT32_MAX;
+            break;
+    }
+
+    return buf_type_flag;
+}
+
+static uint32_t __cmd_pool_cmdbuf_start_recording(uint32_t buf_idx, uint32_t buf_type)
 {
     uint32_t res;
     VkCommandBuffer *p_cmd_buf;
@@ -66,9 +89,10 @@ static uint32_t __cmd_pool_cmdbuf_start_recording(uint32_t buf_idx)
 
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_info.pNext = NULL;
-    begin_info.flags = 0;
 
     begin_info.pInheritanceInfo = NULL;
+
+    begin_info.flags = __cmd_pool_setup_cmd_buffer_type_flag(buf_type);
 
     vkResetCommandBuffer(*p_cmd_buf, 0);
 
@@ -81,7 +105,7 @@ static uint32_t __cmd_pool_cmdbuf_start_recording(uint32_t buf_idx)
     return SUCCESS;
 }
 
-uint32_t cmd_pool_allocate_buffer(VkDevice *p_device, uint32_t *p_buf_idx)
+uint32_t cmd_pool_allocate_buffer(VkDevice *p_device, uint32_t buf_type)
 {
     uint32_t res;
     uint32_t buf_idx;
@@ -116,7 +140,7 @@ uint32_t cmd_pool_allocate_buffer(VkDevice *p_device, uint32_t *p_buf_idx)
         return FAILURE;
     }
 
-    res = __cmd_pool_cmdbuf_start_recording(buf_idx);
+    res = __cmd_pool_cmdbuf_start_recording(buf_idx, buf_type);
     if (res != VK_SUCCESS) {
         printf("command buffer startup failure: %d\n", res);
         return FAILURE;
@@ -126,7 +150,16 @@ uint32_t cmd_pool_allocate_buffer(VkDevice *p_device, uint32_t *p_buf_idx)
 
     printf("command buffer [%u] allocated\n", buf_idx);
 
-    *p_buf_idx = buf_idx;
+    return buf_idx;
+}
+
+uint32_t cmd_pool_free_cmd_buffer(VkDevice *p_device, uint32_t buf_idx)
+{
+    VkCommandBuffer *p_cmd_buf;
+
+    p_cmd_buf = &cmd_pool_ctx.buffer_ctx[buf_idx].buffer;
+
+    vkFreeCommandBuffers(*p_device, cmd_pool_ctx.pool, 1, p_cmd_buf);
 
     return SUCCESS;
 }
@@ -134,11 +167,16 @@ uint32_t cmd_pool_allocate_buffer(VkDevice *p_device, uint32_t *p_buf_idx)
 uint32_t cmd_pool_finish_buffer_recording(uint32_t buf_idx)
 {
     uint32_t res;
+    uint32_t cmd_buf_bitmap;
     VkCommandBuffer *p_cmd_buf;
 
     p_cmd_buf = &cmd_pool_ctx.buffer_ctx[buf_idx].buffer;
 
-    vkCmdEndRenderPass(*p_cmd_buf);
+    cmd_buf_bitmap = &cmd_pool_ctx.buffer_ctx[buf_idx].cmd_bitmap;
+
+    if (cmd_buf_bitmap & (1 << VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS)) {
+        vkCmdEndRenderPass(*p_cmd_buf);
+    }
 
     res = vkEndCommandBuffer(*p_cmd_buf);
     if (res != VK_SUCCESS) {
@@ -155,6 +193,11 @@ uint32_t cmd_pool_finish_buffer_recording(uint32_t buf_idx)
 uint32_t cmd_pool_get_cmd_buffer_state(uint32_t buf_idx)
 {
     return cmd_pool_ctx.buffer_ctx[buf_idx].state;
+}
+
+uint32_t cmd_pool_get_cmd_buffer_bitmap(uint32_t buf_idx)
+{
+    return cmd_pool_ctx.buffer_ctx[buf_idx].cmd_bitmap;
 }
 
 VkCommandBuffer *cmd_pool_get_cmd_buffer_object(uint32_t buf_idx)
@@ -248,6 +291,28 @@ void cmd_pool_add_draw_command(vulkan_cmd_template_t *p_template,
     vkCmdDraw(*p_cmd_buf, vertex_count, instance_count, first_vertex, first_instance);
 
     cmd_pool_ctx.buffer_ctx[cmdbuf_idx].cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_DRAW);
+}
+
+void cmd_pool_add_copy_resource_command(vulkan_cmd_template_t *p_template,
+                                                    vulkan_cmd_param_t *p_param)
+{
+    uint32_t cmdbuf_idx;
+    VkBufferCopy copy_region;
+    VkCommandBuffer *p_cmd_buf;
+
+    cmdbuf_idx = p_param->cmdbuf_idx;
+    p_cmd_buf = &cmd_pool_ctx.buffer_ctx[cmdbuf_idx].buffer;
+
+    copy_region.srcOffset = 0;
+    copy_region.dstOffset = 0;
+
+    copy_region.size = p_param->copy_resource.datasize;
+
+    vkCmdCopyBuffer(p_cmd_buf, p_param->copy_resource.p_object_src->buffer,
+                    p_param->copy_resource.p_object_dst->buffer, 1, &copy_region);
+
+    cmd_pool_ctx.buffer_ctx[cmdbuf_idx].cmd_bitmap |=
+                    (1 << VULKAN_SUPPORTED_CMD_TYPE_COPY_RESOURCE);
 }
 
 uint32_t cmd_pool_check_buffer_allocated(uint32_t buf_idx)

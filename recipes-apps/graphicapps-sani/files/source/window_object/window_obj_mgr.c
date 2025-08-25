@@ -243,6 +243,10 @@ static uint32_t __window_obj_mgr_create_swapchain_sync_objects(void)
 
     res = vkCreateSemaphore(*window_ctx.p_device, &semaphore_info, NULL,
                             &window_ctx.display_ctx.swapchain_ctx.image_available_semaphore);
+    if (res != VK_SUCCESS) {
+        printf("semaphore create failure: %d\n", res);
+        return FAILURE;
+    }
 
     return SUCCESS;
 }
@@ -265,9 +269,7 @@ static uint32_t __window_obj_mgr_setup_swapchain_ctx(display_ctx_t *p_display_ct
         return FAILURE;
     }
 
-    res = __window_obj_mgr_create_swapchain_sync_objects();
-
-    return res;
+    return SUCCESS;
 }
 
 uint32_t window_obj_mgr_setup_display(VkInstance *p_instance)
@@ -331,6 +333,12 @@ uint32_t window_obj_mgr_start_display(VkDevice *p_device)
 
     p_swapchain_ctx->current_image_idx = __window_obj_mgr_get_next_image(p_device);
 
+    if (__window_obj_mgr_create_swapchain_sync_objects() == FAILURE) {
+        return FAILURE;
+    }
+
+    window_ctx.display_ctx.state = WINDOW_OBJ_DISPLAY_STATE_STARTED;
+
     return SUCCESS;
 }
 
@@ -343,17 +351,15 @@ static uint32_t __window_obj_mgr_start_presentation(VkQueue *p_queue)
 {
     uint32_t res;
     swapchain_ctx_t *p_swapchain_ctx;
-    VkSemaphore *p_wait_semaphore;
     VkPresentInfoKHR present_info;
 
     p_swapchain_ctx = &window_ctx.display_ctx.swapchain_ctx;
-    p_wait_semaphore = &window_ctx.display_ctx.swapchain_ctx.render_finish_semaphore;
 
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     present_info.pNext = NULL;
 
     present_info.waitSemaphoreCount = 1;
-    present_info.pWaitSemaphores = p_wait_semaphore;
+    present_info.pWaitSemaphores = &p_swapchain_ctx->render_finish_semaphore;
     present_info.swapchainCount = 1;
     present_info.pSwapchains = &p_swapchain_ctx->swapchain;
     present_info.pImageIndices = &p_swapchain_ctx->current_image_idx;
@@ -382,6 +388,7 @@ VkSemaphore *window_obj_mgr_get_display_semaphore_object(void)
 void window_obj_mgr_add_swapchain_signal_semaphore(VkSemaphore *p_semaphore)
 {
     window_ctx.display_ctx.swapchain_ctx.render_finish_semaphore = *p_semaphore;
+
 }
 
 uint32_t window_obj_mgr_check_display_status(void)

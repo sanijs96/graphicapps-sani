@@ -22,6 +22,9 @@ resource_description_t *vulkan_resource_mgr_get_resource_description(char *resou
 
 void *vulkan_resource_mgr_get_resource_object(char *resource_name);
 
+uint32_t vulkan_resource_mgr_create_device_resource_copy(VkDevice *p_device, char *resource_name,
+                                                                            void *p_resource_object);
+
 void vulkan_resource_mgr_add_memory_property(VkPhysicalDevice *p_phydev);
 
 void vulkan_resource_mgr_show_device_memory_properties(void);

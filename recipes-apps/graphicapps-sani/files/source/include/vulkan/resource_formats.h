@@ -50,7 +50,7 @@ typedef struct resource_info {
     uint32_t type;
     uint32_t count;
     uint32_t binding;
-    uint32_t usage_flags;
+    uint32_t usage_flag;
 
     char name[MAX_LENGTH_ARGUMENT_NAME];
 } resource_info_t;

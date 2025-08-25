@@ -335,7 +335,7 @@ uint32_t device_lock_queue(uint32_t type, uint32_t queue_idx)
 
 void device_unlock_queue(uint32_t type, uint32_t queue_idx)
 {
-    device_queue_lock(type, queue_idx);
+    device_queue_unlock(type, queue_idx);
 }
 
 uint32_t device_get_available_queue_idx(uint32_t type)

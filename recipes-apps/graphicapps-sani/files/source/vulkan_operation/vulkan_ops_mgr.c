@@ -2,6 +2,8 @@
 #include <string.h>
 
 #include "common/common_def.h"
+#include "vulkan/common_def.h"
+
 #include "vulkan/cmd_types.h"
 #include "vulkan/pipeline_stages.h"
 
@@ -41,7 +43,32 @@ const vulkan_cmd_proc_ctx_t cmd_proc_ctx[NUM_VULKAN_SUPPORTED_CMD_TYPES] =
         .setup = NULL,
         .add = cmd_pool_add_draw_command,
     },
+    [VULKAN_SUPPORTED_CMD_TYPE_COPY_RESOURCE] = {
+        .cmdname = "copy_resource",
+        .setup = NULL,
+        .add = cmd_pool_add_copy_resource_command,
+    },
 };
+
+uint32_t vulkan_ops_mgr_get_vulkan_cmd_buffer_type(const char *p_type_name)
+{
+    char *type_names_ref[NUM_VULKAN_CMD_POOL_CMDBUF_TYPES] = {
+	[VULKAN_CMD_POOL_CMDBUF_TYPE_COMMON] = "common",
+	[VULKAN_CMD_POOL_CMDBUF_TYPE_ONETIME] = "onetime"
+    };
+
+    for (uint32_t idx = 0; idx < NUM_VULKAN_CMD_POOL_CMDBUF_TYPES; idx++) {
+        if (!strncmp(p_type_name, type_names_ref[idx], strlen(type_names_ref[idx]))) {
+            printf("type name %s, idx %u\n", p_type_name, idx);
+
+            return idx;
+        }
+    }
+
+    printf("undefined command buffer type: %s\n", p_type_name);
+
+    return NUM_VULKAN_CMD_POOL_CMDBUF_TYPES;
+}
 
 uint32_t vulkan_ops_mgr_get_vulkan_cmd_type_from_name(const char *p_cmd_name)
 {
@@ -201,22 +228,29 @@ uint32_t vulkan_ops_mgr_check_cmd_buffer_activated(uint32_t buf_idx)
     return FALSE;
 }
 
+uint32_t vulkan_ops_mgr_get_cmd_buffer_bitmap(uint32_t buf_idx)
+{
+    if (cmd_pool_get_cmd_buffer_state(buf_idx) == VULKAN_CMD_POOL_CMDBUF_STATE_ALLOCATED) {
+        return 0;
+    }
+
+    return cmd_pool_get_cmd_buffer_bitmap(buf_idx);
+}
+
 uint32_t vulkan_ops_mgr_allocate_cmd_buffer(VkDevice *p_device, uint32_t family_idx,
-                                                                    uint32_t *p_buf_idx)
+                                                                    uint32_t buf_type)
 {
     uint32_t res;
+    uint32_t cmdbuf_idx;
 
     if (cmd_pool_get_state() != VULKAN_CMD_POOL_STATE_CREATED) {
-        // TODO: add cmd handler for this
         res = cmd_pool_create(p_device, family_idx);
         if (res == FAILURE) {
-            return res;
+            return CMD_BUFFER_IDX_INVALID;
         }
     }
 
-    res = cmd_pool_allocate_buffer(p_device, p_buf_idx);
-
-    return res;
+    return cmd_pool_allocate_buffer(p_device, buf_type);
 }
 
 uint32_t vulkan_ops_mgr_activate_cmd_buffer(uint32_t cmdbuf_idx)
@@ -235,6 +269,11 @@ VkCommandBuffer *vulkan_ops_mgr_get_activated_cmd_buffer_object(void)
     }
 
     return cmd_pool_get_cmd_buffer_object(cmdbuf_idx);
+}
+
+uint32_t vulkan_ops_mgr_free_cmd_buffer(VkDevice *p_device, uint32_t buf_idx)
+{
+    return cmd_pool_free_cmd_buffer(p_device, buf_idx);
 }
 
 uint32_t vulkan_ops_mgr_add_vulkan_command(uint32_t cmd_type, vulkan_cmd_param_t *p_param)

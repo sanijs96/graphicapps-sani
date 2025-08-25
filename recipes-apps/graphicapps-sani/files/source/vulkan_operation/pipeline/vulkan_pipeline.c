@@ -201,6 +201,7 @@ static uint32_t __pipeline_create_renderpass(VkDevice *p_device)
     p_ctx->renderpass_info.dependencyCount = 1;
     p_ctx->renderpass_info.pDependencies = &p_ctx->dependency;
 
+    //TODO: 분리
     res = vkCreateRenderPass(*p_device, &p_ctx->renderpass_info, NULL, &p_ctx->renderpass);
     if (res != VK_SUCCESS) {
         printf("renderpass create failed: %d\n", res);

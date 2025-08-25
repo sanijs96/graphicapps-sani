@@ -23,45 +23,25 @@ static struct {
     resource_data_t resources[MAX_NUM_RESOURCE_OBJECTS];
 } datafile_ctx = { .resource_count = 0 };
 
-typedef const struct resource_type_identifier_t {
-    char *name;
-    uint32_t usage_flags;
-} resource_type_identifier_t;
-
-const resource_type_identifier_t resource_type_identifiers[] = {
-    [RESOURCE_FORMAT_TYPE_BUFFER_VERTEX_START] = {NULL, 0},
-    [RESOURCE_FORMAT_TYPE_BUFFER_VERTEX_2D_RGB] = {"vertex_2d_rgb",
-                                                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
+const char * resource_type_names[] = {
+    [RESOURCE_FORMAT_TYPE_BUFFER_VERTEX_START] = NULL,
+    [RESOURCE_FORMAT_TYPE_BUFFER_VERTEX_2D_RGB] = "vertex_2d_rgb",
 };
-
-uint32_t datafile_get_usage_flags_from_resource_type(uint32_t type)
-{
-    uint32_t list_size;
-    uint32_t name_strlen;
-
-    list_size = sizeof(resource_type_identifiers) / sizeof(resource_type_identifier_t);
-
-    if (list_size < type) {
-        return 0;
-    }
-
-    return resource_type_identifiers[type].usage_flags;
-}
 
 uint32_t datafile_get_resource_type_from_typename(char *p_typename_str)
 {
     uint32_t list_size;
     uint32_t name_strlen;
 
-    list_size = sizeof(resource_type_identifiers) / sizeof(resource_type_identifier_t);
+    list_size = sizeof(resource_type_names) / sizeof(char *);
 
     for (uint32_t idx = 0; idx < list_size; idx++) {
-        if (resource_type_identifiers[idx].name == NULL) {
+        if (resource_type_names[idx] == NULL) {
             continue;
         }
 
-        name_strlen = strlen(resource_type_identifiers[idx].name);
-        if (strncmp(p_typename_str, resource_type_identifiers[idx].name, name_strlen)) {
+        name_strlen = strlen(resource_type_names[idx]);
+        if (strncmp(p_typename_str, resource_type_names[idx], name_strlen)) {
             continue;
         }
 

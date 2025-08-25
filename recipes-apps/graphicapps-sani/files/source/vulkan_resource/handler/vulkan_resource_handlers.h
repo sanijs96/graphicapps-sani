@@ -10,5 +10,7 @@ uint32_t resource_handler_setup_resource_buf(resource_t *p_resource_buf, resourc
 
 resource_description_t *resource_handler_get_resource_description(resource_info_t *p_info);
 
+uint32_t resource_handler_get_resource_usage_flag(resource_info_t *p_info);
+
 #endif
 

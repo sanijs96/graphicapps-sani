@@ -1,0 +1,13 @@
+#ifndef __VULKAN_COMMON_DEF_H__
+#define __VULKAN_COMMON_DEF_H__
+
+#define MAX_NUM_CMD_BUFFERS             (4)
+#define CMD_BUFFER_IDX_INVALID          (MAX_NUM_CMD_BUFFERS)
+
+enum cmd_buffer_type {
+    VULKAN_CMD_POOL_CMDBUF_TYPE_COMMON,
+    VULKAN_CMD_POOL_CMDBUF_TYPE_ONETIME,
+    NUM_VULKAN_CMD_POOL_CMDBUF_TYPES,
+};
+
+#endif

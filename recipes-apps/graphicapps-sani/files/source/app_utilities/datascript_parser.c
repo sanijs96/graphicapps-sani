@@ -465,11 +465,6 @@ static uint32_t __datascript_setup_resource_info_ctx(resource_info_t *p_info, ch
         return FAILURE;
     }
 
-    p_info->usage_flags = datafile_get_usage_flags_from_resource_type(p_info->type);
-    if (p_info->usage_flags == 0) {
-        return FAILURE;
-    }
-
     // get object name
     p_cursor = strchr(p_cursor, DIRECTIVE_CHAR_DELIMITER);
     if (p_cursor == NULL) {

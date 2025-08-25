@@ -13,6 +13,7 @@ typedef uint32_t (*resource_data_setup_fn)(resource_t *p_data_buf, resource_info
 
 typedef const struct resource_handler {
     char *name;
+    uint32_t usage_flag;
     resource_bind_fn bind_fn;
     resource_data_setup_fn setup_fn;
 } resource_handler_t;
@@ -24,11 +25,11 @@ static resource_description_t *__resource_handler_bind_vertex_2d_rgb(resource_in
 const resource_handler_t resource_handlers[] = {
     [RESOURCE_FORMAT_TYPE_BUFFER_VERTEX_START] = {.name = NULL},
     [RESOURCE_FORMAT_TYPE_BUFFER_VERTEX_2D_RGB] = {
+        .usage_flag = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         .setup_fn = __resource_handler_setup_vertex_2d_rgb,
         .bind_fn = __resource_handler_bind_vertex_2d_rgb,
     },
     [RESOURCE_FORMAT_TYPE_BUFFER_START] = {.name = NULL},
-
 
     [RESOURCE_FORMAT_TYPE_IMAGE_START] = {.name = NULL},
 };
@@ -125,4 +126,16 @@ resource_description_t *resource_handler_get_resource_description(resource_info_
     }
 
     return p_handler->bind_fn(p_info);
+}
+
+uint32_t resource_handler_get_resource_usage_flag(resource_info_t *p_info)
+{
+    resource_handler_t *p_handler;
+
+    p_handler = __resource_handler_get_resource_handler(p_info->type);
+    if (p_handler == NULL) {
+        return 0;
+    }
+
+    return p_handler->usage_flag;
 }

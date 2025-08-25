@@ -11,6 +11,7 @@ enum vulkan_supported_cmd_types {
     VULKAN_SUPPORTED_CMD_TYPE_BIND_PIPELINE,
     VULKAN_SUPPORTED_CMD_TYPE_BIND_RESOURCE,
     VULKAN_SUPPORTED_CMD_TYPE_DRAW,
+    VULKAN_SUPPORTED_CMD_TYPE_COPY_RESOURCE,
     NUM_VULKAN_SUPPORTED_CMD_TYPES,
 };
 
@@ -52,6 +53,14 @@ typedef struct vulkan_cmd_param {
             VkRect2D scissor;
             VkViewport viewport;
         } draw;
+
+        struct {
+            uint32_t datasize;
+            union {
+                VkImage image;
+                VkImage buffer;
+            } *p_object_src, *p_object_dst;
+        } copy_resource;
     };
 
 } vulkan_cmd_param_t;

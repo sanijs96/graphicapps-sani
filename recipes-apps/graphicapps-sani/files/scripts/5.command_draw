@@ -1,0 +1,25 @@
+# copy resource to device
+temp_buf = cmdbuf alloc -b onetime
+
+cmdbuf add -c copy_resource -i $temp_buf -n triangle
+
+cmdbuf run -i $temp_buf
+
+# allocate command buffer & begin recording
+main_buf = cmdbuf alloc -b common
+
+# create pipeline & subpass
+pipeline_idx = pipeline create
+
+cmdbuf add -c renderpass -i $main_buf
+
+cmdbuf add -c bind_pipeline -i $main_buf -p $pipeline_idx
+
+# resources from vertex_attribute.dat
+cmdbuf add -c bind_resource -i $main_buf -n triangle
+
+cmdbuf add -c bind_resource -i $main_buf -n rectangle
+
+cmdbuf add -c draw -i $main_buf
+
+cmdbuf run -i $main_buf

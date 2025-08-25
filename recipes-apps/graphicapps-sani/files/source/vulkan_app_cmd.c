@@ -2,6 +2,8 @@
 #include <string.h>
 
 #include "common/common_def.h"
+#include "vulkan/common_def.h"
+
 #include "vulkan/cmd_types.h"
 #include "vulkan/queue_types.h"
 #include "vulkan/function_scope.h"
@@ -44,6 +46,7 @@ typedef union vulkan_cmd_args_list {
 
     struct {
         uint32_t buf_idx;
+        uint32_t buf_type;
         uint32_t cmd_type;
         uint32_t pipeline_idx;
         char resource_name[MAX_LENGTH_ARGUMENT_NAME];
@@ -146,6 +149,10 @@ static uint32_t __setup_pipeline_argument(command_arg_t arg, vulkan_cmd_args_lis
 static uint32_t __setup_cmdbuf_argument(command_arg_t arg, vulkan_cmd_args_list_t *p_arglist)
 {
     switch (arg.type) {
+        case PARAM_VK(CMDBUF_BUFFER_TYPE):
+            p_arglist->cmdbuf.buf_type = vulkan_ops_mgr_get_vulkan_cmd_buffer_type(arg.value);
+            break;
+
         case PARAM_VK(CMDBUF_COMMAND_TYPE):
             p_arglist->cmdbuf.cmd_type = vulkan_ops_mgr_get_vulkan_cmd_type_from_name(arg.value);
             break;
@@ -178,10 +185,6 @@ static uint32_t __setup_resource_argument(command_arg_t arg, vulkan_cmd_args_lis
 
         case PARAM_VK(RESOURCE_PIPELINE_IDX):
             p_arglist->cmdbuf.pipeline_idx = (uint32_t)(*(char *)arg.value - '0');
-            break;
-
-        case PARAM_VK(RESOURCE_FORMAT_TYPE):
-            p_arglist->cmdbuf.buf_idx = (uint32_t)(*(char *)arg.value - '0');
             break;
 
         default:
@@ -697,24 +700,25 @@ static uint32_t __vulkan_app_cmd_run_cmd_buffer(vulkan_cmd_args_list_t *p_args_l
 {
     uint32_t queue_idx;
     uint32_t queue_type;
+    uint32_t cmd_buffer_bitmap;
     VkQueue *p_queue;
     VkDevice *p_device;
 
     queue_type = VULKAN_DEVICE_QUEUE_TYPE_GRAPHICS;
     queue_idx = vulkan_obj_mgr_select_available_queue_idx(queue_type);
+    cmd_buffer_bitmap = vulkan_ops_mgr_get_cmd_buffer_bitmap(p_args_list->cmdbuf.buf_idx);
 
     p_queue = vulkan_obj_mgr_get_queue_object(queue_type, queue_idx);
+    if (p_queue == NULL) {
+        return FAILURE;
+    }
+
     p_device = vulkan_obj_mgr_get_current_device_object();
+    if (p_device == NULL) {
+        return FAILURE;
+    }
 
     if (window_obj_mgr_check_display_status() != WINDOW_OBJ_DISPLAY_STATE_CREATED) {
-        return FAILURE;
-    }
-
-    if (__vulkan_app_cmd_add_signal_semaphores(p_device) == FAILURE) {
-        return FAILURE;
-    }
-
-    if (__vulkan_app_cmd_add_wait_semaphores(p_device) == FAILURE) {
         return FAILURE;
     }
 
@@ -722,7 +726,16 @@ static uint32_t __vulkan_app_cmd_run_cmd_buffer(vulkan_cmd_args_list_t *p_args_l
         return FAILURE;
     }
 
+    if (!(cmd_buffer_bitmap & (1 << VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS))) {
+        goto exit;
+    }
+
     if (window_obj_mgr_show_queue_result(p_queue) == FAILURE) {
+        return FAILURE;
+    }
+
+exit:
+    if (vulkan_ops_mgr_free_cmd_buffer(p_device, p_args_list->cmdbuf.buf_idx) == FAILURE) {
         return FAILURE;
     }
 
@@ -739,6 +752,7 @@ uint32_t vulkan_app_cmd_show_pipeline_info(command_t *p_cmd)
 uint32_t vulkan_app_cmd_allocate_command_buffer(command_t *p_cmd)
 {
     uint32_t cmd_buf_idx;
+    uint32_t cmd_buf_type;
     uint32_t queue_family_idx;
     VkDevice *p_device;
     VkRenderPass *p_renderpass;
@@ -754,9 +768,15 @@ uint32_t vulkan_app_cmd_allocate_command_buffer(command_t *p_cmd)
         return FAILURE;
     }
 
+    cmd_buf_type = args_list.cmdbuf.buf_type;
+    if (cmd_buf_type == NUM_VULKAN_CMD_POOL_CMDBUF_TYPES) {
+        return FAILURE;
+    }
+
     queue_family_idx = vulkan_obj_mgr_get_graphics_queue_family_idx(p_device);
 
-    if (vulkan_ops_mgr_allocate_cmd_buffer(p_device, queue_family_idx, &cmd_buf_idx) == FAILURE) {
+    cmd_buf_idx = vulkan_ops_mgr_allocate_cmd_buffer(p_device, queue_family_idx, cmd_buf_type);
+    if (cmd_buf_idx == CMD_BUFFER_IDX_INVALID) {
         return FAILURE;
     }
 
@@ -778,6 +798,14 @@ static uint32_t __vulkan_app_cmd_setup_renderpass_command_param(vulkan_cmd_param
     }
 
     if (window_obj_mgr_start_display(p_device) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (__vulkan_app_cmd_add_wait_semaphores(p_device) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (__vulkan_app_cmd_add_signal_semaphores(p_device) == FAILURE) {
         return FAILURE;
     }
 
@@ -849,6 +877,40 @@ static uint32_t __vulkan_app_cmd_setup_draw_command_param(vulkan_cmd_param_t *p_
     return SUCCESS;
 }
 
+static uint32_t __vulkan_app_cmd_setup_copy_resource_command_param(vulkan_cmd_param_t *p_param,
+                                                                            char *resource_name)
+{
+    uint32_t datasize;
+    VkDevice *p_device;
+    resource_info_t *p_info;
+
+    p_device = vulkan_obj_mgr_get_current_device_object();
+    if (p_device == NULL) {
+        printf("device not created\n");
+        return FAILURE;
+    }
+
+    p_info = vulkan_resource_mgr_get_resource_info(resource_name);
+    if (p_info == NULL) {
+        return FAILURE;
+    }
+
+    datasize = vulkan_resource_mgr_get_resource_data_unit_size(p_info->type) * p_info->count;
+    p_param->copy_resource.datasize = datasize;
+
+    p_param->copy_resource.p_object_src = vulkan_resource_mgr_get_resource_object(resource_name);
+    if (p_param->copy_resource.p_object_src == NULL) {
+        return FAILURE;
+    }
+
+    if (vulkan_resource_mgr_create_device_resource_copy(p_device,
+                resource_name, p_param->copy_resource.p_object_dst) == FAILURE) {
+        return FAILURE;
+    };
+
+    return SUCCESS;
+}
+
 static uint32_t __vulkan_app_cmd_setup_command_param(uint32_t cmd_type,
                                                         vulkan_cmd_param_t *p_param,
                                                         vulkan_cmd_args_list_t *p_args)
@@ -872,6 +934,11 @@ static uint32_t __vulkan_app_cmd_setup_command_param(uint32_t cmd_type,
 
         case VULKAN_SUPPORTED_CMD_TYPE_DRAW:
             res = __vulkan_app_cmd_setup_draw_command_param(p_param);
+            break;
+
+        case VULKAN_SUPPORTED_CMD_TYPE_COPY_RESOURCE:
+            res = __vulkan_app_cmd_setup_copy_resource_command_param(p_param,
+                                                                     p_args->cmdbuf.resource_name);
             break;
 
         default:

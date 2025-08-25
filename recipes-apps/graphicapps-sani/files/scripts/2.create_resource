@@ -2,6 +2,6 @@
 app loaddata -f /home/root/graphicapps-source/data/vertex_attribute.dat
 
 # create image list (TODO)
-#resource create -t image -f /home/root/graphicapps-source/data/image_list.dat
+#resource loaddata -f /home/root/graphicapps-source/data/image_list.dat
 
 resource create -n triangle
