@@ -358,25 +358,20 @@ VkQueue *device_get_queue_object(uint32_t type, uint32_t idx)
     return device_queue_get_queue_object(type, idx);
 }
 
-uint32_t device_submit_queue(VkQueue *p_queue, VkSubmitInfo *p_submit_info)
+uint32_t device_submit_queue(VkQueue *p_queue, VkSubmitInfo *p_submit_info, VkFence *p_fence)
 {
     uint32_t res;
-    VkFence fence;
 
-    if (__device_create_fence(&fence) == FAILURE) {
-        return FAILURE;
-    }
-
-    res = vkQueueSubmit(*p_queue, 1, p_submit_info, fence);
+    res = vkQueueSubmit(*p_queue, 1, p_submit_info, *p_fence);
     if (res != VK_SUCCESS) {
         printf("queue submission failure: %d\n", res);
 
         return FAILURE;
     }
 
-    vkWaitForFences(device_ctx.device, 1, &fence, VK_TRUE, UINT64_MAX);
+    vkWaitForFences(device_ctx.device, 1, p_fence, VK_TRUE, UINT64_MAX);
 
-    vkDestroyFence(device_ctx.device, fence, NULL);
+    vkDestroyFence(device_ctx.device, *p_fence, NULL);
 
     return SUCCESS;
 }

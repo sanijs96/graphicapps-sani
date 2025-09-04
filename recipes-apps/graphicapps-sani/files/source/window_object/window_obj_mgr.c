@@ -16,7 +16,7 @@ typedef struct swapchain_ctx {
     VkImage *p_images;
     VkImageView *p_views;
 
-    VkFence image_fence;
+    VkFence *image_fences;
     VkSemaphore render_finish_semaphore;
     VkSemaphore image_available_semaphore;
 } swapchain_ctx_t;
@@ -219,22 +219,29 @@ static uint32_t __window_obj_mgr_create_swapchain_image_views(display_ctx_t *p_d
     return SUCCESS;
 }
 
-static uint32_t __window_obj_mgr_create_swapchain_sync_objects(void)
+static uint32_t __window_obj_mgr_create_swapchain_sync_objects(uint32_t image_count)
 {
     uint32_t res;
     VkFenceCreateInfo fence_info;
+    swapchain_ctx_t *p_swapchain_ctx;
     VkSemaphoreCreateInfo semaphore_info;
+
+    p_swapchain_ctx = &window_ctx.display_ctx.swapchain_ctx;
+
+    p_swapchain_ctx->image_fences = (VkFence *)malloc(sizeof(VkFence) * image_count);
 
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT; // create with signaled state
     fence_info.pNext = NULL;
 
-    res = vkCreateFence(*window_ctx.p_device, &fence_info, NULL,
-                            &window_ctx.display_ctx.swapchain_ctx.image_fence);
-    if (res != VK_SUCCESS) {
-        printf("fence creation failure: %d\n", res);
+    for (uint32_t idx = 0; idx < image_count; idx++) {
+        res = vkCreateFence(*window_ctx.p_device, &fence_info, NULL,
+                                (VkFence *)(p_swapchain_ctx->image_fences + idx));
+        if (res != VK_SUCCESS) {
+            printf("fence creation failure: %d\n", res);
 
-        return FAILURE;
+            return FAILURE;
+        }
     }
 
     semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -253,7 +260,6 @@ static uint32_t __window_obj_mgr_create_swapchain_sync_objects(void)
 
 static uint32_t __window_obj_mgr_setup_swapchain_ctx(display_ctx_t *p_display_ctx)
 {
-    uint32_t res;
     swapchain_ctx_t *p_swapchain_ctx;
 
     p_swapchain_ctx = &p_display_ctx->swapchain_ctx;
@@ -264,8 +270,11 @@ static uint32_t __window_obj_mgr_setup_swapchain_ctx(display_ctx_t *p_display_ct
     vkGetSwapchainImagesKHR(*window_ctx.p_device, p_swapchain_ctx->swapchain,
                                         &p_swapchain_ctx->image_count, p_swapchain_ctx->p_images);
 
-    res = __window_obj_mgr_create_swapchain_image_views(p_display_ctx);
-    if (res == FAILURE) {
+    if (__window_obj_mgr_create_swapchain_image_views(p_display_ctx) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (__window_obj_mgr_create_swapchain_sync_objects(p_swapchain_ctx->image_count) == FAILURE) {
         return FAILURE;
     }
 
@@ -325,13 +334,12 @@ uint32_t window_obj_mgr_start_display(VkDevice *p_device)
 
     wait_all = VK_TRUE;
     p_swapchain_ctx = &window_ctx.display_ctx.swapchain_ctx;
-    p_image_fence = &p_swapchain_ctx->image_fence;
+
+    p_swapchain_ctx->current_image_idx = __window_obj_mgr_get_next_image(p_device);
+
+    p_image_fence = (VkFence *)(p_swapchain_ctx->image_fences + p_swapchain_ctx->current_image_idx);
 
     if (window_ctx.display_ctx.state == WINDOW_OBJ_DISPLAY_STATE_CREATED) {
-        if (__window_obj_mgr_create_swapchain_sync_objects() == FAILURE) {
-            return FAILURE;
-        }
-
         window_ctx.display_ctx.state = WINDOW_OBJ_DISPLAY_STATE_STARTED;
     }
     else if (window_ctx.display_ctx.state == WINDOW_OBJ_DISPLAY_STATE_STARTED) {
@@ -343,14 +351,21 @@ uint32_t window_obj_mgr_start_display(VkDevice *p_device)
         return FAILURE;
     }
 
-    p_swapchain_ctx->current_image_idx = __window_obj_mgr_get_next_image(p_device);
-
     return SUCCESS;
 }
 
 uint32_t window_obj_mgr_get_next_framebuffer_image_idx(void)
 {
     return window_ctx.display_ctx.swapchain_ctx.current_image_idx;
+}
+
+VkFence *window_obj_mgr_get_current_image_fence_object(void)
+{
+    uint32_t image_idx;
+
+    image_idx = window_obj_mgr_get_next_framebuffer_image_idx();
+
+    return (VkFence *)(window_ctx.display_ctx.swapchain_ctx.image_fences + image_idx);
 }
 
 static uint32_t __window_obj_mgr_start_presentation(VkQueue *p_queue)

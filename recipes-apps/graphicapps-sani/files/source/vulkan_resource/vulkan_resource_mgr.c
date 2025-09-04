@@ -141,8 +141,7 @@ uint32_t vulkan_resource_mgr_add_resource_info(resource_info_t *p_info)
 }
 
 static uint32_t __vulkan_resource_mgr_create_buffer_object(VkDevice *p_device,
-                                                            resource_entry_t *p_entry,
-                                                                    void *p_resource_buf)
+                                                            resource_entry_t *p_entry)
 {
     uint32_t res;
     VkBufferCreateInfo info;
@@ -161,7 +160,7 @@ static uint32_t __vulkan_resource_mgr_create_buffer_object(VkDevice *p_device,
                     vulkan_resource_mgr_get_resource_data_unit_size(p_entry->info.type);
     info.usage = p_entry->info.usage_flag;
 
-    res = vkCreateBuffer(*p_device, &info, NULL, p_resource_buf);
+    res = vkCreateBuffer(*p_device, &info, NULL, &p_entry->resource);
     if (res != VK_SUCCESS) {
         printf("create buffer failure: %d\n", res);
 
@@ -296,14 +295,12 @@ uint32_t vulkan_resource_mgr_get_binding_vertex_count(uint32_t cmdbuf_idx)
     p_entry = (resource_entry_t *)resource_ctx.vertex_list;
 
     while (p_entry != NULL) {
-        if ((p_entry->state != RESOURCE_ENTRY_STATE_BUFFER_BOUND) ||
-                            (p_entry->binding_cmdbuf_idx != cmdbuf_idx)) {
-            p_entry = p_entry->p_next;
-
-            continue;
+        if ((p_entry->state == RESOURCE_ENTRY_STATE_BUFFER_BOUND) &&
+                            (p_entry->binding_cmdbuf_idx == cmdbuf_idx)) {
+            vertex_count += p_entry->info.count;
         }
 
-        vertex_count += p_entry->info.count;
+        p_entry = p_entry->p_next;
     }
 
     return vertex_count;
@@ -320,16 +317,14 @@ uint32_t vulkan_resource_mgr_get_binding_index_count(uint32_t cmdbuf_idx)
     p_entry = (resource_entry_t *)resource_ctx.index_list;
 
     while (p_entry != NULL) {
-        if ((p_entry->state != RESOURCE_ENTRY_STATE_BUFFER_BOUND) ||
-                            (p_entry->binding_cmdbuf_idx != cmdbuf_idx)) {
-            p_entry = p_entry->p_next;
+        if ((p_entry->state == RESOURCE_ENTRY_STATE_BUFFER_BOUND) &&
+                            (p_entry->binding_cmdbuf_idx == cmdbuf_idx)) {
+            index_array_size = __vulkan_resource_mgr_get_index_array_size(&p_entry->info);
 
-            continue;
+            total_index_count += (p_entry->info.count * index_array_size);
         }
 
-        index_array_size = __vulkan_resource_mgr_get_index_array_size(&p_entry->info);
-
-        total_index_count += (p_entry->info.count * index_array_size);
+        p_entry = p_entry->p_next;
     }
 
     return total_index_count;
@@ -415,8 +410,7 @@ uint32_t vulkan_resource_mgr_create_vertex_buffer(VkDevice *p_device, char *reso
         return FAILURE;
     }
 
-    if (__vulkan_resource_mgr_create_buffer_object(p_device, p_entry,
-                                                    &p_entry->resource.buffer) == FAILURE) {
+    if (__vulkan_resource_mgr_create_buffer_object(p_device, p_entry) == FAILURE) {
         return FAILURE;
     }
 
@@ -463,8 +457,7 @@ uint32_t vulkan_resource_mgr_create_index_buffer(VkDevice *p_device, char *resou
         return FAILURE;
     }
 
-    if (__vulkan_resource_mgr_create_buffer_object(p_device, p_entry,
-                                                    &p_entry->resource.buffer) == FAILURE) {
+    if (__vulkan_resource_mgr_create_buffer_object(p_device, p_entry) == FAILURE) {
         return FAILURE;
     }
 
@@ -501,70 +494,75 @@ uint32_t vulkan_resource_mgr_create_image(VkDevice *p_device, char *resource_nam
         //                                    &p_entry->memory_requirement);
 }
 
-uint32_t vulkan_resource_mgr_create_device_resource_copy(VkDevice *p_device, char *resource_name,
-                                                                            void *p_resource_object)
+void *vulkan_resource_mgr_create_device_resource_copy(VkDevice *p_device, char *resource_name)
 {
-    void *p_src_data;
     uint32_t res;
     uint32_t requirement_flag;
-    resource_entry_t *p_entry, entry_copy;
+    resource_entry_t *p_src_entry;
+    static resource_entry_t entry_copy = { .state = RESOURCE_ENTRY_STATE_DEFAULT };
 
     requirement_flag = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-    p_entry = vulkan_resource_mgr_get_resource_entry(resource_name);
-    if (p_entry == NULL) {
+    p_src_entry = vulkan_resource_mgr_get_resource_entry(resource_name);
+    if (p_src_entry == NULL) {
         return FAILURE;
     }
 
-    p_src_data = p_entry->p_host_resource_buf;
+    if (entry_copy.state == RESOURCE_ENTRY_STATE_ALLOCATED) {
+        if (entry_copy.info.type >= RESOURCE_FORMAT_TYPE_IMAGE_START) {
+            vkDestroyImage(*p_device, entry_copy.resource.image, NULL);
+        }
+        else {
+            vkDestroyBuffer(*p_device, entry_copy.resource.buffer, NULL);
+        }
+    }
 
-    memcpy(&entry_copy, p_entry, sizeof(resource_entry_t));
+    memcpy(&entry_copy.info, &p_src_entry->info, sizeof(resource_info_t));
 
-    p_entry = &entry_copy;
+    entry_copy.info.usage_flag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
-    p_entry->info.usage_flag &= ~VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    p_entry->info.usage_flag |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
-    if (p_entry->info.type >= RESOURCE_FORMAT_TYPE_IMAGE_START) {
-        // TOOD: add image handler
-        // res = __vulkan_resource_mgr_create_image_object(p_device, p_entry);
+    if (entry_copy.info.type >= RESOURCE_FORMAT_TYPE_IMAGE_START) {
+        // __vulkan_resource_mgr_create_image_object(p_device, p_entry);
     }
     else {
-        res = __vulkan_resource_mgr_create_buffer_object(p_device, p_entry, p_resource_object);
+        if (__vulkan_resource_mgr_create_buffer_object(p_device, &entry_copy) == FAILURE) {
+            return FAILURE;
+        }
     }
 
-    if (res == FAILURE) {
+    vkGetBufferMemoryRequirements(*p_device, entry_copy.resource.buffer,
+                                            &entry_copy.memory_requirement);
+
+    entry_copy.device_memory_idx = __vulkan_resource_mgr_get_device_memory_idx(requirement_flag);
+    if (entry_copy.device_memory_idx == resource_ctx.device_memory_ctx.property.memoryTypeCount) {
         return FAILURE;
     }
 
-    p_entry->device_memory_idx = __vulkan_resource_mgr_get_device_memory_idx(requirement_flag);
-    if (p_entry->device_memory_idx == resource_ctx.device_memory_ctx.property.memoryTypeCount) {
+    if (__vulkan_resource_mgr_allocate_device_memory(p_device, &entry_copy) == FAILURE) {
         return FAILURE;
     }
 
-    if (__vulkan_resource_mgr_allocate_device_memory(p_device, p_entry) == FAILURE) {
-        return FAILURE;
-    }
-
-    if (p_entry->info.type >= RESOURCE_FORMAT_TYPE_IMAGE_START) {
+    if (entry_copy.info.type >= RESOURCE_FORMAT_TYPE_IMAGE_START) {
         // TOOD: add image handler
     }
     else {
-        res = vkBindBufferMemory(*p_device, *(VkBuffer *)p_resource_object,
-                                                    p_entry->device_memory, 0);
+        res = vkBindBufferMemory(*p_device, entry_copy.resource.buffer,
+                                            entry_copy.device_memory, 0);
+        if (res != VK_SUCCESS) {
+            printf("memory binding failure: %d\n", res);
+            return FAILURE;
+        }
     }
 
-    vkMapMemory(*p_device, p_entry->device_memory, 0,
-                p_entry->memory_requirement.size, 0, &p_entry->p_host_resource_buf);
-    memcpy(p_entry->p_host_resource_buf, p_src_data, p_entry->memory_requirement.size);
-    vkUnmapMemory(*p_device, p_entry->device_memory);
+    vkMapMemory(*p_device, entry_copy.device_memory, 0, entry_copy.memory_requirement.size,
+                                                        0, &entry_copy.p_host_resource_buf);
 
-    if (res != VK_SUCCESS) {
-        printf("memory binding failure: %d\n", res);
-        return FAILURE;
-    }
+    memcpy(entry_copy.p_host_resource_buf, p_src_entry->p_host_resource_buf,
+                                            entry_copy.memory_requirement.size);
 
-    return SUCCESS;
+    vkUnmapMemory(*p_device, entry_copy.device_memory);
+
+    return (void *)&entry_copy.resource;
 }
 
 void vulkan_resource_mgr_add_memory_property(VkPhysicalDevice *p_phydev)

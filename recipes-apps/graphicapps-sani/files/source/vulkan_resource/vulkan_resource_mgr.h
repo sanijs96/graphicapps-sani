@@ -31,8 +31,7 @@ uint32_t vulkan_resource_mgr_get_binding_index_count(uint32_t cmdbuf_idx);
 
 void *vulkan_resource_mgr_get_resource_object(char *resource_name);
 
-uint32_t vulkan_resource_mgr_create_device_resource_copy(VkDevice *p_device, char *resource_name,
-                                                                            void *p_resource_object);
+void *vulkan_resource_mgr_create_device_resource_copy(VkDevice *p_device, char *resource_name);
 
 void vulkan_resource_mgr_add_memory_property(VkPhysicalDevice *p_phydev);
 

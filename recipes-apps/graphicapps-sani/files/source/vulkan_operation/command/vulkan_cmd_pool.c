@@ -37,6 +37,10 @@ uint32_t cmd_pool_create(VkDevice *p_device, uint32_t queue_family_idx)
         cmd_pool_ctx.state = VULKAN_CMD_POOL_STATE_CREATED;
     }
 
+    for (uint32_t idx = 0; idx < MAX_NUM_CMD_BUFFERS; idx++) {
+        cmd_pool_ctx.buffer_ctx[idx].state = VULKAN_CMD_POOL_CMDBUF_STATE_DEFAULT;
+    }
+
     return res;
 }
 
@@ -48,7 +52,7 @@ uint32_t cmd_pool_get_state(void)
 static uint32_t __cmd_pool_get_available_buffer_idx(void)
 {
     for (uint32_t idx = 0; idx < MAX_NUM_CMD_BUFFERS; idx++) {
-        if (cmd_pool_get_cmd_buffer_state(idx) == VULKAN_CMD_POOL_CMDBUF_STATE_UNALLOCATED) {
+        if (cmd_pool_get_cmd_buffer_state(idx) == VULKAN_CMD_POOL_CMDBUF_STATE_DEFAULT) {
             return idx;
         }
     }
@@ -154,11 +158,13 @@ uint32_t cmd_pool_allocate_buffer(VkDevice *p_device, uint32_t buf_type)
 
 uint32_t cmd_pool_free_cmd_buffer(VkDevice *p_device, uint32_t buf_idx)
 {
-    VkCommandBuffer *p_cmd_buf;
+    cmd_buf_ctx_t *p_buf_ctx;
 
-    p_cmd_buf = &cmd_pool_ctx.buffer_ctx[buf_idx].buffer;
+    p_buf_ctx = &cmd_pool_ctx.buffer_ctx[buf_idx];
 
-    vkFreeCommandBuffers(*p_device, cmd_pool_ctx.pool, 1, p_cmd_buf);
+    vkFreeCommandBuffers(*p_device, cmd_pool_ctx.pool, 1, &p_buf_ctx->buffer);
+
+    p_buf_ctx->state = VULKAN_CMD_POOL_CMDBUF_STATE_DEFAULT;
 
     return SUCCESS;
 }

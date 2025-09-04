@@ -47,7 +47,8 @@ uint32_t vulkan_obj_mgr_get_device_queue_family_count(uint32_t phydev_idx);
 
 uint32_t vulkan_obj_mgr_select_available_queue_idx(uint32_t type);
 VkQueue *vulkan_obj_mgr_get_queue_object(uint32_t type, uint32_t idx);
-uint32_t vulkan_obj_mgr_submit_queue(VkQueue *p_queue, VkSubmitInfo *p_submit_info);
+uint32_t vulkan_obj_mgr_submit_queue(VkQueue *p_queue,
+                                        VkSubmitInfo *p_submit_info, VkFence *p_fence);
 void vulkan_obj_mgr_release_queue(uint32_t type, uint32_t idx);
 
 void vulkan_obj_mgr_show_device_info(uint32_t phydev_idx);

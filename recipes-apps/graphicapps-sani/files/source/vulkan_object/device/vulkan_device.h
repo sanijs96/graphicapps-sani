@@ -52,7 +52,7 @@ VkQueue *device_get_queue_object(uint32_t type, uint32_t idx);
 
 uint32_t device_lock_queue(uint32_t type, uint32_t queue_idx);
 void device_unlock_queue(uint32_t type, uint32_t queue_idx);
-uint32_t device_submit_queue(VkQueue *p_queue, VkSubmitInfo *p_submit_info);
+uint32_t device_submit_queue(VkQueue *p_queue, VkSubmitInfo *p_submit_info, VkFence *p_fence);
 
 void device_get_device_queue_properties(uint32_t phydev_idx, VkQueueFamilyProperties *properteis);
 

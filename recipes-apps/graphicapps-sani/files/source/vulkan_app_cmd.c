@@ -655,7 +655,7 @@ static uint32_t __vulkan_app_cmd_setup_queue_submit_info(VkSubmitInfo *p_submit_
     return SUCCESS;
 }
 
-static uint32_t __vulkan_app_cmd_submit_queue(VkQueue *p_queue, uint32_t type)
+static uint32_t __vulkan_app_cmd_submit_queue(VkQueue *p_queue, uint32_t type, VkFence *p_fence)
 {
     VkSubmitInfo submit_info;
 
@@ -663,7 +663,7 @@ static uint32_t __vulkan_app_cmd_submit_queue(VkQueue *p_queue, uint32_t type)
         return FAILURE;
     }
 
-    if (vulkan_obj_mgr_submit_queue(p_queue, &submit_info) == FAILURE) {
+    if (vulkan_obj_mgr_submit_queue(p_queue, &submit_info, p_fence) == FAILURE) {
         return FAILURE;
     }
 }
@@ -673,6 +673,7 @@ static uint32_t __vulkan_app_cmd_run_cmd_buffer(vulkan_cmd_args_list_t *p_args_l
     uint32_t queue_idx;
     uint32_t queue_type;
     uint32_t cmd_buffer_bitmap;
+    VkFence *p_fence;
     VkQueue *p_queue;
     VkDevice *p_device;
 
@@ -690,12 +691,14 @@ static uint32_t __vulkan_app_cmd_run_cmd_buffer(vulkan_cmd_args_list_t *p_args_l
         return FAILURE;
     }
 
-    if (__vulkan_app_cmd_submit_queue(p_queue, queue_type) == FAILURE) {
-        return FAILURE;
-    }
-
     if (!(cmd_buffer_bitmap & (1 << VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS))) {
         goto exit;
+    }
+
+    p_fence = window_obj_mgr_get_current_image_fence_object();
+
+    if (__vulkan_app_cmd_submit_queue(p_queue, queue_type, p_fence) == FAILURE) {
+        return FAILURE;
     }
 
     if (window_obj_mgr_show_queue_result(p_queue) == FAILURE) {
@@ -914,7 +917,7 @@ static uint32_t __vulkan_app_cmd_setup_draw_command_param(vulkan_cmd_param_t *p_
         p_param->draw.type_common.vertex_count =
             vulkan_resource_mgr_get_binding_vertex_count(cmdbuf_idx);
     }
-    if (p_param->subcmd_type == VULKAN_SUBCMD_TYPE_DRAW_COMMAND_INDEX) {
+    else if (p_param->subcmd_type == VULKAN_SUBCMD_TYPE_DRAW_COMMAND_INDEX) {
         p_param->draw.type_index.index_count =
             vulkan_resource_mgr_get_binding_index_count(cmdbuf_idx);
     }
@@ -946,17 +949,19 @@ static uint32_t __vulkan_app_cmd_setup_copy_resource_command_param(vulkan_cmd_pa
     }
 
     datasize = vulkan_resource_mgr_get_resource_data_unit_size(p_info->type) * p_info->count;
+
     p_param->copy_resource.datasize = datasize;
 
-    p_param->copy_resource.p_object_src = vulkan_resource_mgr_get_resource_object(resource_name);
-    if (p_param->copy_resource.p_object_src == NULL) {
+    p_param->copy_resource.p_object_dst = vulkan_resource_mgr_get_resource_object(resource_name);
+    if (p_param->copy_resource.p_object_dst == NULL) {
         return FAILURE;
     }
 
-    if (vulkan_resource_mgr_create_device_resource_copy(p_device,
-                resource_name, p_param->copy_resource.p_object_dst) == FAILURE) {
+    p_param->copy_resource.p_object_src =
+                        vulkan_resource_mgr_create_device_resource_copy(p_device, resource_name);
+    if (p_param->copy_resource.p_object_src == NULL) {
         return FAILURE;
-    };
+    }
 
     return SUCCESS;
 }

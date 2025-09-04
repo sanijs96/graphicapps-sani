@@ -1,6 +1,8 @@
 # add resource for vertex input stage
 resource create -n rectangle
 
+resource create -n rectangle_idx
+
 # copy resource to device
 temp_buf = cmdbuf alloc -b onetime
 

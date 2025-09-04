@@ -35,7 +35,7 @@ const resource_handler_t resource_handlers[] = {
     // vertex buffer
     [RESOURCE_FORMAT_TYPE_VERTEX_BUFFER_START] = {.name = NULL},
     [RESOURCE_FORMAT_TYPE_VERTEX_BUFFER_2D_RGB] = {
-        .usage_flag = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        .usage_flag = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         .setup_fn = __resource_handler_setup_vertex_2d_rgb,
         .bind_fn = __resource_handler_bind_vertex_2d_rgb,
     },
@@ -43,7 +43,7 @@ const resource_handler_t resource_handlers[] = {
     // index buffer
     [RESOURCE_FORMAT_TYPE_INDEX_BUFFER_START] = {.name = NULL},
     [RESOURCE_FORMAT_TYPE_INDEX_BUFFER_3V] = {
-        .usage_flag = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        .usage_flag = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         .setup_fn = __resource_handler_setup_index_3v,
         .bind_fn = __resource_handler_bind_index_3v,
     },

@@ -352,9 +352,10 @@ VkQueue *vulkan_obj_mgr_get_queue_object(uint32_t type, uint32_t idx)
     device_get_queue_object(type, idx);
 }
 
-uint32_t vulkan_obj_mgr_submit_queue(VkQueue *p_queue, VkSubmitInfo *p_submit_info)
+uint32_t vulkan_obj_mgr_submit_queue(VkQueue *p_queue,
+                                        VkSubmitInfo *p_submit_info, VkFence *p_fence)
 {
-    if (device_submit_queue(p_queue, p_submit_info) == FAILURE) {
+    if (device_submit_queue(p_queue, p_submit_info, p_fence) == FAILURE) {
         printf("queue submission failure\n");
         return FAILURE;
     }
