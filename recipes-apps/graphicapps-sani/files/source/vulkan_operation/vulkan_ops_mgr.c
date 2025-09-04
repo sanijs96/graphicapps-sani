@@ -11,41 +11,40 @@
 
 #include "pipeline/vulkan_pipeline.h"
 #include "command/vulkan_cmd_pool.h"
-#include "command/vulkan_cmd_template.h"
 
 #define MAX_VULKAN_CMDNAME_LENGTH       (20)
 
 typedef struct vulkan_cmd_proc_ctx{
     const char cmdname[MAX_VULKAN_CMDNAME_LENGTH];
-    uint32_t (*setup)(vulkan_cmd_template_t *p_template, vulkan_cmd_param_t *p_param);
-    void (*add)(vulkan_cmd_template_t *p_template, vulkan_cmd_param_t *p_param);
+    //uint32_t (*setup)(vulkan_cmd_template_t *p_template, vulkan_cmd_param_t *p_param);
+    void (*add)(vulkan_cmd_param_t *p_param);
 } vulkan_cmd_proc_ctx_t;
 
 const vulkan_cmd_proc_ctx_t cmd_proc_ctx[NUM_VULKAN_SUPPORTED_CMD_TYPES] =
 {
     [VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS] = {
-        .cmdname = "renderpass",
-        .setup = cmd_template_setup_renderpass_command,
+        .cmdname = "begin_renderpass",
+        //.setup = cmd_setup_renderpass_command,
         .add = cmd_pool_add_renderpass_command,
     },
     [VULKAN_SUPPORTED_CMD_TYPE_BIND_PIPELINE] = {
         .cmdname = "bind_pipeline",
-        .setup = NULL,
+        //.setup = NULL,
         .add = cmd_pool_add_bind_pipeline_command,
     },
     [VULKAN_SUPPORTED_CMD_TYPE_BIND_RESOURCE] = {
         .cmdname = "bind_resource",
-        .setup = NULL,
+        //.setup = NULL,
         .add = cmd_pool_add_bind_resource_command,
     },
     [VULKAN_SUPPORTED_CMD_TYPE_DRAW] = {
         .cmdname = "draw",
-        .setup = NULL,
+        //.setup = NULL,
         .add = cmd_pool_add_draw_command,
     },
     [VULKAN_SUPPORTED_CMD_TYPE_COPY_RESOURCE] = {
         .cmdname = "copy_resource",
-        .setup = NULL,
+        //.setup = NULL,
         .add = cmd_pool_add_copy_resource_command,
     },
 };
@@ -83,7 +82,7 @@ uint32_t vulkan_ops_mgr_get_vulkan_cmd_type_from_name(const char *p_cmd_name)
     return NUM_VULKAN_SUPPORTED_CMD_TYPES;
 }
 
-uint32_t vulkan_ops_mgr_get_pipeline_stage_idx_from_name(const char *stage_name_str)
+uint32_t vulkan_ops_mgr_get_pipeline_stage_idx(const char *stage_name_str)
 {
     const char *stage_name_str_ref;
     for (uint32_t stage_idx = 0; stage_idx < NUM_VULKAN_PIPELINE_STAGES; stage_idx++) {
@@ -276,26 +275,37 @@ uint32_t vulkan_ops_mgr_free_cmd_buffer(VkDevice *p_device, uint32_t buf_idx)
     return cmd_pool_free_cmd_buffer(p_device, buf_idx);
 }
 
+uint32_t vulkan_ops_mgr_get_draw_cmd_subcmd_type(char *subcmd_name)
+{
+    const char *subcmd_names[NUM_VULKAN_SUBCMD_TYPES] = {
+        "common",
+        "index",
+        "indirect"
+    };
+
+    if (!strcmp(subcmd_name, "common")) {
+        return VULKAN_SUBCMD_TYPE_DRAW_COMMAND_COMMON;
+    }
+    else if (!strcmp(subcmd_name, "index")) {
+        return VULKAN_SUBCMD_TYPE_DRAW_COMMAND_INDEX;
+    }
+    else if (!strcmp(subcmd_name, "indirect")) {
+        return VULKAN_SUBCMD_TYPE_DRAW_COMMAND_INDIRECT;
+    }
+
+    return INVALID_VULKAN_SUBCMD_TYPE;
+}
+
 uint32_t vulkan_ops_mgr_add_vulkan_command(uint32_t cmd_type, vulkan_cmd_param_t *p_param)
 {
     uint32_t res;
-    vulkan_cmd_template_t template;
-
-    if (cmd_proc_ctx[cmd_type].setup) {
-        res = cmd_proc_ctx[cmd_type].setup(&template, p_param);
-
-        if (res == FAILURE) {
-            printf("command template setup failure\n");
-            return FAILURE;
-        }
-    }
 
     if (!cmd_proc_ctx[cmd_type].add) {
         printf("command handler not implemented\n");
         return FAILURE;
     }
 
-    cmd_proc_ctx[cmd_type].add(&template, p_param);
+    cmd_proc_ctx[cmd_type].add(p_param);
 
     return SUCCESS;
 }

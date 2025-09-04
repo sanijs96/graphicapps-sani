@@ -45,7 +45,7 @@ VkFormat *window_obj_mgr_get_current_swapchain_format(void);
 
 uint32_t window_obj_mgr_create_framebuffers(VkRenderPass* p_renderpass);
 uint32_t window_obj_mgr_get_framebuffer_object_count(void);
-VkFramebuffer *window_obj_mgr_get_framebuffer_objects(void);
+VkFramebuffer *window_obj_mgr_get_framebuffer_object(uint32_t framebuffer_idx);
 
 VkSemaphore *window_obj_mgr_get_display_semaphore_object(void);
 void window_obj_mgr_add_swapchain_signal_semaphore(VkSemaphore *p_semaphore);

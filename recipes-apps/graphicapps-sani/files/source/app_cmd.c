@@ -47,6 +47,40 @@ uint32_t app_cmd_add_runscript_file(command_t *p_cmd)
     return SUCCESS;
 }
 
+uint32_t __app_cmd_setup_resource_info_ctx(resource_info_t *p_info)
+{
+    p_info->count = datascript_get_resource_member_count(p_info->name);
+    if (p_info->count == 0) {
+        return FAILURE;
+    }
+
+    p_info->type = datascript_get_resource_type(p_info->name);
+    if (p_info->type == RESOURCE_FORMAT_TYPE_INVALID) {
+        return FAILURE;
+    }
+
+    if (p_info->type >= RESOURCE_FORMAT_TYPE_IMAGE_START) {
+        // TBD
+    }
+    else if (p_info->type >= RESOURCE_FORMAT_TYPE_INDEX_BUFFER_START) {
+        resource_description_t description;
+
+        if (vulkan_resource_mgr_get_resource_description(p_info, &description) == FAILURE) {
+            return FAILURE;
+        }
+
+        p_info->index_buffer.index_type = description.index_buffer.index_type;
+    }
+    else {
+        p_info->vertex_buffer.binding_idx = datascript_get_resource_entry_idx(p_info->name);
+        if (p_info->vertex_buffer.binding_idx == MAX_NUM_RESOURCE_OBJECTS) {
+            return FAILURE;
+        }
+    }
+
+    return SUCCESS;
+}
+
 uint32_t app_cmd_load_resource_data(command_t *p_cmd)
 {
     uint32_t num_resources;
@@ -62,21 +96,29 @@ uint32_t app_cmd_load_resource_data(command_t *p_cmd)
         return FAILURE;
     }
 
-    num_resources = datascript_get_resource_count();
+    if (datascript_load_all_resource_objects() == FAILURE) {
+        return FAILURE;
+    }
+
+    num_resources = datascript_get_total_resource_count();
     if (num_resources == 0) {
         printf("no resource dectected\n");
         return FAILURE;
     }
 
-    resource_info_t info_list[num_resources];
-    memset(info_list, 0, sizeof(resource_info_t) * num_resources);
-
-    if (datascript_load_resource_info_from_datafile(info_list) == FAILURE) {
-        return FAILURE;
-    }
+    resource_info_t info;
 
     for (uint32_t idx = 0; idx < num_resources; idx++) {
-        if (vulkan_resource_mgr_add_resource_info(&info_list[idx]) == FAILURE) {
+        memset(&info, 0, sizeof(resource_info_t));
+        if (datascript_get_resource_name(idx, info.name) == FAILURE) {
+            return FAILURE;
+        }
+
+        if (__app_cmd_setup_resource_info_ctx(&info) == FAILURE) {
+            return FAILURE;
+        }
+
+        if (vulkan_resource_mgr_add_resource_info(&info) == FAILURE) {
             return FAILURE;
         }
     }

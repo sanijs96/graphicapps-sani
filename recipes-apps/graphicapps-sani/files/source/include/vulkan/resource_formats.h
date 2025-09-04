@@ -5,20 +5,19 @@
 #include "common/common_def.h"
 
 enum resource_format_types {
-    RESOURCE_FORMAT_TYPE_BUFFER_VERTEX_START = 0,
-    /* vertex here */
-    RESOURCE_FORMAT_TYPE_BUFFER_VERTEX_2D_RGB,
-    MAX_RESOURCE_FORMAT_TYPE_VERTEX_BUFFERS,
+    RESOURCE_FORMAT_TYPE_NONE = 0,
+    /* vertex buffer */
+    RESOURCE_FORMAT_TYPE_VERTEX_BUFFER_START,
+    RESOURCE_FORMAT_TYPE_VERTEX_BUFFER_2D_RGB = RESOURCE_FORMAT_TYPE_VERTEX_BUFFER_START,
 
-    RESOURCE_FORMAT_TYPE_BUFFER_START = MAX_RESOURCE_FORMAT_TYPE_VERTEX_BUFFERS,
-    /* buffer here */
-    MAX_RESOURCE_FORMAT_TYPE_BUFFERS,
+    /* index buffer */
+    RESOURCE_FORMAT_TYPE_INDEX_BUFFER_START,
+    RESOURCE_FORMAT_TYPE_INDEX_BUFFER_3V = RESOURCE_FORMAT_TYPE_INDEX_BUFFER_START,
 
-    RESOURCE_FORMAT_TYPE_IMAGE_START = MAX_RESOURCE_FORMAT_TYPE_BUFFERS,
-    /* image here */
-    MAX_RESOURCE_FORMAT_TYPE_IMAGES,
+    /* image */
+    RESOURCE_FORMAT_TYPE_IMAGE_START,
 
-    RESOURCE_FORMAT_TYPE_INVALID
+    RESOURCE_FORMAT_TYPE_INVALID,
 };
 
 #define MAX_NUM_RESOURCE_OBJECTS                (100)
@@ -42,14 +41,29 @@ typedef struct vertex_2d_rgb {
     float padding;
 } vertex_2d_rgb_t;
 
+typedef union index_3v {
+    uint32_t idx[3];
+} index_3v_t;
+
 typedef union resource {
     vertex_2d_rgb_t vertex_2d_rgb;
+    index_3v_t index_3v;
 } resource_t;
 
 typedef struct resource_info {
     uint32_t type;
     uint32_t count;
-    uint32_t binding;
+
+    // resource specific information
+    union {
+        struct {
+            uint32_t index_type;
+        } index_buffer;
+        struct {
+            uint32_t binding_idx;
+        } vertex_buffer;
+    };
+
     uint32_t usage_flag;
 
     char name[MAX_LENGTH_ARGUMENT_NAME];
@@ -61,6 +75,9 @@ typedef union {
         VkVertexInputBindingDescription binding;
         VkVertexInputAttributeDescription *p_attributes;
     } vertex_buffer;
+    struct {
+        uint32_t index_type;
+    } index_buffer;
 
 } resource_description_t;
 

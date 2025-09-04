@@ -59,7 +59,7 @@ command_handler_entry_t vulkan_app_cmd_handler_pipeline[] = {
 
 command_handler_entry_t vulkan_app_cmd_handler_command_buf[] = {
     {"alloc", "b", NULL, vulkan_app_cmd_allocate_command_buffer, NULL},
-    {"add", "cinp", NULL, vulkan_app_cmd_add_vulkan_command, NULL},
+    {"add", "cinps", NULL, vulkan_app_cmd_add_vulkan_command, NULL},
     {"run", "i", NULL, vulkan_app_cmd_run_commands, NULL},
     {"info", "i", NULL, vulkan_app_cmd_show_command_buffer_info, NULL},
 

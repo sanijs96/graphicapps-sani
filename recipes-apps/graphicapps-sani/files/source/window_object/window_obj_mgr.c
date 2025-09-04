@@ -327,17 +327,23 @@ uint32_t window_obj_mgr_start_display(VkDevice *p_device)
     p_swapchain_ctx = &window_ctx.display_ctx.swapchain_ctx;
     p_image_fence = &p_swapchain_ctx->image_fence;
 
-    vkWaitForFences(*p_device, 1, p_image_fence, wait_all, UINT64_MAX);
+    if (window_ctx.display_ctx.state == WINDOW_OBJ_DISPLAY_STATE_CREATED) {
+        if (__window_obj_mgr_create_swapchain_sync_objects() == FAILURE) {
+            return FAILURE;
+        }
 
-    vkResetFences(*p_device, 1, p_image_fence);
-
-    p_swapchain_ctx->current_image_idx = __window_obj_mgr_get_next_image(p_device);
-
-    if (__window_obj_mgr_create_swapchain_sync_objects() == FAILURE) {
+        window_ctx.display_ctx.state = WINDOW_OBJ_DISPLAY_STATE_STARTED;
+    }
+    else if (window_ctx.display_ctx.state == WINDOW_OBJ_DISPLAY_STATE_STARTED) {
+        vkWaitForFences(*p_device, 1, p_image_fence, wait_all, UINT64_MAX);
+        vkResetFences(*p_device, 1, p_image_fence);
+    }
+    else {
+        printf("create window object first\n");
         return FAILURE;
     }
 
-    window_ctx.display_ctx.state = WINDOW_OBJ_DISPLAY_STATE_STARTED;
+    p_swapchain_ctx->current_image_idx = __window_obj_mgr_get_next_image(p_device);
 
     return SUCCESS;
 }
@@ -521,8 +527,8 @@ uint32_t window_obj_mgr_create_framebuffers(VkRenderPass* p_renderpass)
 
         if (res != VK_SUCCESS) {
             printf("framebuffer creation failure: %d\n", res);
-
             res = FAILURE;
+
             goto exit;
         }
     }
@@ -541,9 +547,15 @@ uint32_t window_obj_mgr_get_framebuffer_object_count(void)
     return window_ctx.display_ctx.framebuffer_ctx.framebuffer_count;
 }
 
-VkFramebuffer *window_obj_mgr_get_framebuffer_objects(void)
+VkFramebuffer *window_obj_mgr_get_framebuffer_object(uint32_t framebuffer_idx)
 {
-    return window_ctx.display_ctx.framebuffer_ctx.p_framebufs;
+    if (framebuffer_idx >= window_obj_mgr_get_framebuffer_object_count()) {
+        printf("invalid framebuffer index\n", framebuffer_idx);
+
+        return FAILURE;
+    }
+
+    return &window_ctx.display_ctx.framebuffer_ctx.p_framebufs[framebuffer_idx];
 }
 
 void window_obj_mgr_exit(VkInstance *p_instance)

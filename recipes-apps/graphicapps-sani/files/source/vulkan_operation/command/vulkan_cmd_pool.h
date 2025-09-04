@@ -26,15 +26,10 @@ uint32_t cmd_pool_get_cmd_buffer_state(uint32_t buf_idx);
 uint32_t cmd_pool_get_cmd_buffer_bitmap(uint32_t buf_idx);
 VkCommandBuffer *cmd_pool_get_cmd_buffer_object(uint32_t buf_idx);
 
-void cmd_pool_add_renderpass_command(vulkan_cmd_template_t *p_template,
-                                             vulkan_cmd_param_t *p_param);
-void cmd_pool_add_bind_pipeline_command(vulkan_cmd_template_t *p_template,
-                                                vulkan_cmd_param_t *p_param);
-void cmd_pool_add_bind_resource_command(vulkan_cmd_template_t *p_template,
-                                                vulkan_cmd_param_t *p_param);
-void cmd_pool_add_draw_command(vulkan_cmd_template_t *p_template,
-                                                    vulkan_cmd_param_t *p_param);
-void cmd_pool_add_copy_resource_command(vulkan_cmd_template_t *p_template,
-                                                    vulkan_cmd_param_t *p_param);
+void cmd_pool_add_renderpass_command(vulkan_cmd_param_t *p_param);
+void cmd_pool_add_bind_pipeline_command(vulkan_cmd_param_t *p_param);
+void cmd_pool_add_bind_resource_command(vulkan_cmd_param_t *p_param);
+void cmd_pool_add_draw_command(vulkan_cmd_param_t *p_param);
+void cmd_pool_add_copy_resource_command(vulkan_cmd_param_t *p_param);
 
 #endif

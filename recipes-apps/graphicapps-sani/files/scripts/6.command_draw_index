@@ -1,10 +1,12 @@
 # add resource for vertex input stage
-resource create -n triangle
+resource create -n rectangle
 
 # copy resource to device
 temp_buf = cmdbuf alloc -b onetime
 
-cmdbuf add -c copy_resource -i $temp_buf -n triangle
+cmdbuf add -c copy_resource -i $temp_buf -n rectangle
+
+cmdbuf add -c copy_resource -i $temp_buf -n rectangle_idx
 
 cmdbuf run -i $temp_buf
 
@@ -12,7 +14,7 @@ cmdbuf run -i $temp_buf
 main_buf = cmdbuf alloc -b common
 
 # create pipeline & subpass
-pipeline setup -s vertex_input -n triangle
+pipeline setup -s vertex_input -n rectangle
 
 pipeline_idx = pipeline create
 
@@ -21,8 +23,10 @@ cmdbuf add -c begin_renderpass -i $main_buf
 cmdbuf add -c bind_pipeline -i $main_buf -p $pipeline_idx
 
 # resources from vertex_attribute.dat
-cmdbuf add -c bind_resource -i $main_buf -n triangle
+cmdbuf add -c bind_resource -i $main_buf -n rectangle
 
-cmdbuf add -c draw -i $main_buf -s common
+cmdbuf add -c bind_resource -i $main_buf -n rectangle_idx
+
+cmdbuf add -c draw -i $main_buf -s index
 
 cmdbuf run -i $main_buf

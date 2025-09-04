@@ -9,7 +9,6 @@
 typedef struct cmd_buf_ctx {
     uint32_t state;
     uint32_t cmd_bitmap;
-    uint32_t pipeline_idx; // TODO: bind pipeline idx with buffer
     VkCommandBuffer buffer;
 } cmd_buf_ctx_t;
 
@@ -172,7 +171,7 @@ uint32_t cmd_pool_finish_buffer_recording(uint32_t buf_idx)
 
     p_cmd_buf = &cmd_pool_ctx.buffer_ctx[buf_idx].buffer;
 
-    cmd_buf_bitmap = &cmd_pool_ctx.buffer_ctx[buf_idx].cmd_bitmap;
+    cmd_buf_bitmap = cmd_pool_ctx.buffer_ctx[buf_idx].cmd_bitmap;
 
     if (cmd_buf_bitmap & (1 << VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS)) {
         vkCmdEndRenderPass(*p_cmd_buf);
@@ -205,33 +204,26 @@ VkCommandBuffer *cmd_pool_get_cmd_buffer_object(uint32_t buf_idx)
     return &cmd_pool_ctx.buffer_ctx[buf_idx].buffer;
 }
 
-void cmd_pool_add_renderpass_command(vulkan_cmd_template_t *p_template,
-                                                    vulkan_cmd_param_t *p_param)
+void cmd_pool_add_renderpass_command(vulkan_cmd_param_t *p_param)
 {
     uint32_t cmdbuf_idx;
     VkCommandBuffer *p_cmd_buf;
-    uint32_t framebuf_image_idx;
 
     cmdbuf_idx = p_param->cmdbuf_idx;
-    framebuf_image_idx = p_param->renderpass.framebuffer_image_idx;
-
     p_cmd_buf = &cmd_pool_ctx.buffer_ctx[cmdbuf_idx].buffer;
 
-    p_template->renderpass.framebuffer = p_param->renderpass.p_framebuffers[framebuf_image_idx];
-
-    vkCmdBeginRenderPass(*p_cmd_buf, &p_template->renderpass, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(*p_cmd_buf, &p_param->renderpass.renderpass_info,
+                                                VK_SUBPASS_CONTENTS_INLINE);
 
     cmd_pool_ctx.buffer_ctx[cmdbuf_idx].cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS);
 }
 
-void cmd_pool_add_bind_pipeline_command(vulkan_cmd_template_t *p_template,
-                                                vulkan_cmd_param_t *p_param)
+void cmd_pool_add_bind_pipeline_command(vulkan_cmd_param_t *p_param)
 {
     uint32_t cmdbuf_idx;
     cmd_buf_ctx_t *p_buf_ctx;
 
     cmdbuf_idx = p_param->cmdbuf_idx;
-
     p_buf_ctx = &cmd_pool_ctx.buffer_ctx[cmdbuf_idx];
 
     vkCmdBindPipeline(p_buf_ctx->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -240,37 +232,74 @@ void cmd_pool_add_bind_pipeline_command(vulkan_cmd_template_t *p_template,
     p_buf_ctx->cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_BIND_PIPELINE);
 }
 
-void cmd_pool_add_bind_resource_command(vulkan_cmd_template_t *p_template,
-                                                vulkan_cmd_param_t *p_param)
+void cmd_pool_add_bind_resource_command(vulkan_cmd_param_t *p_param)
 {
     uint32_t cmdbuf_idx;
-    uint32_t resource_type;
+    resource_info_t *p_info;
     cmd_buf_ctx_t *p_buf_ctx;
     const VkDeviceSize offset[] = {0};
 
     cmdbuf_idx = p_param->cmdbuf_idx;
 
-    resource_type = p_param->bind_resource.p_resource_info->type;
+    p_info = p_param->bind_resource.p_resource_info;
 
     p_buf_ctx = &cmd_pool_ctx.buffer_ctx[cmdbuf_idx];
 
-    if (resource_type < MAX_RESOURCE_FORMAT_TYPE_VERTEX_BUFFERS) {
-        vkCmdBindVertexBuffers(p_buf_ctx->buffer,
-                                p_param->bind_resource.p_resource_info->binding, 1, // binding idx & count, associated with vertex input stage
-                                                p_param->bind_resource.p_resource, offset);
-    }
-    else if (resource_type < MAX_RESOURCE_FORMAT_TYPE_BUFFERS){
+    if (p_info->type >= RESOURCE_FORMAT_TYPE_IMAGE_START) {
         // TODO
+    }
+    else if (p_info->type >= RESOURCE_FORMAT_TYPE_INDEX_BUFFER_START) {
+        vkCmdBindIndexBuffer(p_buf_ctx->buffer,
+                                *(VkBuffer *)p_param->bind_resource.p_resource,
+                                            0, p_info->index_buffer.index_type);
     }
     else {
-        // TODO
+        vkCmdBindVertexBuffers(p_buf_ctx->buffer,
+                                // binding idx & count, associated with vertex input stage
+                                p_info->vertex_buffer.binding_idx, 1,
+                                p_param->bind_resource.p_resource, offset);
     }
 
     p_buf_ctx->cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_BIND_RESOURCE);
 }
 
-void cmd_pool_add_draw_command(vulkan_cmd_template_t *p_template,
-                                            vulkan_cmd_param_t *p_param)
+void __cmd_pool_add_draw_command(vulkan_cmd_param_t *p_param, VkCommandBuffer *p_cmd_buf)
+{
+    uint32_t subcmd_type;
+    uint32_t instance_count;
+    uint32_t first_instance;
+
+    subcmd_type = p_param->subcmd_type;
+
+    // no instancing(TBD)
+    instance_count = 1;
+    first_instance = 0;
+
+    if (subcmd_type == VULKAN_SUBCMD_TYPE_DRAW_COMMAND_COMMON) {
+        uint32_t first_vertex = 3;
+        uint32_t vertex_count = 0;
+
+        vkCmdDraw(*p_cmd_buf, p_param->draw.type_common.vertex_count,
+                        instance_count, first_vertex, first_instance);
+    }
+    else if (subcmd_type == VULKAN_SUBCMD_TYPE_DRAW_COMMAND_INDEX) {
+        uint32_t first_index = 0;
+        uint32_t vertex_offset = 0;
+
+        vkCmdDrawIndexed(*p_cmd_buf, p_param->draw.type_index.index_count,
+                                                instance_count, first_index,
+                                                vertex_offset, first_instance);
+    }
+    else {
+        printf("unsupported draw command type\n");
+
+        return FAILURE;
+    }
+
+    return SUCCESS;
+}
+
+void cmd_pool_add_draw_command(vulkan_cmd_param_t *p_param)
 {
     uint32_t cmdbuf_idx;
     VkCommandBuffer *p_cmd_buf;
@@ -282,19 +311,12 @@ void cmd_pool_add_draw_command(vulkan_cmd_template_t *p_template,
 
     vkCmdSetScissor(*p_cmd_buf, 0, 1, &p_param->draw.scissor);
 
-    // TODO: modify vertex ctx
-    uint32_t vertex_count = 3;
-    uint32_t instance_count = 1;
-    uint32_t first_vertex = 0;
-    uint32_t first_instance = 0;
-
-    vkCmdDraw(*p_cmd_buf, vertex_count, instance_count, first_vertex, first_instance);
+    __cmd_pool_add_draw_command(p_param, p_cmd_buf);
 
     cmd_pool_ctx.buffer_ctx[cmdbuf_idx].cmd_bitmap |= (1 << VULKAN_SUPPORTED_CMD_TYPE_DRAW);
 }
 
-void cmd_pool_add_copy_resource_command(vulkan_cmd_template_t *p_template,
-                                                    vulkan_cmd_param_t *p_param)
+void cmd_pool_add_copy_resource_command(vulkan_cmd_param_t *p_param)
 {
     uint32_t cmdbuf_idx;
     VkBufferCopy copy_region;
@@ -308,7 +330,7 @@ void cmd_pool_add_copy_resource_command(vulkan_cmd_template_t *p_template,
 
     copy_region.size = p_param->copy_resource.datasize;
 
-    vkCmdCopyBuffer(p_cmd_buf, p_param->copy_resource.p_object_src->buffer,
+    vkCmdCopyBuffer(*p_cmd_buf, p_param->copy_resource.p_object_src->buffer,
                     p_param->copy_resource.p_object_dst->buffer, 1, &copy_region);
 
     cmd_pool_ctx.buffer_ctx[cmdbuf_idx].cmd_bitmap |=

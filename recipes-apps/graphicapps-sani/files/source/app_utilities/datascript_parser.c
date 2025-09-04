@@ -371,35 +371,54 @@ uint32_t datascript_check_datafile_registered(void)
 
 static char __datascript_search_datafile_directives(char *p_input_str)
 {
-    if (strchr(p_input_str, DIRECTIVE_CHAR_COMMENT)) {
-        return DIRECTIVE_CHAR_COMMENT;
+    char directive_type;
+    char *directive_addr, *directive_addr_latest;
+
+    directive_addr_latest = &p_input_str[strlen(p_input_str)];
+
+    directive_addr = strchr(p_input_str, DIRECTIVE_CHAR_COMMENT);
+    if (directive_addr && (directive_addr < directive_addr_latest)) {
+        directive_addr_latest = directive_addr;
+        directive_type = DIRECTIVE_CHAR_COMMENT;
     }
 
-    if (strchr(p_input_str, DIRECTIVE_CHAR_RESOURCE_OBJECT_DEFINE_START)) {
-        return DIRECTIVE_CHAR_RESOURCE_OBJECT_DEFINE_START;
+    directive_addr = strchr(p_input_str, DIRECTIVE_CHAR_RESOURCE_OBJECT_DEFINE_START);
+    if (directive_addr && (directive_addr < directive_addr_latest)) {
+        directive_addr_latest = directive_addr;
+        directive_type = DIRECTIVE_CHAR_RESOURCE_OBJECT_DEFINE_START;
     }
 
-    if (strchr(p_input_str, DIRECTIVE_CHAR_RESOURCE_OBJECT_DEFINE_CLOSE)) {
-        return DIRECTIVE_CHAR_RESOURCE_OBJECT_DEFINE_CLOSE;
+    directive_addr = strchr(p_input_str, DIRECTIVE_CHAR_RESOURCE_OBJECT_DEFINE_CLOSE);
+    if (directive_addr && (directive_addr < directive_addr_latest)) {
+        directive_addr_latest = directive_addr;
+        directive_type = DIRECTIVE_CHAR_RESOURCE_OBJECT_DEFINE_CLOSE;
     }
 
-    if (strchr(p_input_str, DIRECTIVE_CHAR_RESOURCE_MEMBER_DEFINE_START)) {
-        return DIRECTIVE_CHAR_RESOURCE_MEMBER_DEFINE_START;
+    directive_addr = strchr(p_input_str, DIRECTIVE_CHAR_RESOURCE_MEMBER_DEFINE_START);
+    if (directive_addr && (directive_addr < directive_addr_latest)) {
+        directive_addr_latest = directive_addr;
+        directive_type = DIRECTIVE_CHAR_RESOURCE_MEMBER_DEFINE_START;
     }
 
-    if (strchr(p_input_str, DIRECTIVE_CHAR_RESOURCE_MEMBER_DEFINE_CLOSE)) {
-        return DIRECTIVE_CHAR_RESOURCE_MEMBER_DEFINE_CLOSE;
+    directive_addr = strchr(p_input_str, DIRECTIVE_CHAR_RESOURCE_MEMBER_DEFINE_CLOSE);
+    if (directive_addr && (directive_addr < directive_addr_latest)) {
+        directive_addr_latest = directive_addr;
+        directive_type = DIRECTIVE_CHAR_RESOURCE_MEMBER_DEFINE_CLOSE;
     }
 
-    if (strchr(p_input_str, DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_START)) {
-        return DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_START;
+    directive_addr = strchr(p_input_str, DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_START);
+    if (directive_addr && (directive_addr < directive_addr_latest)) {
+        directive_addr_latest = directive_addr;
+        directive_type = DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_START;
     }
 
-    if (strchr(p_input_str, DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_CLOSE)) {
-        return DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_CLOSE;
+    directive_addr = strchr(p_input_str, DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_CLOSE);
+    if (directive_addr && (directive_addr < directive_addr_latest)) {
+        directive_addr_latest = directive_addr;
+        directive_type = DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_CLOSE;
     }
 
-    return DIRECTIVE_CHAR_NONE;
+    return directive_type;
 }
 
 static uint32_t __datascript_get_next_objstr_from_datafile(char *buf_str)
@@ -447,68 +466,92 @@ get_new_object_data:
     return SUCCESS;
 }
 
-static uint32_t __datascript_setup_resource_info_ctx(resource_info_t *p_info, char *data_buf_str)
+uint32_t datascript_get_resource_entry_idx(char *resource_name)
 {
-    uint32_t copy_str_len;
-    char *p_cursor;
-    char argstr[MAX_LENGTH_ARGUMENT_NAME];
-
-    // get object type
-    p_cursor = data_buf_str;
-    copy_str_len = strchr(p_cursor, DIRECTIVE_CHAR_DELIMITER) - p_cursor;
-
-    strncpy(argstr, p_cursor, copy_str_len);
-    argstr[copy_str_len] = '\0';
-
-    p_info->type = datafile_get_resource_type_from_typename(argstr);
-    if (p_info->type == RESOURCE_FORMAT_TYPE_INVALID) {
-        return FAILURE;
-    }
-
-    // get object name
-    p_cursor = strchr(p_cursor, DIRECTIVE_CHAR_DELIMITER);
-    if (p_cursor == NULL) {
-        printf("resource name not recognized\n");
-        return FAILURE;
-    }
-
-    p_cursor++;
-    copy_str_len = strchr(p_cursor, DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_START) - p_cursor;
-    strncpy(p_info->name, p_cursor, copy_str_len);
-    p_info->name[copy_str_len] = '\0';
-
-    // get array count
-    p_cursor = strchr(p_cursor, DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_START);
-    if (p_cursor == NULL) {
-        printf("resource name not recognized\n");
-        return FAILURE;
-    }
-
-    p_cursor++;
-    p_info->count = *p_cursor - '0';
-
-    return SUCCESS;
+    return datafile_get_resource_entry_idx(resource_name);
 }
 
-static uint32_t __datascript_register_resource_entries(resource_info_t *p_info, char *data_buf_str)
+static uint32_t __datascript_parse_resource_type(char *p_cursor)
+{
+    uint32_t argstr_len;
+    char argstr[MAX_LENGTH_ARGUMENT_NAME];
+
+    if (strchr(p_cursor, DIRECTIVE_CHAR_DELIMITER) == NULL) {
+        printf("resource type not recognized\n");
+
+        return RESOURCE_FORMAT_TYPE_INVALID;
+    }
+
+    argstr_len = strchr(p_cursor, DIRECTIVE_CHAR_DELIMITER) - p_cursor;
+
+    strncpy(argstr, p_cursor, argstr_len);
+
+    argstr[argstr_len] = '\0';
+
+    return datafile_get_resource_type_from_typename(argstr);
+}
+
+static uint32_t __datascript_parse_resource_name(char *p_cursor, char *p_resource_name_buf)
+{
+    uint32_t argstr_len;
+
+    argstr_len = 0;
+
+    if (strchr(p_cursor, DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_START) == NULL) {
+        printf("resource name not recognized\n");
+    }
+    else {
+        argstr_len = strchr(p_cursor, DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_START) - p_cursor;
+
+        strncpy(p_resource_name_buf, p_cursor, argstr_len);
+    }
+
+    p_resource_name_buf[argstr_len] = '\0';
+
+    return argstr_len;
+}
+
+static uint32_t __datascript_parse_resource_count(char *p_cursor)
+{
+    uint64_t array_start_offset;
+
+    if (strchr(p_cursor, DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_START) == NULL) {
+        printf("resource array not recognized\n");
+
+        return 0;
+    }
+
+    array_start_offset = strchr(p_cursor, DIRECTIVE_CHAR_RESOURCE_ARRAY_SIZE_START) - p_cursor;
+
+    // get array count
+    return p_cursor[array_start_offset + 1] - '0';
+}
+
+static uint32_t __datascript_save_resource_data(char *resource_name, char *data_buf_str)
 {
     uint32_t value_strlen;
-    uint32_t value_entry_idx;
-    uint32_t value_member_idx;
-
+    uint32_t resource_entry_idx;
+    uint32_t entry_count_per_member;
+    uint32_t current_member_list_idx;
+    uint32_t total_member_list_count;
     char *p_cursor;
     char *p_cursor_limit;
     resource_member_entry_t member_value_strbuf[MAX_NUM_RESOURCE_OBJECT_MEMBERS];
 
+    resource_entry_idx = datafile_get_resource_entry_idx(resource_name);
+
     p_cursor = data_buf_str;
 
-    value_member_idx = 0;
+    total_member_list_count = datafile_get_resource_member_count(resource_name);
+
+    current_member_list_idx = 0;
 
 register_member_values:
     p_cursor = strchr(p_cursor, DIRECTIVE_CHAR_RESOURCE_MEMBER_DEFINE_START); // '{'
     p_cursor_limit = strchr(p_cursor, DIRECTIVE_CHAR_RESOURCE_MEMBER_DEFINE_CLOSE); // '}'
 
-    value_entry_idx = 0;
+    entry_count_per_member = 0;
+
     while (p_cursor_limit > p_cursor) {
         p_cursor++; // skip directive
 
@@ -527,24 +570,76 @@ register_member_values:
             value_strlen = p_cursor_limit - p_cursor;
         }
 
-        memset(member_value_strbuf[value_entry_idx].value, 0, MAX_RESOURCE_VALUE_LENGTH_STR);
-        strncpy(member_value_strbuf[value_entry_idx].value, p_cursor, value_strlen);
-        member_value_strbuf[value_entry_idx].value[value_strlen] = '\0';
+        memset(member_value_strbuf[entry_count_per_member].value, 0, MAX_RESOURCE_VALUE_LENGTH_STR);
+        strncpy(member_value_strbuf[entry_count_per_member].value, p_cursor, value_strlen);
+        member_value_strbuf[entry_count_per_member].value[value_strlen] = '\0';
 
         p_cursor += value_strlen;
 
-        value_entry_idx++;
+        entry_count_per_member++;
     }
 
-    if (datafile_save_resource_data(p_info, member_value_strbuf,
-                                    value_entry_idx, value_member_idx) == FAILURE) {
+    if (datafile_save_resource_data(resource_entry_idx,
+                                    member_value_strbuf,
+                                    entry_count_per_member,
+                                    current_member_list_idx) == FAILURE) {
         return FAILURE;
     }
 
-    value_member_idx++;
+    current_member_list_idx++;
 
-    if (value_member_idx < p_info->count) {
+    if (current_member_list_idx < total_member_list_count) {
         goto register_member_values;
+    }
+
+    return SUCCESS;
+}
+
+static uint32_t __datascript_register_resource_object(char *data_buf_str)
+{
+    uint32_t resource_type;
+    uint32_t resource_count;
+    uint32_t resource_name_len;
+    uint32_t resource_entry_idx;
+    char resource_name[MAX_RESOURCE_NAME_LENGTH];
+
+    char *p_cursor;
+
+    p_cursor = data_buf_str;
+
+    // get object type
+    resource_type = __datascript_parse_resource_type(p_cursor);
+    if (resource_type == RESOURCE_FORMAT_TYPE_INVALID) {
+        return FAILURE;
+    }
+
+    p_cursor = strchr(p_cursor, DIRECTIVE_CHAR_DELIMITER);
+    p_cursor++;
+
+    // get object name
+    resource_name_len = __datascript_parse_resource_name(p_cursor, resource_name);
+    if (resource_name_len == 0) {
+        return FAILURE;
+    }
+
+    // get object member count
+    resource_count = __datascript_parse_resource_count(p_cursor);
+    if (resource_count == 0) {
+        return FAILURE;
+    }
+
+    // register object
+    resource_entry_idx = datafile_allocate_resource_data_entry(resource_count);
+    if (resource_entry_idx == MAX_NUM_RESOURCE_OBJECTS) {
+        return FAILURE;
+    }
+
+    datafile_save_resource_type(resource_entry_idx, resource_type);
+    datafile_save_resource_name(resource_entry_idx, resource_name);
+    datafile_save_resource_count(resource_entry_idx, resource_count);
+
+    if (__datascript_save_resource_data(resource_name, p_cursor) == FAILURE) {
+        return FAILURE;
     }
 
     return SUCCESS;
@@ -557,50 +652,26 @@ static uint32_t __datascript_release_current_datafile_entry(void)
     return SUCCESS;
 }
 
-uint32_t datascript_get_resource_count(void)
+uint32_t datascript_get_total_resource_count(void)
 {
-    char *p_cursor;
-    uint32_t resource_count;
-
-    resource_count = 0;
-
-    p_cursor = strchr(datafile_list->ctx.p_filedata_str, DIRECTIVE_CHAR_RESOURCE_OBJECT_DEFINE_CLOSE);
-    while (p_cursor != NULL) {
-        resource_count++;
-        p_cursor = strchr(++p_cursor, DIRECTIVE_CHAR_RESOURCE_OBJECT_DEFINE_CLOSE);
-    }
-
-    return resource_count;
+    return datafile_get_total_resource_count();
 }
 
-uint32_t datascript_load_resource_info_from_datafile(resource_info_t *info_list)
+uint32_t datascript_load_all_resource_objects(void)
 {
     uint32_t list_idx;
     char data_buf_str[300];
 
     list_idx = 0;
 
+    uint32_t resource_count;
+    char *p_resource_name;
+
 get_new_datastr:
     memset(data_buf_str, 0, 300);
 
     if (__datascript_get_next_objstr_from_datafile(data_buf_str) == SUCCESS) {
-        memset(&info_list[list_idx], 0, sizeof(resource_info_t));
-
-        if (__datascript_setup_resource_info_ctx(&info_list[list_idx], data_buf_str) == FAILURE) {
-            return FAILURE;
-        }
-
-        if (datafile_allocate_resource_data_entry(&info_list[list_idx]) == FAILURE) {
-            return FAILURE;
-        }
-
-        info_list[list_idx].binding = datafile_get_resource_entry_idx(info_list[list_idx].name);
-        if (info_list[list_idx].binding == MAX_NUM_RESOURCE_OBJECTS) {
-            printf("resource entry fully occupied\n");
-            return FAILURE;
-        }
-
-        if (__datascript_register_resource_entries(&info_list[list_idx], data_buf_str) == FAILURE) {
+        if (__datascript_register_resource_object(data_buf_str) == FAILURE) {
             return FAILURE;
         }
 
@@ -614,6 +685,21 @@ get_new_datastr:
 
     // EOF
     return SUCCESS;
+}
+
+uint32_t datascript_get_resource_name(uint32_t resource_entry_idx, char *resource_name_buf)
+{
+    return datafile_get_resource_name(resource_entry_idx, resource_name_buf);
+}
+
+uint32_t datascript_get_resource_type(char *resource_name)
+{
+    return datafile_get_resource_type(resource_name);
+}
+
+uint32_t datascript_get_resource_member_count(char *resource_name)
+{
+    return datafile_get_resource_member_count(resource_name);
 }
 
 resource_member_list_t *datascript_get_resource_data(char *resource_name)
