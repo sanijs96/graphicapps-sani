@@ -282,8 +282,7 @@ void __cmd_pool_add_draw_command(vulkan_cmd_param_t *p_param, VkCommandBuffer *p
     first_instance = 0;
 
     if (subcmd_type == VULKAN_SUBCMD_TYPE_DRAW_COMMAND_COMMON) {
-        uint32_t first_vertex = 3;
-        uint32_t vertex_count = 0;
+        uint32_t first_vertex = 0;
 
         vkCmdDraw(*p_cmd_buf, p_param->draw.type_common.vertex_count,
                         instance_count, first_vertex, first_instance);

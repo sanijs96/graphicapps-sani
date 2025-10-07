@@ -30,6 +30,8 @@ uint32_t window_obj_mgr_start_display(VkDevice *p_device);
 
 uint32_t window_obj_mgr_get_next_framebuffer_image_idx(void);
 
+VkFence *window_obj_mgr_get_current_image_fence_object(void);
+
 uint32_t window_obj_mgr_show_queue_result(VkQueue *p_queue);
 
 uint32_t window_obj_mgr_check_display_status(void);

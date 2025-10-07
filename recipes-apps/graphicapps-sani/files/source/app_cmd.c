@@ -73,6 +73,7 @@ uint32_t __app_cmd_setup_resource_info_ctx(resource_info_t *p_info)
     }
     else {
         p_info->vertex_buffer.binding_idx = datascript_get_resource_entry_idx(p_info->name);
+
         if (p_info->vertex_buffer.binding_idx == MAX_NUM_RESOURCE_OBJECTS) {
             return FAILURE;
         }

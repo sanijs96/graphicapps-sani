@@ -18,8 +18,7 @@ void datafile_save_resource_name(uint32_t entry_idx, char *resource_name);
 void datafile_save_resource_type(uint32_t entry_idx, uint32_t resource_type);
 void datafile_save_resource_count(uint32_t entry_idx, uint32_t resource_count);
 
-uint32_t datafile_get_resource_name(uint32_t entry_idx, char *resource_name);
-
+uint32_t datafile_get_resource_name(uint32_t entry_idx, char *resource_name_buf);
 uint32_t datafile_get_resource_type(char *resource_name);
 uint32_t datafile_get_resource_member_count(char *resource_name);
 uint32_t datafile_save_resource_data(uint32_t entry_idx,

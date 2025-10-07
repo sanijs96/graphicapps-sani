@@ -81,9 +81,9 @@ static uint32_t __resource_handler_setup_index_3v(resource_t *p_buf, resource_in
     for (uint32_t idx = 0; idx < p_info->count; idx++) {
         member_idx = 0;
 
-        p_buf[idx].index_3v.idx[0] = atoi(p_members[idx][member_idx++].value);
-        p_buf[idx].index_3v.idx[1] = atoi(p_members[idx][member_idx++].value);
-        p_buf[idx].index_3v.idx[2] = atoi(p_members[idx][member_idx++].value);
+        ((index_3v_t *)p_buf)[idx].idx[0] = atoi(p_members[idx][member_idx++].value);
+        ((index_3v_t *)p_buf)[idx].idx[1] = atoi(p_members[idx][member_idx++].value);
+        ((index_3v_t *)p_buf)[idx].idx[2] = atoi(p_members[idx][member_idx++].value);
     }
 
     return SUCCESS;

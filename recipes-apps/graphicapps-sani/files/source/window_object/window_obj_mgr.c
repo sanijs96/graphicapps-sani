@@ -311,7 +311,7 @@ uint32_t window_obj_mgr_setup_display(VkInstance *p_instance)
     return res;
 }
 
-static uint32_t __window_obj_mgr_get_next_image(VkDevice *p_device)
+static uint32_t __window_obj_mgr_get_next_image_idx(VkDevice *p_device)
 {
     uint32_t image_idx;
     VkSemaphore *p_semaphore;
@@ -335,7 +335,11 @@ uint32_t window_obj_mgr_start_display(VkDevice *p_device)
     wait_all = VK_TRUE;
     p_swapchain_ctx = &window_ctx.display_ctx.swapchain_ctx;
 
-    p_swapchain_ctx->current_image_idx = __window_obj_mgr_get_next_image(p_device);
+    p_image_fence = (VkFence *)(p_swapchain_ctx->image_fences + p_swapchain_ctx->current_image_idx);
+
+    vkWaitForFences(*p_device, 1, p_image_fence, wait_all, UINT64_MAX);
+
+    p_swapchain_ctx->current_image_idx = __window_obj_mgr_get_next_image_idx(p_device);
 
     p_image_fence = (VkFence *)(p_swapchain_ctx->image_fences + p_swapchain_ctx->current_image_idx);
 
@@ -343,7 +347,6 @@ uint32_t window_obj_mgr_start_display(VkDevice *p_device)
         window_ctx.display_ctx.state = WINDOW_OBJ_DISPLAY_STATE_STARTED;
     }
     else if (window_ctx.display_ctx.state == WINDOW_OBJ_DISPLAY_STATE_STARTED) {
-        vkWaitForFences(*p_device, 1, p_image_fence, wait_all, UINT64_MAX);
         vkResetFences(*p_device, 1, p_image_fence);
     }
     else {
@@ -521,7 +524,7 @@ uint32_t window_obj_mgr_create_framebuffers(VkRenderPass* p_renderpass)
 
     image_count = window_ctx.display_ctx.swapchain_ctx.image_count;
 
-    p_framebuffers = (VkFramebuffer *)malloc(sizeof(VkFramebuffer[image_count]));
+    p_framebuffers = (VkFramebuffer *)malloc(sizeof(VkFramebuffer) * image_count);
 
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebuffer_info.pNext = NULL;
@@ -538,7 +541,7 @@ uint32_t window_obj_mgr_create_framebuffers(VkRenderPass* p_renderpass)
     for (uint32_t idx = 0; idx < image_count; idx++) {
         framebuffer_info.pAttachments = &window_ctx.display_ctx.swapchain_ctx.p_views[idx];
         res = vkCreateFramebuffer(*window_ctx.p_device, &framebuffer_info, NULL,
-                                                            &p_framebuffers[idx]);
+                                                            p_framebuffers + idx);
 
         if (res != VK_SUCCESS) {
             printf("framebuffer creation failure: %d\n", res);

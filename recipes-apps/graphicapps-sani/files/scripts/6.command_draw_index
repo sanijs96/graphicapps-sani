@@ -5,11 +5,11 @@ resource create -n rectangle_idx
 
 # copy resource to device
 temp_buf = cmdbuf alloc -b onetime
-
 cmdbuf add -c copy_resource -i $temp_buf -n rectangle
+cmdbuf run -i $temp_buf
 
+temp_buf = cmdbuf alloc -b onetime
 cmdbuf add -c copy_resource -i $temp_buf -n rectangle_idx
-
 cmdbuf run -i $temp_buf
 
 # allocate command buffer & begin recording

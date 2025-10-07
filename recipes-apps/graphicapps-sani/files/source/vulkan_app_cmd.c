@@ -381,6 +381,8 @@ uint32_t vulkan_app_cmd_create_device(command_t *p_cmd)
     vulkan_resource_mgr_add_memory_property(p_phydev);
 
     window_obj_mgr_setup_device_ctx(p_phydev, p_device);
+
+    return SUCCESS;
 }
 
 static void __check_presentation_support(uint32_t phydev_idx, VkSurfaceKHR *p_surface)
@@ -692,13 +694,18 @@ static uint32_t __vulkan_app_cmd_run_cmd_buffer(vulkan_cmd_args_list_t *p_args_l
     }
 
     if (!(cmd_buffer_bitmap & (1 << VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS))) {
-        goto exit;
+        *p_fence = VK_NULL_HANDLE;
     }
-
-    p_fence = window_obj_mgr_get_current_image_fence_object();
+    else {
+        p_fence = window_obj_mgr_get_current_image_fence_object();
+    }
 
     if (__vulkan_app_cmd_submit_queue(p_queue, queue_type, p_fence) == FAILURE) {
         return FAILURE;
+    }
+
+    if (!(cmd_buffer_bitmap & (1 << VULKAN_SUPPORTED_CMD_TYPE_RENDERPASS))) {
+        goto exit;
     }
 
     if (window_obj_mgr_show_queue_result(p_queue) == FAILURE) {

@@ -402,8 +402,7 @@ uint32_t vulkan_resource_mgr_create_vertex_buffer(VkDevice *p_device, char *reso
 
     p_resource_list = &resource_ctx.vertex_list;
 
-    requirement_flag = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    requirement_flag = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
     p_entry = __vulkan_resource_mgr_get_matching_resource_entry(resource_name, p_resource_list);
     if (p_entry == NULL) {
@@ -449,8 +448,7 @@ uint32_t vulkan_resource_mgr_create_index_buffer(VkDevice *p_device, char *resou
 
     p_resource_list = &resource_ctx.index_list;
 
-    requirement_flag = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    requirement_flag = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
     p_entry = __vulkan_resource_mgr_get_matching_resource_entry(resource_name, p_resource_list);
     if (p_entry == NULL) {
@@ -501,7 +499,8 @@ void *vulkan_resource_mgr_create_device_resource_copy(VkDevice *p_device, char *
     resource_entry_t *p_src_entry;
     static resource_entry_t entry_copy = { .state = RESOURCE_ENTRY_STATE_DEFAULT };
 
-    requirement_flag = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    requirement_flag = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
     p_src_entry = vulkan_resource_mgr_get_resource_entry(resource_name);
     if (p_src_entry == NULL) {

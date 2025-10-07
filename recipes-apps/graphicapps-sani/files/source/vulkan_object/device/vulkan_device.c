@@ -369,9 +369,5 @@ uint32_t device_submit_queue(VkQueue *p_queue, VkSubmitInfo *p_submit_info, VkFe
         return FAILURE;
     }
 
-    vkWaitForFences(device_ctx.device, 1, p_fence, VK_TRUE, UINT64_MAX);
-
-    vkDestroyFence(device_ctx.device, *p_fence, NULL);
-
     return SUCCESS;
 }
